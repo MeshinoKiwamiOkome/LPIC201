@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ファイルシステムの操作 ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em; color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #b7791f; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #744210, #b7791f);
+      border-radius: 12px; padding: 32px 32px 24px;
+      margin-bottom: 32px; color: #fff;
+      box-shadow: 0 4px 18px rgba(183,121,31,0.35);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em; font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85; letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .chapter-header h1 { margin: 0 0 10px; font-size: 1.6em; color: #fff; border: none; padding: 0; }
+    .chapter-header p  { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px; padding: 3px 12px;
+      font-size: 0.76em; font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 { color: #744210; margin-top: 48px; border-left: 5px solid #b7791f; padding-left: 12px; }
+    h3 { color: #276749; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7; padding: 2px 6px;
+      border-radius: 4px; font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c; color: #e2e8f0;
+      padding: 18px 20px; border-radius: 8px;
+      overflow-x: auto; font-size: 0.88em;
+      line-height: 1.7; font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+    pre .err     { color: #fc8181; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #4a5568; color: #e2e8f0;
+      border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 0.75em;
+      cursor: pointer; font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s; z-index: 1;
+    }
+    .copy-btn:hover { background: #b7791f; }
+
+    /* ボックス */
+    .note {
+      background: #fff; border: 1px dashed #fbd38d;
+      border-radius: 6px; padding: 14px 18px;
+      font-size: 0.93em; color: #4a5568; margin: 14px 0;
+    }
+    .note strong { color: #744210; }
+    .warn {
+      background: #fffaf0; border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #744210; margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4; border: 1px solid #68d391;
+      border-left: 5px solid #48bb78; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #276749; margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 20px 24px;
+      margin: 12px 0 28px; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 10px; padding: 18px 22px;
+      margin-bottom: 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 { margin: 0 0 12px; font-size: 0.92em; color: #744210; border: none; padding: 0; }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #b7791f; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #744210; font-weight: bold; }
+
+    /* FSタイプカード */
+    .fs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px; margin: 14px 0;
+    }
+    .fs-card {
+      border-radius: 8px; padding: 14px 16px;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .fs-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+    .fs-card .fs-name {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 1em; font-weight: bold; margin-bottom: 4px;
+    }
+    .fs-card .fs-tag {
+      font-size: 0.72em; font-weight: bold;
+      border-radius: 10px; padding: 2px 10px;
+      display: inline-block; margin-bottom: 6px;
+    }
+    .fs-card .fs-desc {
+      font-size: 0.82em; color: #4a5568; line-height: 1.6;
+    }
+
+    /* マウントフロー */
+    .mount-flow {
+      display: flex; align-items: center;
+      gap: 8px; flex-wrap: wrap;
+      justify-content: center; margin: 16px 0;
+    }
+    .mount-box {
+      border-radius: 8px; padding: 12px 16px;
+      text-align: center; font-size: 0.85em;
+      font-weight: bold; min-width: 120px;
+    }
+    .mount-arrow { font-size: 1.4em; color: #718096; }
+
+    /* スワップバー */
+    .swap-visual {
+      background: #edf2f7; border-radius: 8px;
+      padding: 16px; margin: 14px 0;
+    }
+    .mem-bar-wrap {
+      margin-bottom: 10px;
+    }
+    .mem-bar-label {
+      font-size: 0.82em; font-weight: bold;
+      font-family: 'Consolas', 'Monaco', monospace;
+      margin-bottom: 4px; color: #4a5568;
+    }
+    .mem-bar-bg {
+      background: #e2e8f0; border-radius: 6px;
+      height: 22px; overflow: hidden; position: relative;
+    }
+    .mem-bar-fill {
+      height: 100%; border-radius: 6px;
+      display: flex; align-items: center;
+      padding-left: 8px; font-size: 0.75em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-weight: bold; color: #fff;
+      transition: width 0.5s ease;
+      white-space: nowrap;
+    }
+
+    /* インタラクティブデモ */
+    .interactive-demo {
+      background: #fffaf0; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 16px 20px; margin: 14px 0;
+    }
+    .slider-row {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em; font-weight: bold;
+      min-width: 180px; color: #744210;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row select {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 6px 10px; font-size: 0.88em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #2d3748; background: #fff;
+      cursor: pointer; flex: 1;
+    }
+    .slider-row select:focus { border-color: #b7791f; outline: none; }
+    .slider-row input[type="range"] { flex: 1; min-width: 100px; accent-color: #b7791f; }
+    .val-display {
+      min-width: 60px; text-align: right;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85em; color: #2d3748;
+    }
+    .output-display {
+      background: #1a202c; color: #68d391;
+      border-radius: 6px; padding: 12px 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em; margin-top: 10px;
+      white-space: pre; overflow-x: auto; line-height: 1.7;
+    }
+
+    /* タブ */
+    .tab-wrap { margin: 14px 0; }
+    .tab-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: -1px; }
+    .tab-btn {
+      padding: 8px 18px; border: 1px solid #fbd38d;
+      border-bottom: none; border-radius: 6px 6px 0 0;
+      background: #edf2f7; color: #744210;
+      font-size: 0.85em; font-weight: bold;
+      font-family: 'Consolas', 'Monaco', monospace;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .tab-btn.active { background: #fff; border-bottom: 1px solid #fff; }
+    .tab-btn:hover:not(.active) { background: #fefcbf; }
+    .tab-content {
+      display: none; background: #fff;
+      border: 1px solid #fbd38d;
+      border-radius: 0 6px 6px 6px; padding: 18px 20px;
+    }
+    .tab-content.active { display: block; }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse; width: 100%;
+      background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0; font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #fbd38d; padding: 10px 14px; text-align: left;
+    }
+    table.ref-table thead tr { background: #744210; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #fffaf0; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0; border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0; padding: 24px 28px; margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 18px 22px; margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 8px 12px; font-size: 0.95em;
+      width: 100%; max-width: 440px; margin: 6px 0;
+      outline: none; font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus { border-color: #b7791f; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block; padding: 9px 20px;
+      border-radius: 6px; border: none; cursor: pointer;
+      font-size: 0.95em; font-weight: bold;
+      transition: opacity 0.2s; margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-amber { background: #b7791f; color: #fff; }
+    .btn-done  { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px; padding: 10px 14px;
+      border-radius: 6px; font-weight: bold; display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #fefcbf; color: #744210; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 48px;
+      padding-top: 20px; border-top: 2px solid #fbd38d;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block; padding: 10px 20px;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.9em; transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #b7791f; color: #fff; }
+    .page-nav .home { background: #fff; color: #b7791f; border: 2px solid #b7791f; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4; border: 2px solid #48bb78;
+      border-radius: 10px; padding: 20px 24px;
+      margin-top: 40px; text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 2px solid #fbd38d;
+      font-size: 0.82em; color: #a0aec0; text-align: center;
+    }
+    footer a { color: #b7791f; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .fs-grid { grid-template-columns: repeat(2, 1fr); }
+      .mount-flow { gap: 4px; }
+      .mount-box { min-width: 80px; font-size: 0.78em; padding: 8px 10px; }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+      .slider-row label { min-width: 130px; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  第4章：デバイスとファイルシステム › ファイルシステムの操作
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 04 › SECTION 01</div>
+  <h1>💾 ファイルシステムの操作</h1>
+  <p>ファイルシステムの情報確認、マウント・アンマウントの操作、
+  sync コマンドによるデータの安全な書き込み、
+  スワップ領域の管理方法を体系的に学びます。</p>
+  <div class="badge-row">
+    <span class="badge">df</span>
+    <span class="badge">du</span>
+    <span class="badge">mount</span>
+    <span class="badge">umount</span>
+    <span class="badge">/etc/fstab</span>
+    <span class="badge">sync</span>
+    <span class="badge">swapon</span>
+    <span class="badge">swapoff</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第4章のセクション</h2>
+  <ol>
+    <li class="current"><a href="index.html">ファイルシステムの操作</a></li>
+    <li><a href="02_fscheck.html">ファイルシステムの作成と検査</a></li>
+    <li><a href="03_lvm.html">LVM の管理</a></li>
+    <li><a href="04_raid.html">RAID の管理</a></li>
+    <li><a href="05_storage.html">ストレージデバイスの管理</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：ファイルシステムの情報 -->
+<!-- ============================================================ -->
+<h2 id="fsinfo">① ファイルシステムの情報</h2>
+
+<div class="note">
+  <strong>重要ポイント①：df はファイルシステムの使用量、du はディレクトリ・ファイルの使用量を確認するコマンド</strong><br>
+  どちらもシステム管理で頻繁に使用します。オプションの違いを正確に理解しましょう。
+</div>
+
+<div class="demo-box">
+  <h3>主要なファイルシステムの種類（クリックで詳細）</h3>
+  <div class="fs-grid">
+
+    <div class="fs-card" style="background:#ebf8ff; border:2px solid #90cdf4;"
+         onclick="showFsType('ext4')">
+      <div class="fs-name" style="color:#2b4c7e;">ext4</div>
+      <div class="fs-tag" style="background:#2b4c7e; color:#fff;">Linux 標準</div>
+      <div class="fs-desc">Linux の標準FS。ジャーナリング対応・高い安定性</div>
+    </div>
+
+    <div class="fs-card" style="background:#f0fff4; border:2px solid #68d391;"
+         onclick="showFsType('xfs')">
+      <div class="fs-name" style="color:#1a4731;">XFS</div>
+      <div class="fs-tag" style="background:#1a4731; color:#fff;">高性能</div>
+      <div class="fs-desc">RHEL 系の標準FS。大容量・高性能・並列I/O</div>
+    </div>
+
+    <div class="fs-card" style="background:#faf5ff; border:2px solid #b794f4;"
+         onclick="showFsType('btrfs')">
+      <div class="fs-name" style="color:#553c9a;">Btrfs</div>
+      <div class="fs-tag" style="background:#553c9a; color:#fff;">次世代</div>
+      <div class="fs-desc">スナップショット・RAID・圧縮を内蔵した次世代FS</div>
+    </div>
+
+    <div class="fs-card" style="background:#fffaf0; border:2px solid #f6ad55;"
+         onclick="showFsType('vfat')">
+      <div class="fs-name" style="color:#744210;">vfat / FAT32</div>
+      <div class="fs-tag" style="background:#744210; color:#fff;">互換性</div>
+      <div class="fs-desc">Windows/Linux 共通。USB・ESP パーティション</div>
+    </div>
+
+    <div class="fs-card" style="background:#fff5f5; border:2px solid #fc8181;"
+         onclick="showFsType('tmpfs')">
+      <div class="fs-name" style="color:#9b2335;">tmpfs</div>
+      <div class="fs-tag" style="background:#9b2335; color:#fff;">メモリ上</div>
+      <div class="fs-desc">RAM 上の一時FS。/tmp・/run に使用</div>
+    </div>
+
+    <div class="fs-card" style="background:#edf2f7; border:2px solid #a0aec0;"
+         onclick="showFsType('nfs')">
+      <div class="fs-name" style="color:#4a5568;">NFS</div>
+      <div class="fs-tag" style="background:#4a5568; color:#fff;">ネットワーク</div>
+      <div class="fs-desc">ネットワーク経由でリモートFSをマウント</div>
+    </div>
+
+  </div>
+
+  <!-- FS詳細 -->
+  <div id="fs-type-detail" style="display:none; margin-top:12px; background:#fff; border:1px solid #fbd38d; border-left:5px solid #b7791f; border-radius:0 8px 8px 0; padding:14px 18px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const fsTypes = {
+      ext4: {
+        title: 'ext4（Fourth Extended Filesystem）',
+        color: '#2b4c7e',
+        body: `Linux で最も広く使われているファイルシステムです。<br><br>
+          <strong>主な特徴：</strong><br>
+          ・ジャーナリング対応（クラッシュ後の高速回復）<br>
+          ・最大ファイルサイズ：16TB・最大ボリュームサイズ：1EB<br>
+          ・エクステント（連続ブロック管理）による高速化<br>
+          ・遅延アロケーション・マルチブロックアロケーション<br><br>
+          <strong>主なコマンド：</strong><br>
+          ・作成：<code>mkfs.ext4 /dev/sdb1</code><br>
+          ・検査：<code>fsck.ext4 /dev/sdb1</code><br>
+          ・情報：<code>tune2fs -l /dev/sdb1</code> / <code>dumpe2fs /dev/sdb1</code>`
+      },
+      xfs: {
+        title: 'XFS',
+        color: '#1a4731',
+        body: `RHEL/CentOS 7 以降の標準ファイルシステムです。大容量・高性能が特徴です。<br><br>
+          <strong>主な特徴：</strong><br>
+          ・最大ファイルサイズ：8EB・最大ボリュームサイズ：8EB<br>
+          ・並列I/O に最適化・大規模ファイルサーバー向け<br>
+          ・オンラインデフラグ・オンライン拡張（縮小は不可）<br>
+          ・ジャーナリング対応<br><br>
+          <strong>主なコマンド：</strong><br>
+          ・作成：<code>mkfs.xfs /dev/sdb1</code><br>
+          ・検査：<code>xfs_repair /dev/sdb1</code><br>
+          ・情報：<code>xfs_info /dev/sdb1</code><br>
+          ・バックアップ：<code>xfsdump</code> / <code>xfsrestore</code>`
+      },
+      btrfs: {
+        title: 'Btrfs（B-tree Filesystem）',
+        color: '#553c9a',
+        body: `次世代の Linux ファイルシステムです。多機能ですが、まだ発展途上の部分もあります。<br><br>
+          <strong>主な特徴：</strong><br>
+          ・スナップショット機能（差分バックアップ）<br>
+          ・内蔵 RAID（RAID 0/1/5/6/10）<br>
+          ・透過的な圧縮（zlib・lzo・zstd）<br>
+          ・コピーオンライト（CoW）<br>
+          ・サブボリューム管理<br><br>
+          <strong>主なコマンド：</strong><br>
+          ・作成：<code>mkfs.btrfs /dev/sdb1</code><br>
+          ・スナップショット：<code>btrfs subvolume snapshot</code><br>
+          ・情報：<code>btrfs filesystem show</code>`
+      },
+      vfat: {
+        title: 'vfat / FAT32',
+        color: '#744210',
+        body: `Windows と Linux で共通して使用できるファイルシステムです。<br><br>
+          <strong>主な用途：</strong><br>
+          ・USB メモリ・SD カードの標準FS<br>
+          ・UEFI の EFI システムパーティション（ESP）<br>
+          ・Windows/Linux 間のファイル共有<br><br>
+          <strong>制限事項：</strong><br>
+          ・最大ファイルサイズ：4GB（FAT32）<br>
+          ・Linux のパーミッション・所有者情報を保持できない<br>
+          ・大文字小文字を区別しない<br><br>
+          <strong>主なコマンド：</strong><br>
+          ・作成：<code>mkfs.vfat /dev/sdb1</code> / <code>mkfs.fat -F 32 /dev/sdb1</code>`
+      },
+      tmpfs: {
+        title: 'tmpfs',
+        color: '#9b2335',
+        body: `RAM 上に作成される一時的なファイルシステムです。<br><br>
+          <strong>主な特徴：</strong><br>
+          ・メモリ上に存在するため非常に高速<br>
+          ・再起動するとデータが消える（一時データ向け）<br>
+          ・必要に応じてスワップも使用<br><br>
+          <strong>主な用途：</strong><br>
+          ・<code>/tmp</code>：一時ファイル<br>
+          ・<code>/run</code>：実行時データ（PID ファイルなど）<br>
+          ・<code>/dev/shm</code>：共有メモリ<br><br>
+          <strong>マウント例：</strong><br>
+          <code>mount -t tmpfs -o size=512m tmpfs /tmp</code>`
+      },
+      nfs: {
+        title: 'NFS（Network File System）',
+        color: '#4a5568',
+        body: `ネットワーク経由でリモートサーバーのファイルシステムをマウントします。<br><br>
+          <strong>主な特徴：</strong><br>
+          ・クライアントからはローカルFSと同様に操作可能<br>
+          ・NFS v3（UDP/TCP）・NFS v4（TCP のみ）<br>
+          ・ポート：2049（NFS）・111（portmapper）<br><br>
+          <strong>マウント例：</strong><br>
+          <code>mount -t nfs 192.168.1.10:/exports/data /mnt/nfs</code><br><br>
+          <strong>/etc/fstab 記述例：</strong><br>
+          <code>192.168.1.10:/exports/data /mnt/nfs nfs defaults,_netdev 0 0</code>`
+      }
+    };
+
+    function showFsType(key) {
+      const d = fsTypes[key];
+      const el = document.getElementById('fs-type-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display='none'; el.dataset.current=''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-family:'Consolas','Monaco',monospace; font-size:0.95em;">${d.title}</strong><br><br>${d.body}`;
+      el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+  </script>
+
+  <h3>df コマンド（ファイルシステムの使用量）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># ファイルシステムの使用量を表示</span>
+$ <span class="cmd">df</span>
+<span class="hdr">Filesystem     1K-blocks     Used Available Use% Mounted on</span>
+<span class="out">udev             3987456        0   3987456   0% /dev</span>
+<span class="out">tmpfs             804608     1932    802676   1% /run</span>
+<span class="hl">/dev/sda2       96696308 12345678  79345678  14% /</span>
+<span class="out">/dev/sda1         523248     6220    517028   2% /boot/efi</span>
+<span class="out">tmpfs            4023040      120   4022920   1% /dev/shm</span>
+
+<span class="comment"># 人間が読みやすい単位で表示（推奨）</span>
+$ <span class="cmd">df</span> <span class="opt">-h</span>
+<span class="hdr">Filesystem      Size  Used Avail Use% Mounted on</span>
+<span class="hl">/dev/sda2        93G   12G   76G  14% /</span>
+<span class="out">/dev/sdb1       932G  450G  482G  49% /data</span>
+
+<span class="comment"># inode の使用量を表示</span>
+$ <span class="cmd">df</span> <span class="opt">-i</span>
+<span class="hdr">Filesystem      Inodes  IUsed   IFree IUse% Mounted on</span>
+<span class="out">/dev/sda2      6291456 245678 6045778    4% /</span>
+
+<span class="comment"># ファイルシステムタイプも表示</span>
+$ <span class="cmd">df</span> <span class="opt">-T</span>
+<span class="hdr">Filesystem     Type  1K-blocks     Used Available Use% Mounted on</span>
+<span class="out">/dev/sda2      ext4   96696308 12345678  79345678  14% /</span>
+
+<span class="comment"># 特定のパスのみ表示</span>
+$ <span class="cmd">df</span> <span class="opt">-h</span> /home
+<span class="out">Filesystem      Size  Used Avail Use% Mounted on</span>
+<span class="out">/dev/sda2        93G   12G   76G  14% /</span>
+</pre>
+  </div>
+
+  <h3>du コマンド（ディレクトリ・ファイルの使用量）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># カレントディレクトリの使用量（サブディレクトリ含む）</span>
+$ <span class="cmd">du</span>
+<span class="out">4       ./cache</span>
+<span class="out">8       ./config</span>
+<span class="out">1024    ./data</span>
+<span class="out">1036    .</span>
+
+<span class="comment"># 人間が読みやすい単位で表示</span>
+$ <span class="cmd">du</span> <span class="opt">-h</span> /var/log
+<span class="out">4.0K    /var/log/apt</span>
+<span class="out">12M     /var/log/journal</span>
+<span class="out">256K    /var/log/syslog</span>
+
+<span class="comment"># 合計のみ表示（-s = summary）</span>
+$ <span class="cmd">du</span> <span class="opt">-sh</span> /var/log
+<span class="out">45M     /var/log</span>
+
+<span class="comment"># 1階層のみ表示（-d = max-depth）</span>
+$ <span class="cmd">du</span> <span class="opt">-h</span> <span class="opt">-d 1</span> /var
+<span class="out">4.0K    /var/backups</span>
+<span class="out">45M     /var/log</span>
+<span class="out">2.1G    /var/lib</span>
+<span class="out">2.2G    /var</span>
+
+<span class="comment"># 大きい順にソートして上位10件</span>
+$ <span class="cmd">du</span> <span class="opt">-h</span> /var/* | <span class="cmd">sort</span> <span class="opt">-rh</span> | <span class="cmd">head</span> <span class="opt">-10</span>
+
+<span class="comment"># ファイルも含めて表示（-a = all）</span>
+$ <span class="cmd">du</span> <span class="opt">-ah</span> /etc | <span class="cmd">sort</span> <span class="opt">-rh</span> | <span class="cmd">head</span> <span class="opt">-5</span>
+</pre>
+  </div>
+
+  <h3>df と du の主要オプション比較</h3>
+  <table class="ref-table">
+    <thead><tr><th>オプション</th><th>df での意味</th><th>du での意味</th></tr></thead>
+    <tbody>
+      <tr><td><code>-h</code></td><td>人間が読みやすい単位（K/M/G）</td><td>人間が読みやすい単位（K/M/G）</td></tr>
+      <tr><td><code>-H</code></td><td>1000 進数で表示（1K=1000）</td><td>1000 進数で表示</td></tr>
+      <tr><td><code>-i</code></td><td>inode の使用量を表示</td><td>—</td></tr>
+      <tr><td><code>-T</code></td><td>ファイルシステムタイプを表示</td><td>—</td></tr>
+      <tr><td><code>-s</code></td><td>—</td><td>合計のみ表示（summary）</td></tr>
+      <tr><td><code>-a</code></td><td>すべてのFSを表示（疑似FSも）</td><td>ファイルも含めて表示</td></tr>
+      <tr><td><code>-d N</code></td><td>—</td><td>N 階層まで表示（max-depth）</td></tr>
+      <tr><td><code>-x</code></td><td>指定FSタイプのみ表示</td><td>異なるFSをスキップ</td></tr>
+    </tbody>
+  </table>
+
+  <h3>その他のファイルシステム情報コマンド</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># マウント中のファイルシステムを確認</span>
+$ <span class="cmd">mount</span>
+$ <span class="cmd">cat</span> /proc/mounts
+$ <span class="cmd">findmnt</span>                    <span class="comment"># ツリー形式で表示</span>
+$ <span class="cmd">findmnt</span> <span class="opt">-t</span> <span class="val">ext4</span>           <span class="comment"># ext4 のみ表示</span>
+
+<span class="comment"># ブロックデバイスの情報</span>
+$ <span class="cmd">lsblk</span>                      <span class="comment"># ブロックデバイスのツリー表示</span>
+$ <span class="cmd">lsblk</span> <span class="opt">-f</span>                   <span class="comment"># FS タイプ・UUID も表示</span>
+$ <span class="cmd">blkid</span>                      <span class="comment"># UUID・FSタイプを表示</span>
+$ <span class="cmd">blkid</span> /dev/sda1            <span class="comment"># 特定デバイスの情報</span>
+
+<span class="comment"># lsblk -f の出力例</span>
+$ <span class="cmd">lsblk</span> <span class="opt">-f</span>
+<span class="hdr">NAME   FSTYPE FSVER LABEL UUID                                 FSAVAIL FSUSE% MOUNTPOINTS</span>
+<span class="out">sda</span>
+<span class="out">├─sda1 vfat   FAT32       XXXX-XXXX                              499M     5% /boot/efi</span>
+<span class="hl">└─sda2 ext4   1.0         xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx    76G    14% /</span>
+<span class="out">sdb</span>
+<span class="out">└─sdb1 xfs                yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy   482G    49% /data</span>
+
+<span class="comment"># ext4 の詳細情報</span>
+$ <span class="cmd">tune2fs</span> <span class="opt">-l</span> /dev/sda2       <span class="comment"># スーパーブロック情報</span>
+$ <span class="cmd">dumpe2fs</span> /dev/sda2         <span class="comment"># 詳細なFS情報</span>
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：マウントとアンマウント -->
+<!-- ============================================================ -->
+<h2 id="mount">② マウントとアンマウント</h2>
+
+<div class="note">
+  <strong>重要ポイント②：mount コマンドでファイルシステムをディレクトリツリーに接続し、umount で切り離す。/etc/fstab で起動時の自動マウントを設定する</strong><br>
+  マウントポイントは空のディレクトリである必要があります。
+</div>
+
+<div class="demo-box">
+  <h3>マウントの概念図</h3>
+  <div class="mount-flow">
+    <div class="mount-box" style="background:#1a202c; color:#e2e8f0; border:2px solid #4a5568;">
+      💾 デバイス<br><code style="font-size:0.8em; color:#90cdf4;">/dev/sdb1</code>
+    </div>
+    <div class="mount-arrow">→ mount →</div>
+    <div class="mount-box" style="background:#744210; color:#fff; border:2px solid #b7791f;">
+      📁 マウントポイント<br><code style="font-size:0.8em; color:#fbd38d;">/mnt/data</code>
+    </div>
+    <div class="mount-arrow">→</div>
+    <div class="mount-box" style="background:#1a4731; color:#fff; border:2px solid #2f855a;">
+      ✅ アクセス可能<br><code style="font-size:0.8em; color:#9ae6b4;">ls /mnt/data</code>
+    </div>
+  </div>
+
+  <h3>mount コマンドの基本</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># 基本的なマウント</span>
+$ <span class="cmd">sudo mount</span> /dev/sdb1 /mnt/data
+
+<span class="comment"># ファイルシステムタイプを指定</span>
+$ <span class="cmd">sudo mount</span> <span class="opt">-t</span> <span class="val">ext4</span> /dev/sdb1 /mnt/data
+$ <span class="cmd">sudo mount</span> <span class="opt">-t</span> <span class="val">xfs</span>  /dev/sdc1 /mnt/xfsdata
+$ <span class="cmd">sudo mount</span> <span class="opt">-t</span> <span class="val">vfat</span> /dev/sdd1 /mnt/usb
+$ <span class="cmd">sudo mount</span> <span class="opt">-t</span> <span class="val">nfs</span>  192.168.1.10:/exports /mnt/nfs
+
+<span class="comment"># マウントオプションを指定（-o）</span>
+$ <span class="cmd">sudo mount</span> <span class="opt">-o</span> <span class="val">ro</span> /dev/sdb1 /mnt/data         <span class="comment"># 読み取り専用</span>
+$ <span class="cmd">sudo mount</span> <span class="opt">-o</span> <span class="val">rw,noexec</span> /dev/sdb1 /mnt/data  <span class="comment"># 読み書き・実行不可</span>
+$ <span class="cmd">sudo mount</span> <span class="opt">-o</span> <span class="val">remount,rw</span> /                   <span class="comment"># 再マウント（ro→rw）</span>
+
+<span class="comment"># UUID で指定（デバイス名が変わっても安全）</span>
+$ <span class="cmd">sudo mount</span> UUID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx /mnt/data
+
+<span class="comment"># ISO イメージをループマウント</span>
+$ <span class="cmd">sudo mount</span> <span class="opt">-o</span> <span class="val">loop</span> ubuntu.iso /mnt/iso
+$ <span class="cmd">sudo mount</span> <span class="opt">-t</span> <span class="val">iso9660</span> <span class="opt">-o</span> <span class="val">loop</span> ubuntu.iso /mnt/iso
+
+<span class="comment"># tmpfs をマウント</span>
+$ <span class="cmd">sudo mount</span> <span class="opt">-t</span> <span class="val">tmpfs</span> <span class="opt">-o</span> <span class="val">size=512m</span> tmpfs /tmp
+
+<span class="comment"># 現在のマウント状態を確認</span>
+$ <span class="cmd">mount</span>                    <span class="comment"># すべてのマウントを表示</span>
+$ <span class="cmd">mount</span> | <span class="cmd">grep</span> <span class="val">sdb</span>        <span class="comment"># 特定デバイスを確認</span>
+$ <span class="cmd">findmnt</span>                  <span class="comment"># ツリー形式で表示</span>
+</pre>
+  </div>
+
+  <h3>主要なマウントオプション</h3>
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#744210; margin:0 0 12px;">
+      マウントオプションを選択して意味と用途を確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>マウントオプション</label>
+      <select id="mount-opt-sel" onchange="showMountOpt()">
+        <option value="">-- 選択してください --</option>
+        <option value="ro">ro（読み取り専用）</option>
+        <option value="rw">rw（読み書き）</option>
+        <option value="noexec">noexec（実行禁止）</option>
+        <option value="nosuid">nosuid（SUID無効）</option>
+        <option value="nodev">nodev（デバイスファイル無効）</option>
+        <option value="noatime">noatime（アクセス時刻更新なし）</option>
+        <option value="defaults">defaults（デフォルト設定）</option>
+        <option value="netdev">_netdev（ネットワーク依存）</option>
+        <option value="auto">auto / noauto</option>
+        <option value="user">user / users / nouser</option>
+      </select>
+    </div>
+    <div class="output-display" id="mount-opt-output" style="display:none;"></div>
+  </div>
+
+  <script>
+    const mountOpts = {
+      ro: {
+        color: '#90cdf4',
+        text:
+`ro（read-only）：読み取り専用でマウント
+
+・書き込み操作をすべて拒否する
+・データ保護・破損防止に使用
+・CD/DVD は自動的に ro でマウントされる
+
+用途：
+・バックアップデータの誤書き込み防止
+・障害時のシステム起動（fsck 前）
+・CD/DVD・ISO イメージのマウント
+
+例：
+$ sudo mount -o ro /dev/sdb1 /mnt/backup
+$ sudo mount -o remount,ro /  # 再マウントで ro に変更`
+      },
+      rw: {
+        color: '#68d391',
+        text:
+`rw（read-write）：読み書き可能でマウント（デフォルト）
+
+・通常のマウントはデフォルトで rw
+・ro でマウントされたFSを rw に変更する場合は remount を使用
+
+例：
+$ sudo mount -o rw /dev/sdb1 /mnt/data
+$ sudo mount -o remount,rw /  # ro → rw に再マウント`
+      },
+      noexec: {
+        color: '#f6ad55',
+        text:
+`noexec：バイナリファイルの実行を禁止
+
+・このFS上のファイルを実行不可にする
+・セキュリティ強化に使用
+
+用途：
+・/tmp パーティション（マルウェアの実行防止）
+・データ専用パーティション
+・ユーザーのホームディレクトリ
+
+例：
+$ sudo mount -o noexec /dev/sdb1 /tmp
+
+/etc/fstab 例：
+/dev/sdb1  /tmp  ext4  defaults,noexec,nosuid,nodev  0 2`
+      },
+      nosuid: {
+        color: '#b794f4',
+        text:
+`nosuid：SUID/SGID ビットを無効化
+
+・このFS上のファイルの SUID/SGID を無視する
+・セキュリティ強化に使用
+
+SUID とは：
+・Set User ID。実行時にファイル所有者の権限で実行される
+・例：/usr/bin/passwd（root 権限で実行される）
+
+用途：
+・/tmp・/home などのユーザー書き込み可能パーティション
+・外部メディア（USB など）
+
+例：
+$ sudo mount -o nosuid /dev/sdb1 /mnt/usb`
+      },
+      nodev: {
+        color: '#fc8181',
+        text:
+`nodev：デバイスファイルを無効化
+
+・このFS上のデバイスファイルを無視する
+・セキュリティ強化に使用
+
+用途：
+・/tmp・/home・外部メディアなど
+・ユーザーが不正なデバイスファイルを作成できなくする
+
+例：
+$ sudo mount -o nodev /dev/sdb1 /mnt/usb
+
+推奨セット：
+noexec,nosuid,nodev を組み合わせて使用することが多い`
+      },
+      noatime: {
+        color: '#68d391',
+        text:
+`noatime：ファイルアクセス時刻（atime）の更新を無効化
+
+・ファイルを読み込むたびに atime を更新しない
+・ディスクI/Oを削減してパフォーマンスを向上
+
+関連オプション：
+・noatime：atime を一切更新しない
+・relatime：mtime より古い場合のみ更新（デフォルト）
+・strictatime：常に更新（最も I/O が多い）
+
+用途：
+・SSD の書き込み回数削減（寿命延長）
+・高負荷サーバーのパフォーマンス改善
+
+例：
+$ sudo mount -o noatime /dev/sdb1 /mnt/data`
+      },
+      defaults: {
+        color: '#fbd38d',
+        text:
+`defaults：デフォルトオプションのセット
+
+defaults = rw,suid,dev,exec,auto,nouser,async
+
+各オプションの意味：
+・rw     : 読み書き可能
+・suid   : SUID/SGID を有効
+・dev    : デバイスファイルを有効
+・exec   : バイナリ実行を許可
+・auto   : mount -a で自動マウント
+・nouser : root のみマウント可能
+・async  : 非同期I/O（書き込みをバッファリング）
+
+/etc/fstab での使用例：
+/dev/sda2  /  ext4  defaults  0 1`
+      },
+      netdev: {
+        color: '#90cdf4',
+        text:
+`_netdev：ネットワーク依存のファイルシステムを示す
+
+・ネットワークが利用可能になってからマウントする
+・NFS・CIFS・iSCSI などのネットワークFSに必要
+
+/etc/fstab での使用例：
+192.168.1.10:/exports  /mnt/nfs  nfs  defaults,_netdev  0 0
+
+注意：
+・_netdev を付けないと起動時にネットワークが
+  利用可能になる前にマウントしようとして失敗する
+・systemd 環境では network.target への依存が自動設定される`
+      },
+      auto: {
+        color: '#68d391',
+        text:
+`auto / noauto：mount -a での自動マウント制御
+
+auto（デフォルト）：
+・mount -a コマンドで自動マウントされる
+・起動時に /etc/fstab の全エントリを処理する際に対象になる
+
+noauto：
+・mount -a では自動マウントされない
+・手動で mount コマンドを実行した場合のみマウントされる
+
+用途（noauto）：
+・CD/DVD ドライブ（必要な時だけマウント）
+・バックアップ用デバイス
+・オプションのストレージ
+
+例：
+/dev/sr0  /mnt/cdrom  iso9660  noauto,ro  0 0`
+      },
+      user: {
+        color: '#b794f4',
+        text:
+`user / users / nouser：一般ユーザーのマウント権限
+
+user：
+・一般ユーザーがマウント可能
+・マウントしたユーザーのみアンマウント可能
+・noexec,nosuid,nodev が自動的に設定される
+
+users：
+・一般ユーザーがマウント可能
+・どのユーザーでもアンマウント可能
+
+nouser（デフォルト）：
+・root のみマウント可能
+
+用途（user）：
+・CD/DVD ドライブ・USB メモリ
+・ユーザーが自分でマウントできるようにする
+
+例：
+/dev/sr0  /mnt/cdrom  iso9660  noauto,user,ro  0 0`
+      }
+    };
+
+    function showMountOpt() {
+      const key = document.getElementById('mount-opt-sel').value;
+      const el  = document.getElementById('mount-opt-output');
+      if (!key) { el.style.display='none'; return; }
+      const d = mountOpts[key];
+      el.style.display = 'block';
+      el.style.color   = d.color;
+      el.textContent   = d.text;
+    }
+  </script>
+
+  <h3>umount コマンド</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># マウントポイントを指定してアンマウント</span>
+$ <span class="cmd">sudo umount</span> /mnt/data
+
+<span class="comment"># デバイスを指定してアンマウント</span>
+$ <span class="cmd">sudo umount</span> /dev/sdb1
+
+<span class="comment"># 使用中でアンマウントできない場合の確認</span>
+$ <span class="cmd">sudo umount</span> /mnt/data
+<span class="err">umount: /mnt/data: target is busy</span>
+
+<span class="comment"># 使用中のプロセスを確認</span>
+$ <span class="cmd">lsof</span> /mnt/data          <span class="comment"># /mnt/data を使用中のプロセス一覧</span>
+$ <span class="cmd">fuser</span> <span class="opt">-m</span> /mnt/data       <span class="comment"># 使用中のプロセスIDを表示</span>
+$ <span class="cmd">fuser</span> <span class="opt">-km</span> /mnt/data      <span class="comment"># 使用中のプロセスを強制終了してアンマウント</span>
+
+<span class="comment"># 遅延アンマウント（使用中プロセスが終了したらアンマウント）</span>
+$ <span class="cmd">sudo umount</span> <span class="opt">-l</span> /mnt/data  <span class="comment"># lazy umount</span>
+
+<span class="comment"># 強制アンマウント（NFS などが応答しない場合）</span>
+$ <span class="cmd">sudo umount</span> <span class="opt">-f</span> /mnt/nfs   <span class="comment"># force umount（危険）</span>
+
+<span class="comment"># /etc/fstab に記載されたすべてをマウント</span>
+$ <span class="cmd">sudo mount</span> <span class="opt">-a</span>
+
+<span class="comment"># /etc/fstab に記載されたすべてをアンマウント</span>
+$ <span class="cmd">sudo umount</span> <span class="opt">-a</span>
+</pre>
+  </div>
+
+  <h3>/etc/fstab の設定</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /etc/fstab の書式</span>
+<span class="comment"># デバイス  マウントポイント  FSタイプ  オプション  dump  pass</span>
+
+<span class="comment"># 書式の各フィールド説明</span>
+<span class="comment"># 1. デバイス：/dev/sda1 または UUID=xxxx または LABEL=xxx</span>
+<span class="comment"># 2. マウントポイント：/boot など</span>
+<span class="comment"># 3. FSタイプ：ext4, xfs, vfat, nfs, swap など</span>
+<span class="comment"># 4. オプション：defaults, ro, noexec など</span>
+<span class="comment"># 5. dump：0=バックアップ対象外, 1=対象（現在はほぼ0）</span>
+<span class="comment"># 6. pass：fsck の順序（0=スキップ, 1=最初, 2=後）</span>
+
+<span class="comment"># /etc/fstab の例</span>
+<span class="hdr"># &lt;device&gt;                                &lt;mountpoint&gt; &lt;type&gt;  &lt;options&gt;              &lt;dump&gt; &lt;pass&gt;</span>
+<span class="hl">UUID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx /            ext4    defaults               0      1</span>
+<span class="out">UUID=yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy /boot        ext4    defaults               0      2</span>
+<span class="out">UUID=XXXX-XXXX                           /boot/efi    vfat    umask=0077             0      1</span>
+<span class="hl">UUID=zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz none        swap    sw                     0      0</span>
+<span class="out">tmpfs                                    /tmp         tmpfs   defaults,noexec,nosuid 0      0</span>
+<span class="out">192.168.1.10:/exports                    /mnt/nfs     nfs     defaults,_netdev       0      0</span>
+<span class="out">/dev/sr0                                 /mnt/cdrom   iso9660 noauto,user,ro         0      0</span>
+
+<span class="comment"># pass フィールドの意味</span>
+<span class="comment"># 0 : fsck をスキップ（swap・NFS・tmpfs など）</span>
+<span class="comment"># 1 : 最初に fsck（ルートファイルシステム /）</span>
+<span class="comment"># 2 : 2番目以降に fsck（その他のパーティション）</span>
+</pre>
+  </div>
+
+  <div class="warn">
+    <strong>⚠️ /etc/fstab の設定ミスに注意</strong><br>
+    <code>/etc/fstab</code> の設定ミスはシステムが起動しなくなる原因になります。<br>
+    ・変更後は必ず <code>sudo mount -a</code> でエラーがないか確認する<br>
+    ・デバイス名（<code>/dev/sda1</code>）は再起動後に変わる可能性があるため、<strong>UUID</strong> で指定することを推奨<br>
+    ・UUID は <code>blkid</code> または <code>lsblk -f</code> で確認できる
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：sync コマンド -->
+<!-- ============================================================ -->
+<h2 id="sync">③ sync コマンド</h2>
+
+<div class="note">
+  <strong>重要ポイント③：sync はカーネルのバッファキャッシュをディスクに書き込むコマンド。アンマウント前・シャットダウン前に実行することでデータ損失を防ぐ</strong><br>
+  Linux はパフォーマンスのためにディスク書き込みをバッファリング（非同期I/O）します。
+  <code>sync</code> はそのバッファを強制的にフラッシュします。
+</div>
+
+<div class="demo-box">
+  <h3>バッファキャッシュの仕組みと sync</h3>
+  <div style="background:#1a202c; border-radius:8px; padding:16px 20px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; line-height:2; color:#e2e8f0; margin:14px 0;">
+    <div style="color:#b794f4; font-weight:bold;">【書き込みの流れ】</div>
+    <div>
+      アプリケーション
+      <span style="color:#f6ad55;"> → write() → </span>
+      カーネルバッファキャッシュ
+      <span style="color:#68d391;"> → sync → </span>
+      ディスク
+    </div>
+    <div style="color:#68d391; margin-top:8px;">
+      ・通常：カーネルが適切なタイミングで自動的にフラッシュ（pdflush/writeback）<br>
+      ・sync ：即座にすべてのバッファをディスクに書き込む<br>
+      ・async：デフォルト。書き込みをバッファリングして後でまとめて書き込む（高速）<br>
+      ・sync オプション：マウント時に sync オプションを指定すると常に同期書き込み（低速）
+    </div>
+  </div>
+
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># バッファキャッシュをすべてディスクに書き込む</span>
+$ <span class="cmd">sync</span>
+
+<span class="comment"># 複数回実行することもある（確実性のため）</span>
+$ <span class="cmd">sync</span>; <span class="cmd">sync</span>; <span class="cmd">sync</span>
+
+<span class="comment"># アンマウント前に sync を実行（安全のため）</span>
+$ <span class="cmd">sync</span> && <span class="cmd">sudo umount</span> /mnt/usb
+
+<span class="comment"># ページキャッシュを手動で解放（メモリ解放）</span>
+$ <span class="cmd">sync</span>
+$ <span class="cmd">echo</span> <span class="val">1</span> | <span class="cmd">sudo tee</span> /proc/sys/vm/drop_caches  <span class="comment"># ページキャッシュ解放</span>
+$ <span class="cmd">echo</span> <span class="val">2</span> | <span class="cmd">sudo tee</span> /proc/sys/vm/drop_caches  <span class="comment"># スラブキャッシュ解放</span>
+$ <span class="cmd">echo</span> <span class="val">3</span> | <span class="cmd">sudo tee</span> /proc/sys/vm/drop_caches  <span class="comment"># 両方解放</span>
+<span class="comment"># ※ drop_caches の前に sync を実行してダーティページを書き込む</span>
+
+<span class="comment"># ダーティページの状態を確認</span>
+$ <span class="cmd">cat</span> /proc/meminfo | <span class="cmd">grep</span> <span class="val">Dirty</span>
+<span class="out">Dirty:              1024 kB</span>   <span class="comment"># ← まだディスクに書かれていないデータ</span>
+<span class="out">Writeback:             0 kB</span>   <span class="comment"># ← 現在書き込み中のデータ</span>
+</pre>
+  </div>
+
+  <div class="good">
+    ✅ <strong>sync が重要な場面</strong><br>
+    ・<strong>USB メモリのアンマウント前</strong>：<code>sync && umount /mnt/usb</code><br>
+    ・<strong>緊急シャットダウン前</strong>：<code>sync; sync; sync</code> → <code>shutdown -h now</code><br>
+    ・<strong>カーネルパニック後の再起動前</strong>：Magic SysRq キーで <code>s</code>（sync）を実行<br>
+    ・<strong>ベンチマーク測定前</strong>：キャッシュの影響を排除するため <code>sync</code> + <code>drop_caches</code>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 4：スワップ -->
+<!-- ============================================================ -->
+<h2 id="swap">④ スワップ</h2>
+
+<div class="note">
+  <strong>重要ポイント④：スワップはRAMが不足した場合にディスクをRAMの代わりに使用する領域。swapon・swapoff で管理する</strong><br>
+  スワップ領域は専用パーティション（スワップパーティション）またはスワップファイルとして作成できます。
+</div>
+
+<div class="demo-box">
+  <h3>メモリとスワップの関係（インタラクティブ）</h3>
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#744210; margin:0 0 12px;">
+      メモリ使用率を変えてスワップの動作を確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>メモリ使用率（%）</label>
+      <input type="range" id="mem-usage" min="10" max="100" value="60" oninput="updateSwapViz()">
+      <span class="val-display" id="mem-usage-val">60%</span>
+    </div>
+    <div class="slider-row">
+      <label>vm.swappiness</label>
+      <input type="range" id="swappiness-val2" min="0" max="100" value="60" oninput="updateSwapViz()">
+      <span class="val-display" id="swappiness-display">60</span>
+    </div>
+
+    <div class="swap-visual">
+      <div class="mem-bar-wrap">
+        <div class="mem-bar-label">RAM 使用量</div>
+        <div class="mem-bar-bg">
+          <div class="mem-bar-fill" id="ram-fill" style="background:linear-gradient(90deg,#2b4c7e,#567ebb);"></div>
+        </div>
+      </div>
+      <div class="mem-bar-wrap">
+        <div class="mem-bar-label">スワップ使用量</div>
+        <div class="mem-bar-bg">
+          <div class="mem-bar-fill" id="swap-fill" style="background:linear-gradient(90deg,#744210,#b7791f);"></div>
+        </div>
+      </div>
+    </div>
+    <div class="output-display" id="swap-viz-output"></div>
+  </div>
+
+  <script>
+    function updateSwapViz() {
+      const memUsage   = parseInt(document.getElementById('mem-usage').value);
+      const swappiness = parseInt(document.getElementById('swappiness-val2').value);
+      document.getElementById('mem-usage-val').textContent   = memUsage + '%';
+      document.getElementById('swappiness-display').textContent = swappiness;
+
+      // スワップ使用量の計算（簡易シミュレーション）
+      let swapPct = 0;
+      if (memUsage >= 90) {
+        swapPct = Math.min(80, (memUsage - 90) * 8 + swappiness * 0.3);
+      } else if (memUsage >= 70) {
+        swapPct = Math.max(0, (memUsage - 70) * 0.5 + swappiness * 0.1);
+      } else {
+        swapPct = swappiness > 80 ? Math.max(0, (memUsage - 40) * 0.2) : 0;
+      }
+      swapPct = Math.min(100, Math.round(swapPct));
+
+      document.getElementById('ram-fill').style.width = memUsage + '%';
+      document.getElementById('ram-fill').textContent = memUsage + '%';
+      document.getElementById('swap-fill').style.width = swapPct + '%';
+      document.getElementById('swap-fill').textContent = swapPct > 5 ? swapPct + '%' : '';
+
+      const out = document.getElementById('swap-viz-output');
+      let msg = `RAM 使用率: ${memUsage}%  |  vm.swappiness: ${swappiness}  |  スワップ使用: ${swapPct}%\n`;
+      msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+      if (memUsage >= 95) {
+        msg += '🔴 危険：メモリがほぼ枯渇。OOM Killer が発動する可能性があります\n';
+        msg += '   → 早急なメモリ増設またはプロセスの削減が必要です';
+        out.style.color = '#fc8181';
+      } else if (memUsage >= 80 || swapPct > 20) {
+        msg += '⚠️  警告：スワップを多用しています。パフォーマンスが低下しています\n';
+        msg += '   → vm.swappiness を下げるか、メモリ増設を検討してください';
+        out.style.color = '#f6ad55';
+      } else if (swapPct > 0) {
+        msg += '💡 スワップを少し使用しています\n';
+        msg += '   → vm.swappiness=' + swappiness + ' のため積極的にスワップを使用しています\n';
+        msg += '   → サーバーでは vm.swappiness=10 前後を推奨します';
+        out.style.color = '#fbd38d';
+      } else {
+        msg += '✅ 正常：RAMに余裕があります。スワップは使用されていません\n';
+        msg += '   → 現在の設定は良好です';
+        out.style.color = '#68d391';
+      }
+      out.textContent = msg;
+    }
+    updateSwapViz();
+  </script>
+
+  <h3>スワップの確認と管理（タブで切り替え）</h3>
+  <div class="tab-wrap">
+    <div class="tab-btns">
+      <button class="tab-btn active" onclick="switchTab(this,'tab-swapcheck')">確認コマンド</button>
+      <button class="tab-btn" onclick="switchTab(this,'tab-swappart')">スワップパーティション</button>
+      <button class="tab-btn" onclick="switchTab(this,'tab-swapfile')">スワップファイル</button>
+      <button class="tab-btn" onclick="switchTab(this,'tab-swapmgr')">swapon / swapoff</button>
+    </div>
+
+    <!-- 確認コマンド -->
+    <div class="tab-content active" id="tab-swapcheck">
+      <h3 style="margin-top:0; color:#744210;">スワップの確認コマンド</h3>
+      <div class="pre-wrap">
+        <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># スワップ領域の一覧を表示</span>
+$ <span class="cmd">swapon</span> <span class="opt">--show</span>
+<span class="hdr">NAME      TYPE SIZE USED PRIO</span>
+<span class="out">/dev/sda3 partition   2G  68M   -2</span>
+<span class="out">/swapfile file        2G   0B   -3</span>
+
+<span class="comment"># free コマンドでメモリとスワップを確認</span>
+$ <span class="cmd">free</span> <span class="opt">-h</span>
+<span class="hdr">               total        used        free      shared  buff/cache   available</span>
+<span class="out">Mem:           7.7Gi       3.2Gi       1.1Gi       234Mi       3.4Gi       4.0Gi</span>
+<span class="hl">Swap:          4.0Gi        68Mi       3.9Gi</span>
+
+<span class="comment"># /proc/swaps でも確認できる</span>
+$ <span class="cmd">cat</span> /proc/swaps
+<span class="hdr">Filename                Type        Size    Used    Priority</span>
+<span class="out">/dev/sda3               partition   2097148 69632   -2</span>
+<span class="out">/swapfile               file        2097148 0       -3</span>
+
+<span class="comment"># vmstat でスワップI/Oを確認</span>
+$ <span class="cmd">vmstat</span> <span class="val">1</span> <span class="val">5</span>
+<span class="hdr">procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----</span>
+<span class="hdr"> r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st</span>
+<span class="out"> 1  0  69632 1100000 524288 3400000   0    0     0     1   50  100  5  2 93  0  0</span>
+<span class="comment"># si=スワップイン（ディスク→RAM）so=スワップアウト（RAM→ディスク）</span>
+</pre>
+      </div>
+    </div>
+
+    <!-- スワップパーティション -->
+    <div class="tab-content" id="tab-swappart">
+      <h3 style="margin-top:0; color:#744210;">スワップパーティションの作成</h3>
+      <div class="pre-wrap">
+        <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># 1. パーティションを作成（fdisk または parted）</span>
+$ <span class="cmd">sudo fdisk</span> /dev/sdb
+<span class="comment"># → n（新規）→ パーティション番号 → サイズ → t（タイプ）→ 82（Linux swap）→ w（書き込み）</span>
+
+<span class="comment"># 2. スワップ領域として初期化</span>
+$ <span class="cmd">sudo mkswap</span> /dev/sdb1
+<span class="out">Setting up swapspace version 1, size = 2 GiB (2147479552 bytes)</span>
+<span class="out">no label, UUID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</span>
+
+<span class="comment"># 3. スワップを有効化</span>
+$ <span class="cmd">sudo swapon</span> /dev/sdb1
+
+<span class="comment"># 4. /etc/fstab に追記して永続化</span>
+$ <span class="cmd">echo</span> <span class="val">'/dev/sdb1 none swap sw 0 0'</span> | <span class="cmd">sudo tee</span> <span class="opt">-a</span> /etc/fstab
+<span class="comment"># または UUID で指定（推奨）</span>
+$ <span class="cmd">echo</span> <span class="val">'UUID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx none swap sw 0 0'</span> | <span class="cmd">sudo tee</span> <span class="opt">-a</span> /etc/fstab
+
+<span class="comment"># 確認</span>
+$ <span class="cmd">swapon</span> <span class="opt">--show</span>
+</pre>
+      </div>
+    </div>
+
+    <!-- スワップファイル -->
+    <div class="tab-content" id="tab-swapfile">
+      <h3 style="margin-top:0; color:#744210;">スワップファイルの作成</h3>
+      <div class="pre-wrap">
+        <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># 1. スワップファイルを作成（fallocate が高速）</span>
+$ <span class="cmd">sudo fallocate</span> <span class="opt">-l</span> <span class="val">2G</span> /swapfile
+<span class="comment"># fallocate が使えない場合は dd を使用</span>
+$ <span class="cmd">sudo dd</span> <span class="opt">if</span>=/dev/zero <span class="opt">of</span>=/swapfile <span class="opt">bs</span>=1M <span class="opt">count</span>=2048
+
+<span class="comment"># 2. パーミッションを設定（root のみ読み書き可能）</span>
+$ <span class="cmd">sudo chmod</span> <span class="val">600</span> /swapfile
+
+<span class="comment"># 3. スワップ領域として初期化</span>
+$ <span class="cmd">sudo mkswap</span> /swapfile
+<span class="out">Setting up swapspace version 1, size = 2 GiB (2147479552 bytes)</span>
+
+<span class="comment"># 4. スワップを有効化</span>
+$ <span class="cmd">sudo swapon</span> /swapfile
+
+<span class="comment"># 5. /etc/fstab に追記して永続化</span>
+$ <span class="cmd">echo</span> <span class="val">'/swapfile none swap sw 0 0'</span> | <span class="cmd">sudo tee</span> <span class="opt">-a</span> /etc/fstab
+
+<span class="comment"># 確認</span>
+$ <span class="cmd">swapon</span> <span class="opt">--show</span>
+<span class="hdr">NAME      TYPE  SIZE USED PRIO</span>
+<span class="out">/swapfile file    2G   0B   -2</span>
+</pre>
+      </div>
+    </div>
+
+    <!-- swapon/swapoff -->
+    <div class="tab-content" id="tab-swapmgr">
+      <h3 style="margin-top:0; color:#744210;">swapon / swapoff コマンド</h3>
+      <div class="pre-wrap">
+        <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># スワップを有効化</span>
+$ <span class="cmd">sudo swapon</span> /dev/sdb1          <span class="comment"># パーティション</span>
+$ <span class="cmd">sudo swapon</span> /swapfile           <span class="comment"># ファイル</span>
+$ <span class="cmd">sudo swapon</span> <span class="opt">-a</span>                  <span class="comment"># /etc/fstab の全スワップを有効化</span>
+
+<span class="comment"># 優先度を指定してスワップを有効化（高い値が優先）</span>
+$ <span class="cmd">sudo swapon</span> <span class="opt">-p</span> <span class="val">10</span> /dev/sdb1     <span class="comment"># 優先度 10</span>
+$ <span class="cmd">sudo swapon</span> <span class="opt">-p</span> <span class="val">5</span>  /swapfile      <span class="comment"># 優先度 5（低い）</span>
+
+<span class="comment"># スワップを無効化</span>
+$ <span class="cmd">sudo swapoff</span> /dev/sdb1
+$ <span class="cmd">sudo swapoff</span> /swapfile
+$ <span class="cmd">sudo swapoff</span> <span class="opt">-a</span>                 <span class="comment"># すべてのスワップを無効化</span>
+
+<span class="comment"># スワップの一覧と詳細表示</span>
+$ <span class="cmd">swapon</span> <span class="opt">--show</span>
+$ <span class="cmd">swapon</span> <span class="opt">-v</span>                       <span class="comment"># 詳細表示</span>
+
+<span class="comment"># スワップの優先度について</span>
+<span class="comment"># /etc/fstab の sw オプションで優先度を指定</span>
+<span class="comment"># UUID=xxx none swap sw,pri=10 0 0</span>
+<span class="comment"># 優先度が同じ場合はラウンドロビンで使用（パフォーマンス向上）</span>
+</pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(btn, id) {
+      btn.closest('.tab-wrap').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.closest('.tab-wrap').querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(id).classList.add('active');
+    }
+  </script>
+
+  <h3>スワップ関連コマンドまとめ</h3>
+  <table class="ref-table">
+    <thead><tr><th>コマンド</th><th>説明</th><th>主なオプション</th></tr></thead>
+    <tbody>
+      <tr><td><code>mkswap</code></td><td>スワップ領域の初期化</td><td><code>-L ラベル</code>・<code>-U UUID</code></td></tr>
+      <tr><td><code>swapon</code></td><td>スワップを有効化</td><td><code>-a</code>（全て）・<code>-p 優先度</code>・<code>--show</code></td></tr>
+      <tr><td><code>swapoff</code></td><td>スワップを無効化</td><td><code>-a</code>（全て）・<code>-v</code>（詳細）</td></tr>
+      <tr><td><code>free -h</code></td><td>メモリ・スワップ使用量確認</td><td><code>-h</code>（人間が読みやすい）・<code>-s N</code>（N秒ごとに更新）</td></tr>
+      <tr><td><code>vmstat</code></td><td>スワップI/O（si/so）確認</td><td><code>1 5</code>（1秒ごとに5回）</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- まとめ表 -->
+<!-- ============================================================ -->
+<h2>📌 まとめ一覧</h2>
+<div class="demo-box">
+  <table class="ref-table">
+    <thead><tr><th>カテゴリ</th><th>コマンド / ファイル</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td colspan="3" style="background:#fefcbf; color:#744210; font-weight:bold; font-size:0.88em;">▼ ファイルシステム情報</td></tr>
+      <tr><td>FS使用量</td><td><code>df -h</code></td><td>ファイルシステムの使用量（人間が読みやすい単位）</td></tr>
+      <tr><td>inode使用量</td><td><code>df -i</code></td><td>inode の使用量</td></tr>
+      <tr><td>FSタイプ表示</td><td><code>df -T</code></td><td>ファイルシステムタイプを含む使用量</td></tr>
+      <tr><td>ディレクトリ使用量</td><td><code>du -sh ディレクトリ</code></td><td>ディレクトリの合計使用量</td></tr>
+      <tr><td>ブロックデバイス情報</td><td><code>lsblk -f</code></td><td>FSタイプ・UUID・マウントポイント</td></tr>
+      <tr><td>UUID確認</td><td><code>blkid</code></td><td>デバイスの UUID・FSタイプ</td></tr>
+      <tr><td colspan="3" style="background:#fefcbf; color:#744210; font-weight:bold; font-size:0.88em;">▼ マウント・アンマウント</td></tr>
+      <tr><td>マウント</td><td><code>mount -t FSタイプ デバイス マウントポイント</code></td><td>ファイルシステムをマウント</td></tr>
+      <tr><td>アンマウント</td><td><code>umount マウントポイント</code></td><td>ファイルシステムをアンマウント</td></tr>
+      <tr><td>遅延アンマウント</td><td><code>umount -l マウントポイント</code></td><td>使用中プロセス終了後にアンマウント</td></tr>
+      <tr><td>全マウント</td><td><code>mount -a</code></td><td>/etc/fstab の全エントリをマウント</td></tr>
+      <tr><td>自動マウント設定</td><td><code>/etc/fstab</code></td><td>起動時の自動マウント設定ファイル</td></tr>
+      <tr><td colspan="3" style="background:#fefcbf; color:#744210; font-weight:bold; font-size:0.88em;">▼ sync・スワップ</td></tr>
+      <tr><td>バッファフラッシュ</td><td><code>sync</code></td><td>カーネルバッファをディスクに書き込む</td></tr>
+      <tr><td>スワップ初期化</td><td><code>mkswap デバイス/ファイル</code></td><td>スワップ領域として初期化</td></tr>
+      <tr><td>スワップ有効化</td><td><code>swapon デバイス/ファイル</code></td><td>スワップを有効化</td></tr>
+      <tr><td>スワップ無効化</td><td><code>swapoff デバイス/ファイル</code></td><td>スワップを無効化</td></tr>
+      <tr><td>スワップ確認</td><td><code>swapon --show</code></td><td>有効なスワップ領域の一覧</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 穴埋め問題</h3>
+    <p>以下の説明に合うコマンド・ファイル・オプションを入力してください。</p>
+    <label>① ファイルシステムの使用量を人間が読みやすい単位で表示するコマンド：</label>
+    <input type="text" id="q1a" placeholder="コマンド -オプション">
+    <label>② /var/log の合計使用量のみを人間が読みやすい単位で表示するコマンド：</label>
+    <input type="text" id="q1b" placeholder="コマンド -オプション /var/log">
+    <label>③ カーネルのバッファキャッシュをディスクに書き込むコマンド：</label>
+    <input type="text" id="q1c" placeholder="コマンド名">
+    <label>④ スワップ領域として初期化するコマンド：</label>
+    <input type="text" id="q1d" placeholder="コマンド名">
+    <label>⑤ /etc/fstab の pass フィールドでルートファイルシステムに設定する値：</label>
+    <input type="text" id="q1e" placeholder="数字">
+    <br>
+    <button class="btn btn-amber" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const a = document.getElementById('q1a').value.trim().toLowerCase().replace(/\s+/g,'');
+        const b = document.getElementById('q1b').value.trim().toLowerCase().replace(/\s+/g,'');
+        const c = document.getElementById('q1c').value.trim().toLowerCase().replace(/\s/g,'');
+        const d = document.getElementById('q1d').value.trim().toLowerCase().replace(/\s/g,'');
+        const e = document.getElementById('q1e').value.trim();
+        const r = document.getElementById('q1-result');
+        const ca = a === 'df-h';
+        const cb = b === 'du-sh/var/log' || b === 'du-hs/var/log';
+        const cc = c === 'sync';
+        const cd = d === 'mkswap';
+        const ce = e === '1';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ df -h'}　` +
+            `② ${cb?'✅':'❌ du -sh /var/log'}　` +
+            `③ ${cc?'✅':'❌ sync'}　` +
+            `④ ${cd?'✅':'❌ mkswap'}　` +
+            `⑤ ${ce?'✅':'❌ 1（ルートFSは1、その他は2、スキップは0）'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 選択問題</h3>
+    <p>
+      <code>/etc/fstab</code> の以下のエントリについて、正しい説明はどれですか？<br>
+      <code style="background:#edf2f7; padding:4px 8px; border-radius:4px;">
+        UUID=xxxx /data ext4 defaults,noexec,nosuid 0 2
+      </code>
+    </p>
+    <select id="q2">
+      <option value="">-- 選択してください --</option>
+      <option value="a">このパーティションは起動時にマウントされず、fsck もスキップされる</option>
+      <option value="b">このパーティションは読み取り専用でマウントされ、fsck は2番目に実行される</option>
+      <option value="c">このパーティションはデフォルト設定でマウントされるが、実行ファイルの実行と SUID が無効化され、fsck は2番目に実行される</option>
+      <option value="d">このパーティションはネットワーク接続後にマウントされる</option>
+    </select>
+    <br>
+    <button class="btn btn-amber" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const v = document.getElementById('q2').value;
+        const r = document.getElementById('q2-result');
+        if (v === 'c') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>各フィールドの解説：</strong><br>' +
+            '・<code>UUID=xxxx</code>：UUID でデバイスを指定<br>' +
+            '・<code>/data</code>：マウントポイント<br>' +
+            '・<code>ext4</code>：ファイルシステムタイプ<br>' +
+            '・<code>defaults</code>：rw,suid,dev,exec,auto,nouser,async<br>' +
+            '・<code>noexec</code>：実行ファイルの実行を禁止（defaults の exec を上書き）<br>' +
+            '・<code>nosuid</code>：SUID/SGID を無効化（defaults の suid を上書き）<br>' +
+            '・<code>0</code>：dump バックアップ対象外<br>' +
+            '・<code>2</code>：fsck を2番目に実行（ルートFS の後）';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '・<code>defaults</code>：通常の読み書きでマウント（ro ではない）<br>' +
+            '・<code>noexec</code>：実行ファイルの実行を禁止<br>' +
+            '・<code>nosuid</code>：SUID/SGID を無効化<br>' +
+            '・最後の <code>2</code>：fsck を2番目に実行（0=スキップ、1=最初、2=後）';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① <code>df -i</code> は inode の使用量を表示する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② <code>umount -l</code> は使用中のファイルシステムを即座に強制アンマウントする
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ <code>sync</code> コマンドはカーネルのバッファキャッシュをディスクに書き込む
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ スワップファイルを作成する手順は「fallocate → chmod 600 → mkswap → swapon」の順である
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ <code>/etc/fstab</code> の pass フィールドが 0 の場合、起動時に fsck がスキップされる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ <code>mount -o remount,rw /</code> はルートファイルシステムを読み書き可能で再マウントする
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ NFS マウントには <code>_netdev</code> オプションを指定することが推奨される
+    </label>
+    <br>
+    <button class="btn btn-amber" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：①③④⑤⑥⑦（a,c,d,e,f,g）
+        // ② umount -l は遅延アンマウント（lazy）。強制は -f
+        const correct = { a:true, b:false, c:true, d:true, e:true, f:true, g:true };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>①③④⑤⑥⑦<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・② <code>umount -l</code> は<strong>遅延アンマウント（lazy）</strong>です。<br>' +
+            '&nbsp;&nbsp;使用中プロセスが終了したらアンマウントします。<br>' +
+            '&nbsp;&nbsp;即座に強制アンマウントするのは <code>umount -f</code>（force）です。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. シナリオ問題</h3>
+    <p>
+      サーバーの <code>/</code> パーティションの使用率が 95% に達しています。
+      <code>df -h</code> で確認したところ、<code>/var/log</code> が大量のディスクを使用していることがわかりました。
+      <strong>次に実行すべきコマンド</strong>として最も適切なものはどれですか？
+    </p>
+    <select id="q4">
+      <option value="">-- 選択してください --</option>
+      <option value="a">df -i /var/log</option>
+      <option value="b">du -sh /var/log/*  |  sort -rh  |  head -10</option>
+      <option value="c">mount -o remount,ro /var/log</option>
+      <option value="d">sync && umount /var/log</option>
+    </select>
+    <br>
+    <button class="btn btn-amber" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const v = document.getElementById('q4').value;
+        const r = document.getElementById('q4-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<code>du -sh /var/log/* | sort -rh | head -10</code><br>' +
+            '/var/log 以下の各ファイル・ディレクトリの使用量を大きい順に表示します。<br><br>' +
+            '<strong>問題解決の手順：</strong><br>' +
+            '① <code>du -sh /var/log/* | sort -rh | head -10</code>（大きいファイルを特定）<br>' +
+            '② 古いログファイルを削除または圧縮<br>' +
+            '③ ログローテーション設定を見直す（<code>/etc/logrotate.conf</code>）<br>' +
+            '④ 必要に応じて /var を別パーティションに移動';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br><br>' +
+            '/var/log が大量のディスクを使用している場合、まず<br>' +
+            '<code>du -sh /var/log/* | sort -rh | head -10</code><br>' +
+            'で具体的にどのファイルが大きいかを特定します。<br>' +
+            '・<code>df -i</code> は inode の確認（今回は容量の問題）<br>' +
+            '・<code>mount -o remount,ro</code> は読み取り専用への変更（解決にならない）<br>' +
+            '・<code>umount</code> は /var/log は通常 / と同じパーティション';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-block">
+    <h3>Q5. 選択問題</h3>
+    <p>
+      <code>vmstat 1 5</code> の出力で <code>so</code> の値が継続的に大きい場合、
+      何が起きていると考えられますか？
+    </p>
+    <select id="q5">
+      <option value="">-- 選択してください --</option>
+      <option value="a">ディスクI/Oが多く、ストレージがボトルネックになっている</option>
+      <option value="b">RAM が不足してスワップアウト（RAM→ディスク）が頻繁に発生している</option>
+      <option value="c">ネットワークの送信量が多い</option>
+      <option value="d">CPU の使用率が高い</option>
+    </select>
+    <br>
+    <button class="btn btn-amber" onclick="checkQ5()">答え合わせ</button>
+    <div class="result-msg" id="q5-result"></div>
+    <script>
+      function checkQ5() {
+        const v = document.getElementById('q5').value;
+        const r = document.getElementById('q5-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>vmstat の swap フィールド：</strong><br>' +
+            '・<code>si</code>（swap in）：ディスク→RAM へのスワップイン<br>' +
+            '・<code>so</code>（swap out）：RAM→ディスク へのスワップアウト<br><br>' +
+            '<code>so</code> が大きい = <strong>RAM が不足してデータをスワップに追い出している</strong><br><br>' +
+            '<strong>対処法：</strong><br>' +
+            '① <code>ps aux --sort=-%mem</code> でメモリを多く使うプロセスを特定<br>' +
+            '② 不要なプロセスを停止<br>' +
+            '③ <code>vm.swappiness</code> を下げる<br>' +
+            '④ メモリ増設を検討';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            'vmstat の <code>so</code>（swap out）が大きい場合は<br>' +
+            '<strong>RAM が不足してスワップアウトが頻繁に発生</strong>していることを示します。<br>' +
+            'これはパフォーマンス低下の原因になります。';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 「ファイルシステムの操作」の学習が完了したら記録しましょう！</p>
+  <button class="btn btn-done" onclick="markComplete()">✅ このセクションを完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch4', '20');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  if (parseInt(localStorage.getItem('lpic201_ch4') || '0') >= 20) {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="../03_boot/03_altboot.html">← 第3章：その他のブートローダ</a>
+  <a class="home" href="../index.html">🏠 目次へ</a>
+  <a class="next" href="02_fscheck.html">次へ：ファイルシステムの作成と検査 →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
