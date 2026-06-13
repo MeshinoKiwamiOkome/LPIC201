@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>RAID ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em; color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #2c5282; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #1a365d, #2c5282);
+      border-radius: 12px; padding: 32px 32px 24px;
+      margin-bottom: 32px; color: #fff;
+      box-shadow: 0 4px 18px rgba(44,82,130,0.35);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em; font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85; letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .chapter-header h1 { margin: 0 0 10px; font-size: 1.6em; color: #fff; border: none; padding: 0; }
+    .chapter-header p  { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px; padding: 3px 12px;
+      font-size: 0.76em; font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 { color: #1a365d; margin-top: 48px; border-left: 5px solid #2c5282; padding-left: 12px; }
+    h3 { color: #276749; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7; padding: 2px 6px;
+      border-radius: 4px; font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c; color: #e2e8f0;
+      padding: 18px 20px; border-radius: 8px;
+      overflow-x: auto; font-size: 0.88em;
+      line-height: 1.7; font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+    pre .err     { color: #fc8181; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #4a5568; color: #e2e8f0;
+      border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 0.75em;
+      cursor: pointer; font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s; z-index: 1;
+    }
+    .copy-btn:hover { background: #2c5282; }
+
+    /* ボックス */
+    .note {
+      background: #fff; border: 1px dashed #90cdf4;
+      border-radius: 6px; padding: 14px 18px;
+      font-size: 0.93em; color: #4a5568; margin: 14px 0;
+    }
+    .note strong { color: #1a365d; }
+    .warn {
+      background: #fffaf0; border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #744210; margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4; border: 1px solid #68d391;
+      border-left: 5px solid #48bb78; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #276749; margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff; border: 1px solid #bee3f8;
+      border-radius: 8px; padding: 20px 24px;
+      margin: 12px 0 28px; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff; border: 1px solid #bee3f8;
+      border-radius: 10px; padding: 18px 22px;
+      margin-bottom: 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 { margin: 0 0 12px; font-size: 0.92em; color: #1a365d; border: none; padding: 0; }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #2c5282; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #1a365d; font-weight: bold; }
+
+    /* RAID ビジュアライザー */
+    .raid-visual {
+      margin: 16px 0;
+    }
+    .raid-disks {
+      display: flex; gap: 8px; align-items: flex-start;
+      flex-wrap: wrap; margin-bottom: 8px;
+    }
+    .raid-disk {
+      display: flex; flex-direction: column;
+      gap: 3px; min-width: 70px;
+    }
+    .raid-disk-label {
+      text-align: center;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.78em; font-weight: bold;
+      color: #4a5568; margin-bottom: 4px;
+    }
+    .raid-block {
+      border-radius: 4px; padding: 6px 4px;
+      text-align: center;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.72em; font-weight: bold;
+      line-height: 1.3;
+      transition: transform 0.15s;
+    }
+    .raid-block:hover { transform: scale(1.05); }
+    .raid-arrow-row {
+      display: flex; align-items: center;
+      gap: 8px; margin: 8px 0;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.82em; color: #718096;
+    }
+
+    /* RAID 比較カード */
+    .raid-compare-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px; margin: 14px 0;
+    }
+    .raid-compare-card {
+      border-radius: 8px; padding: 16px;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .raid-compare-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+    .raid-compare-card .rc-level {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 1.4em; font-weight: bold; margin-bottom: 4px;
+    }
+    .raid-compare-card .rc-name {
+      font-size: 0.82em; font-weight: bold; margin-bottom: 8px;
+    }
+    .raid-compare-card .rc-bar-row {
+      margin-bottom: 4px;
+    }
+    .raid-compare-card .rc-bar-label {
+      font-size: 0.72em; color: #718096; margin-bottom: 2px;
+    }
+    .raid-compare-card .rc-bar-bg {
+      background: rgba(0,0,0,0.15); border-radius: 4px; height: 8px; overflow: hidden;
+    }
+    .raid-compare-card .rc-bar-fill {
+      height: 100%; border-radius: 4px;
+    }
+
+    /* インタラクティブデモ */
+    .interactive-demo {
+      background: #ebf8ff; border: 1px solid #bee3f8;
+      border-radius: 8px; padding: 16px 20px; margin: 14px 0;
+    }
+    .slider-row {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em; font-weight: bold;
+      min-width: 180px; color: #1a365d;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row select {
+      border: 2px solid #bee3f8; border-radius: 6px;
+      padding: 6px 10px; font-size: 0.88em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #2d3748; background: #fff;
+      cursor: pointer; flex: 1;
+    }
+    .slider-row select:focus { border-color: #2c5282; outline: none; }
+    .slider-row input[type="range"] { flex: 1; min-width: 100px; accent-color: #2c5282; }
+    .val-display {
+      min-width: 60px; text-align: right;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85em; color: #2d3748;
+    }
+    .output-display {
+      background: #1a202c; color: #68d391;
+      border-radius: 6px; padding: 12px 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em; margin-top: 10px;
+      white-space: pre; overflow-x: auto; line-height: 1.7;
+    }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse; width: 100%;
+      background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0; font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #bee3f8; padding: 10px 14px; text-align: left;
+    }
+    table.ref-table thead tr { background: #1a365d; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #ebf8ff; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0; border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0; padding: 24px 28px; margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 18px 22px; margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 8px 12px; font-size: 0.95em;
+      width: 100%; max-width: 440px; margin: 6px 0;
+      outline: none; font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus { border-color: #f6ad55; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block; padding: 9px 20px;
+      border-radius: 6px; border: none; cursor: pointer;
+      font-size: 0.95em; font-weight: bold;
+      transition: opacity 0.2s; margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-blue { background: #2c5282; color: #fff; }
+    .btn-done { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px; padding: 10px 14px;
+      border-radius: 6px; font-weight: bold; display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #bee3f8; color: #1a365d; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 48px;
+      padding-top: 20px; border-top: 2px solid #bee3f8;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block; padding: 10px 20px;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.9em; transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #2c5282; color: #fff; }
+    .page-nav .home { background: #fff; color: #2c5282; border: 2px solid #2c5282; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4; border: 2px solid #48bb78;
+      border-radius: 10px; padding: 20px 24px;
+      margin-top: 40px; text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 2px solid #bee3f8;
+      font-size: 0.82em; color: #a0aec0; text-align: center;
+    }
+    footer a { color: #2c5282; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .raid-compare-grid { grid-template-columns: repeat(2, 1fr); }
+      .raid-disks { gap: 4px; }
+      .raid-disk { min-width: 56px; }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  第5章：高度なストレージ管理 › RAID
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 05 › SECTION 01</div>
+  <h1>🗄️ RAID</h1>
+  <p>RAID の各レベル（0/1/4/5）の仕組みと特徴を理解し、
+  Linux のソフトウェア RAID（mdadm）による構築・運用・障害対応を学びます。</p>
+  <div class="badge-row">
+    <span class="badge">RAID0</span>
+    <span class="badge">RAID1</span>
+    <span class="badge">RAID4</span>
+    <span class="badge">RAID5</span>
+    <span class="badge">mdadm</span>
+    <span class="badge">/proc/mdstat</span>
+    <span class="badge">ホットスペア</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第5章のセクション</h2>
+  <ol>
+    <li class="current"><a href="index.html">RAID</a></li>
+    <li><a href="02_lvm.html">LVM の管理</a></li>
+    <li><a href="03_storage.html">ストレージデバイスの管理</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：RAID の概要 -->
+<!-- ============================================================ -->
+<h2 id="overview">① RAID の概要</h2>
+
+<div class="note">
+  <strong>重要ポイント①：RAID（Redundant Array of Independent Disks）は複数のディスクを組み合わせて性能向上・冗長性確保を実現する技術</strong><br>
+  ハードウェア RAID とソフトウェア RAID があります。Linux では <code>mdadm</code> でソフトウェア RAID を構築します。
+</div>
+
+<div class="demo-box">
+  <h3>RAID レベル比較（クリックで詳細）</h3>
+  <div class="raid-compare-grid">
+
+    <div class="raid-compare-card" style="background:#ebf8ff; border:2px solid #90cdf4;"
+         onclick="showRaidLevel('raid0')">
+      <div class="rc-level" style="color:#2b4c7e;">RAID 0</div>
+      <div class="rc-name" style="color:#2b4c7e;">ストライピング</div>
+      <div class="rc-bar-row">
+        <div class="rc-bar-label">性能（読み書き）</div>
+        <div class="rc-bar-bg"><div class="rc-bar-fill" style="width:95%; background:#2b4c7e;"></div></div>
+      </div>
+      <div class="rc-bar-row">
+        <div class="rc-bar-label">冗長性</div>
+        <div class="rc-bar-bg"><div class="rc-bar-fill" style="width:0%; background:#fc8181;"></div></div>
+      </div>
+      <div class="rc-bar-row">
+        <div class="rc-bar-label">容量効率</div>
+        <div class="rc-bar-bg"><div class="rc-bar-fill" style="width:100%; background:#68d391;"></div></div>
+      </div>
+    </div>
+
+    <div class="raid-compare-card" style="background:#f0fff4; border:2px solid #68d391;"
+         onclick="showRaidLevel('raid1')">
+      <div class="rc-level" style="color:#1a4731;">RAID 1</div>
+      <div class="rc-name" style="color:#1a4731;">ミラーリング</div>
+      <div class="rc-bar-row">
+        <div class="rc-bar-label">性能（読み書き）</div>
+        <div class="rc-bar-bg"><div class="rc-bar-fill" style="width:65%; background:#1a4731;"></div></div>
+      </div>
+      <div class="rc-bar-row">
+        <div class="rc-bar-label">冗長性</div>
+        <div class="rc-bar-bg"><div class="rc-bar-fill" style="width:90%; background:#48bb78;"></div></div>
+      </div>
+      <div class="rc-bar-row">
+        <div class="rc-bar-label">容量効率</div>
+        <div class="rc-bar-bg"><div class="rc-bar-fill" style="width:50%; background:#68d391;"></div></div>
+      </div>
+    </div>
+
+    <div class="raid-compare-card" style="background:#faf5ff; border:2px solid #b794f4;"
+         onclick="showRaidLevel('raid4')">
+      <div class="rc-level" style="color:#553c9a;">RAID 4</div>
+      <div class="rc-name" style="color:#553c9a;">専用パリティ</div>
+      <div class="rc-bar-row">
+        <div class="rc-bar-label">性能（読み書き）</div>
+        <div class="rc-bar-bg"><div class="rc-bar-fill" style="width:55%; background:#553c9a;"></div></div>
+      </div>
+      <div class="rc-bar-row">
+        <div class="rc-bar-label">冗長性</div>
+        <div class="rc-bar-bg"><div class="rc-bar-fill" style="width:70%; background:#9f7aea;"></div></div>
+      </div>
+      <div class="rc-bar-row">
+        <div class="rc-bar-label">容量効率</div>
+        <div class="rc-bar-bg"><div class="rc-bar-fill" style="width:75%; background:#b794f4;"></div></div>
+      </div>
+    </div>
+
+    <div class="raid-compare-card" style="background:#fffaf0; border:2px solid #f6ad55;"
+         onclick="showRaidLevel('raid5')">
+      <div class="rc-level" style="color:#744210;">RAID 5</div>
+      <div class="rc-name" style="color:#744210;">分散パリティ</div>
+      <div class="rc-bar-row">
+        <div class="rc-bar-label">性能（読み書き）</div>
+        <div class="rc-bar-bg"><div class="rc-bar-fill" style="width:75%; background:#744210;"></div></div>
+      </div>
+      <div class="rc-bar-row">
+        <div class="rc-bar-label">冗長性</div>
+        <div class="rc-bar-bg"><div class="rc-bar-fill" style="width:75%; background:#f6ad55;"></div></div>
+      </div>
+      <div class="rc-bar-row">
+        <div class="rc-bar-label">容量効率</div>
+        <div class="rc-bar-bg"><div class="rc-bar-fill" style="width:80%; background:#fbd38d;"></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RAID 詳細 -->
+  <div id="raid-level-detail" style="display:none; margin-top:14px; background:#fff; border:1px solid #bee3f8; border-left:5px solid #2c5282; border-radius:0 8px 8px 0; padding:16px 20px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const raidLevels = {
+      raid0: {
+        title: 'RAID 0（ストライピング）',
+        color: '#2b4c7e',
+        body: `複数のディスクにデータを分散して書き込む（ストライピング）方式です。<br><br>
+          <strong>特徴：</strong><br>
+          ・読み書き性能が大幅に向上（ディスク数に比例）<br>
+          ・冗長性はゼロ（1台でも故障するとすべてのデータが失われる）<br>
+          ・容量効率 100%（全ディスク容量を使用可能）<br>
+          ・最低 2 台のディスクが必要<br><br>
+          <strong>計算式：</strong><br>
+          ・総容量 = ディスク容量 × ディスク台数<br>
+          ・例：1TB × 4台 = 4TB 使用可能<br><br>
+          <strong>用途：</strong><br>
+          ・高速性が重要でデータ損失が許容できる環境（一時ファイル・キャッシュ）<br>
+          ・動画編集・科学計算などの高速I/O が必要な用途`
+      },
+      raid1: {
+        title: 'RAID 1（ミラーリング）',
+        color: '#1a4731',
+        body: `同じデータを複数のディスクに書き込む（ミラーリング）方式です。<br><br>
+          <strong>特徴：</strong><br>
+          ・高い冗長性（N-1 台まで故障しても動作継続可能）<br>
+          ・読み取り性能が向上（複数ディスクから並列読み取り可能）<br>
+          ・書き込み性能は単体ディスクと同等（全ディスクに書き込むため）<br>
+          ・容量効率 50%（2台の場合）<br>
+          ・最低 2 台のディスクが必要<br><br>
+          <strong>計算式：</strong><br>
+          ・総容量 = ディスク容量（最小のもの）<br>
+          ・例：1TB × 2台 = 1TB 使用可能<br><br>
+          <strong>用途：</strong><br>
+          ・OSパーティション・重要データの保護<br>
+          ・高い可用性が必要なシステム`
+      },
+      raid4: {
+        title: 'RAID 4（専用パリティ）',
+        color: '#553c9a',
+        body: `データをストライピングし、専用のパリティディスクを持つ方式です。<br><br>
+          <strong>特徴：</strong><br>
+          ・1台の故障に対応可能<br>
+          ・専用パリティディスクへの書き込みがボトルネックになりやすい<br>
+          ・読み取り性能は良好（RAID 0 と同様のストライピング）<br>
+          ・容量効率 = (N-1)/N（N=ディスク台数）<br>
+          ・最低 3 台のディスクが必要<br><br>
+          <strong>計算式：</strong><br>
+          ・総容量 = ディスク容量 × (ディスク台数 - 1)<br>
+          ・例：1TB × 4台 = 3TB 使用可能<br><br>
+          <strong>注意：</strong><br>
+          パリティディスクへの集中アクセスが問題になるため、<br>
+          現在は RAID 5（分散パリティ）が主流です。`
+      },
+      raid5: {
+        title: 'RAID 5（分散パリティ）',
+        color: '#744210',
+        body: `データとパリティを全ディスクに分散して書き込む方式です。<br><br>
+          <strong>特徴：</strong><br>
+          ・1台の故障に対応可能（パリティから復元）<br>
+          ・パリティが分散されるためボトルネックが発生しにくい<br>
+          ・読み取り性能は良好<br>
+          ・書き込みはパリティ計算のオーバーヘッドがある<br>
+          ・容量効率 = (N-1)/N（N=ディスク台数）<br>
+          ・最低 3 台のディスクが必要<br><br>
+          <strong>計算式：</strong><br>
+          ・総容量 = ディスク容量 × (ディスク台数 - 1)<br>
+          ・例：1TB × 4台 = 3TB 使用可能<br><br>
+          <strong>用途：</strong><br>
+          ・ファイルサーバー・データベースサーバー<br>
+          ・性能と冗長性のバランスが必要な環境<br><br>
+          <strong>関連：RAID 6</strong><br>
+          RAID 6 は 2 台の故障に対応（パリティを 2 つ保持）。最低 4 台必要。`
+      }
+    };
+
+    function showRaidLevel(key) {
+      const d = raidLevels[key];
+      const el = document.getElementById('raid-level-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display='none'; el.dataset.current=''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-size:0.95em;">${d.title}</strong><br><br>${d.body}`;
+      el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：各 RAID レベルの視覚化 -->
+<!-- ============================================================ -->
+<h2 id="raid-visual">② RAID レベルの視覚化</h2>
+
+<div class="demo-box">
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#1a365d; margin:0 0 12px;">
+      RAID レベルを選択してデータの配置を確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>RAID レベル</label>
+      <select id="raid-vis-sel" onchange="showRaidVis()">
+        <option value="">-- 選択してください --</option>
+        <option value="raid0">RAID 0（ストライピング）</option>
+        <option value="raid1">RAID 1（ミラーリング）</option>
+        <option value="raid4">RAID 4（専用パリティ）</option>
+        <option value="raid5">RAID 5（分散パリティ）</option>
+      </select>
+    </div>
+    <div id="raid-vis-area" style="display:none; margin-top:14px;"></div>
+  </div>
+
+  <script>
+    function showRaidVis() {
+      const key = document.getElementById('raid-vis-sel').value;
+      const el  = document.getElementById('raid-vis-area');
+      if (!key) { el.style.display='none'; return; }
+      el.style.display = 'block';
+
+      const colors = ['#2b4c7e','#1a4731','#553c9a','#744210','#9b2335'];
+      const bgColors = ['#ebf8ff','#f0fff4','#faf5ff','#fffaf0','#fff5f5'];
+
+      const visuals = {
+        raid0: {
+          disks: 4,
+          title: 'RAID 0：4台のディスクにデータを分散（ストライプサイズ = 1ブロック）',
+          color: '#2b4c7e',
+          blocks: [
+            ['A1','A5','A9','A13'],
+            ['A2','A6','A10','A14'],
+            ['A3','A7','A11','A15'],
+            ['A4','A8','A12','A16'],
+          ],
+          blockColors: [
+            ['#ebf8ff','#ebf8ff','#ebf8ff','#ebf8ff'],
+            ['#bee3f8','#bee3f8','#bee3f8','#bee3f8'],
+            ['#90cdf4','#90cdf4','#90cdf4','#90cdf4'],
+            ['#63b3ed','#63b3ed','#63b3ed','#63b3ed'],
+          ],
+          blockTextColors: ['#2b4c7e','#2b4c7e','#2b4c7e','#1a365d'],
+          note: '⚡ 4台並列書き込みで最大4倍の速度\n❌ 1台でも故障するとすべてのデータが失われる\n💾 総容量 = 1TB × 4台 = 4TB（容量効率100%）',
+          noteColor: '#2b4c7e'
+        },
+        raid1: {
+          disks: 2,
+          title: 'RAID 1：同じデータを2台のディスクにミラーリング',
+          color: '#1a4731',
+          blocks: [
+            ['A1','A2','A3','A4'],
+            ['A1','A2','A3','A4'],
+          ],
+          blockColors: [
+            ['#f0fff4','#c6f6d5','#9ae6b4','#68d391'],
+            ['#f0fff4','#c6f6d5','#9ae6b4','#68d391'],
+          ],
+          blockTextColors: ['#1a4731','#1a4731'],
+          note: '✅ 1台が故障してもデータは保護される\n📖 読み取りは2台から並列で高速化可能\n💾 総容量 = 1TB（容量効率50%）',
+          noteColor: '#1a4731'
+        },
+        raid4: {
+          disks: 4,
+          title: 'RAID 4：3台にデータ、1台に専用パリティ',
+          color: '#553c9a',
+          blocks: [
+            ['A1','A4','A7','A10'],
+            ['A2','A5','A8','A11'],
+            ['A3','A6','A9','A12'],
+            ['P1','P2','P3','P4'],
+          ],
+          blockColors: [
+            ['#faf5ff','#faf5ff','#faf5ff','#faf5ff'],
+            ['#e9d8fd','#e9d8fd','#e9d8fd','#e9d8fd'],
+            ['#d6bcfa','#d6bcfa','#d6bcfa','#d6bcfa'],
+            ['#9f7aea','#9f7aea','#9f7aea','#9f7aea'],
+          ],
+          blockTextColors: ['#553c9a','#553c9a','#553c9a','#fff'],
+          note: '✅ 1台の故障に対応（パリティから復元可能）\n⚠️  パリティディスクへの書き込みが集中してボトルネックになる\n💾 総容量 = 1TB × 3台 = 3TB（容量効率75%）',
+          noteColor: '#553c9a'
+        },
+        raid5: {
+          disks: 4,
+          title: 'RAID 5：データとパリティを4台に分散',
+          color: '#744210',
+          blocks: [
+            ['A1','A4','A7','P4'],
+            ['A2','A5','P3','A10'],
+            ['A3','P2','A8','A11'],
+            ['P1','A6','A9','A12'],
+          ],
+          blockColors: [
+            ['#fffaf0','#fffaf0','#fffaf0','#f6ad55'],
+            ['#fefcbf','#fefcbf','#f6ad55','#fefcbf'],
+            ['#fbd38d','#f6ad55','#fbd38d','#fbd38d'],
+            ['#f6ad55','#fbd38d','#fbd38d','#fbd38d'],
+          ],
+          blockTextColors: ['#744210','#744210','#744210','#744210'],
+          note: '✅ 1台の故障に対応（パリティが分散されボトルネックなし）\n⚡ RAID 4 より書き込み性能が向上\n💾 総容量 = 1TB × 3台 = 3TB（容量効率75%）',
+          noteColor: '#744210'
+        }
+      };
+
+      const v = visuals[key];
+      let html = `<div style="font-size:0.85em; font-weight:bold; color:${v.color}; margin-bottom:12px;">${v.title}</div>`;
+      html += '<div class="raid-disks">';
+      for (let d = 0; d < v.disks; d++) {
+        html += `<div class="raid-disk">
+          <div class="raid-disk-label">Disk ${d+1}</div>`;
+        for (let b = 0; b < v.blocks[d].length; b++) {
+          const isParity = v.blocks[d][b].startsWith('P');
+          html += `<div class="raid-block" style="background:${v.blockColors[d][b]}; color:${v.blockTextColors[d]}; border:1px solid ${v.color}; ${isParity ? 'border-style:dashed;' : ''}">${v.blocks[d][b]}</div>`;
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+      html += `<div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:${v.noteColor}; white-space:pre-line; margin-top:10px;">${v.note}</div>`;
+      el.innerHTML = html;
+    }
+  </script>
+
+  <h3>RAID レベル比較表</h3>
+  <table class="ref-table">
+    <thead>
+      <tr><th>RAID</th><th>別名</th><th>最低台数</th><th>耐障害性</th><th>容量効率</th><th>読み取り</th><th>書き込み</th><th>主な用途</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>RAID 0</strong></td>
+        <td>ストライピング</td>
+        <td>2台</td>
+        <td class="warn" style="color:#c05621;">❌ なし</td>
+        <td>100%</td>
+        <td>⚡ 高速</td>
+        <td>⚡ 高速</td>
+        <td>一時ファイル・キャッシュ</td>
+      </tr>
+      <tr>
+        <td><strong>RAID 1</strong></td>
+        <td>ミラーリング</td>
+        <td>2台</td>
+        <td style="color:#276749;">✅ 1台</td>
+        <td>50%</td>
+        <td>⚡ 高速</td>
+        <td>普通</td>
+        <td>OS・重要データ</td>
+      </tr>
+      <tr>
+        <td><strong>RAID 4</strong></td>
+        <td>専用パリティ</td>
+        <td>3台</td>
+        <td style="color:#276749;">✅ 1台</td>
+        <td>(N-1)/N</td>
+        <td>⚡ 高速</td>
+        <td>⚠️ 低速</td>
+        <td>（現在はほぼ RAID 5 に置換）</td>
+      </tr>
+      <tr>
+        <td><strong>RAID 5</strong></td>
+        <td>分散パリティ</td>
+        <td>3台</td>
+        <td style="color:#276749;">✅ 1台</td>
+        <td>(N-1)/N</td>
+        <td>⚡ 高速</td>
+        <td>普通</td>
+        <td>ファイルサーバー・DB</td>
+      </tr>
+      <tr>
+        <td><strong>RAID 6</strong></td>
+        <td>二重分散パリティ</td>
+        <td>4台</td>
+        <td style="color:#276749;">✅ 2台</td>
+        <td>(N-2)/N</td>
+        <td>⚡ 高速</td>
+        <td>低速</td>
+        <td>大容量ストレージ</td>
+      </tr>
+      <tr>
+        <td><strong>RAID 10</strong></td>
+        <td>RAID 1+0</td>
+        <td>4台</td>
+        <td style="color:#276749;">✅ 複数台</td>
+        <td>50%</td>
+        <td>⚡ 高速</td>
+        <td>⚡ 高速</td>
+        <td>高性能DB・仮想化</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>容量計算インタラクティブデモ</h3>
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#1a365d; margin:0 0 12px;">
+      RAID レベルとディスク構成を選択して使用可能容量を計算しましょう
+    </p>
+    <div class="slider-row">
+      <label>RAID レベル</label>
+      <select id="calc-raid" onchange="calcRaid()">
+        <option value="0">RAID 0</option>
+        <option value="1">RAID 1</option>
+        <option value="4">RAID 4</option>
+        <option value="5" selected>RAID 5</option>
+        <option value="6">RAID 6</option>
+        <option value="10">RAID 10</option>
+      </select>
+    </div>
+    <div class="slider-row">
+      <label>ディスク台数</label>
+      <input type="range" id="calc-disks" min="2" max="8" value="4" oninput="calcRaid()">
+      <span class="val-display" id="calc-disks-val">4台</span>
+    </div>
+    <div class="slider-row">
+      <label>1台あたりの容量</label>
+      <input type="range" id="calc-size" min="1" max="16" value="4" oninput="calcRaid()">
+      <span class="val-display" id="calc-size-val">4TB</span>
+    </div>
+    <div class="output-display" id="calc-output"></div>
+  </div>
+
+  <script>
+    function calcRaid() {
+      const level  = document.getElementById('calc-raid').value;
+      const disks  = parseInt(document.getElementById('calc-disks').value);
+      const size   = parseInt(document.getElementById('calc-size').value);
+      document.getElementById('calc-disks-val').textContent = disks + '台';
+      document.getElementById('calc-size-val').textContent  = size + 'TB';
+
+      const total = disks * size;
+      let usable, parity, fault, minDisks, ok = true;
+
+      switch(level) {
+        case '0':  usable=total; parity=0; fault=0; minDisks=2; break;
+        case '1':  usable=size;  parity=total-size; fault=disks-1; minDisks=2; break;
+        case '4':  usable=(disks-1)*size; parity=size; fault=1; minDisks=3; break;
+        case '5':  usable=(disks-1)*size; parity=size; fault=1; minDisks=3; break;
+        case '6':  usable=(disks-2)*size; parity=size*2; fault=2; minDisks=4; break;
+        case '10': usable=total/2; parity=total/2; fault=Math.floor(disks/2); minDisks=4; break;
+        default:   usable=0; parity=0; fault=0; minDisks=2;
+      }
+
+      if (disks < minDisks) { ok = false; }
+      const eff = ok ? Math.round(usable/total*100) : 0;
+
+      const out = document.getElementById('calc-output');
+      if (!ok) {
+        out.style.color = '#fc8181';
+        out.textContent =
+          `RAID ${level} には最低 ${minDisks} 台のディスクが必要です。\n` +
+          `現在 ${disks} 台 → ディスク台数を増やしてください。`;
+        return;
+      }
+
+      out.style.color = '#68d391';
+      out.textContent =
+        `RAID ${level}  |  ${disks}台 × ${size}TB\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `総容量        : ${total}TB\n` +
+        `使用可能容量  : ${usable}TB\n` +
+        `パリティ消費  : ${parity}TB\n` +
+        `容量効率      : ${eff}%\n` +
+        `耐障害性      : ${fault === 0 ? '❌ なし（1台故障でデータ消失）' : `✅ 最大 ${fault} 台の故障に対応`}\n` +
+        `最低必要台数  : ${minDisks}台`;
+    }
+    calcRaid();
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：RAID の構築（mdadm） -->
+<!-- ============================================================ -->
+<h2 id="mdadm-build">③ RAID の構築（mdadm）</h2>
+
+<div class="note">
+  <strong>重要ポイント②：Linux のソフトウェア RAID は mdadm コマンドで管理する。RAID デバイスは /dev/md0 などの名前で作成される</strong><br>
+  <code>/proc/mdstat</code> で RAID の状態を確認できます。
+</div>
+
+<div class="demo-box">
+  <h3>mdadm による RAID 構築手順</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># mdadm のインストール</span>
+$ <span class="cmd">sudo apt install</span> mdadm
+
+<span class="comment">## RAID 0 の作成（4台でストライピング）</span>
+$ <span class="cmd">sudo mdadm</span> <span class="opt">--create</span> /dev/md0 \
+    <span class="opt">--level</span>=<span class="val">0</span> \
+    <span class="opt">--raid-devices</span>=<span class="val">4</span> \
+    /dev/sdb1 /dev/sdc1 /dev/sdd1 /dev/sde1
+<span class="out">mdadm: Defaulting to version 1.2 metadata</span>
+<span class="out">mdadm: array /dev/md0 started.</span>
+
+<span class="comment">## RAID 1 の作成（2台でミラーリング）</span>
+$ <span class="cmd">sudo mdadm</span> <span class="opt">--create</span> /dev/md1 \
+    <span class="opt">--level</span>=<span class="val">1</span> \
+    <span class="opt">--raid-devices</span>=<span class="val">2</span> \
+    /dev/sdb1 /dev/sdc1
+
+<span class="comment">## RAID 5 の作成（4台：3台データ + 1台パリティ分散）</span>
+$ <span class="cmd">sudo mdadm</span> <span class="opt">--create</span> /dev/md2 \
+    <span class="opt">--level</span>=<span class="val">5</span> \
+    <span class="opt">--raid-devices</span>=<span class="val">4</span> \
+    /dev/sdb1 /dev/sdc1 /dev/sdd1 /dev/sde1
+
+<span class="comment">## ホットスペア付き RAID 5 の作成</span>
+$ <span class="cmd">sudo mdadm</span> <span class="opt">--create</span> /dev/md2 \
+    <span class="opt">--level</span>=<span class="val">5</span> \
+    <span class="opt">--raid-devices</span>=<span class="val">4</span> \
+    <span class="opt">--spare-devices</span>=<span class="val">1</span> \
+    /dev/sdb1 /dev/sdc1 /dev/sdd1 /dev/sde1 /dev/sdf1
+<span class="comment">#   ↑4台がアクティブ、sdf1 がホットスペア</span>
+
+<span class="comment"># 作成後にファイルシステムを作成してマウント</span>
+$ <span class="cmd">sudo mkfs.ext4</span> /dev/md2
+$ <span class="cmd">sudo mkdir</span> /mnt/raid5
+$ <span class="cmd">sudo mount</span> /dev/md2 /mnt/raid5
+</pre>
+  </div>
+
+  <h3>mdadm の設定ファイルへの保存</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># RAID 設定を /etc/mdadm/mdadm.conf に保存（起動時の自動認識に必要）</span>
+$ <span class="cmd">sudo mdadm</span> <span class="opt">--detail</span> <span class="opt">--scan</span> | <span class="cmd">sudo tee</span> <span class="opt">-a</span> /etc/mdadm/mdadm.conf
+<span class="out">ARRAY /dev/md2 metadata=1.2 name=hostname:2 UUID=xxxxxxxx:xxxxxxxx:xxxxxxxx:xxxxxxxx</span>
+
+<span class="comment"># initramfs を更新（起動時に RAID を認識させるため）</span>
+$ <span class="cmd">sudo update-initramfs</span> <span class="opt">-u</span>
+
+<span class="comment"># /etc/fstab に追記して自動マウント</span>
+$ <span class="cmd">echo</span> <span class="val">'/dev/md2  /mnt/raid5  ext4  defaults  0 2'</span> | <span class="cmd">sudo tee</span> <span class="opt">-a</span> /etc/fstab
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 4：RAID の運用・監視 -->
+<!-- ============================================================ -->
+<h2 id="mdadm-ops">④ RAID の運用・監視</h2>
+
+<div class="demo-box">
+  <h3>RAID 状態の確認</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /proc/mdstat で RAID の状態を確認（最重要）</span>
+$ <span class="cmd">cat</span> /proc/mdstat
+<span class="hdr">Personalities : [raid1] [raid5] [raid6]</span>
+<span class="hl">md2 : active raid5 sde1[3] sdd1[2] sdc1[1] sdb1[0]</span>
+<span class="out">      3145728 blocks super 1.2 level 5, 512k chunk, algorithm 2 [4/4] [UUUU]</span>
+<span class="out">      bitmap: 0/1 pages [0KB], 65536KB chunk</span>
+<span class="out"></span>
+<span class="hl">md1 : active raid1 sdc1[1] sdb1[0]</span>
+<span class="out">      1048576 blocks super 1.2 [2/2] [UU]</span>
+<span class="out"></span>
+<span class="out">unused devices: &lt;none&gt;</span>
+
+<span class="comment"># [UUUU] = すべてのディスクが正常（U=Up, F=Faulty, S=Spare）</span>
+<span class="comment"># [4/4]  = 4台中4台が正常</span>
+
+<span class="comment"># mdadm --detail で詳細情報を表示</span>
+$ <span class="cmd">sudo mdadm</span> <span class="opt">--detail</span> /dev/md2
+<span class="hdr">/dev/md2:</span>
+<span class="out">           Version : 1.2</span>
+<span class="out">     Creation Time : Mon Jan  1 10:00:00 2026</span>
+<span class="out">        Raid Level : raid5</span>
+<span class="out">        Array Size : 3145728 (3.00 GiB 3.22 GB)</span>
+<span class="out">     Used Dev Size : 1048576 (1024.00 MiB 1073.74 MB)</span>
+<span class="out">      Raid Devices : 4</span>
+<span class="out">     Total Devices : 4</span>
+<span class="hl">       Array State : UUUU ('U' == working, '.' == failed)</span>
+<span class="out"></span>
+<span class="out">    Number   Major   Minor   RaidDevice State</span>
+<span class="out">       0       8       17        0      active sync   /dev/sdb1</span>
+<span class="out">       1       8       33        1      active sync   /dev/sdc1</span>
+<span class="out">       2       8       49        2      active sync   /dev/sdd1</span>
+<span class="out">       3       8       65        3      active sync   /dev/sde1</span>
+
+<span class="comment"># 全 RAID アレイの詳細を一括表示</span>
+$ <span class="cmd">sudo mdadm</span> <span class="opt">--detail</span> <span class="opt">--scan</span>
+</pre>
+  </div>
+
+  <h3>RAID の障害対応（インタラクティブ）</h3>
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#1a365d; margin:0 0 12px;">
+      障害シナリオを選択して対応手順を確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>障害シナリオ</label>
+      <select id="raid-fail-sel" onchange="showRaidFail()">
+        <option value="">-- シナリオを選択 --</option>
+        <option value="disk-fail">ディスク1台が故障（RAID 5）</option>
+        <option value="disk-replace">故障ディスクの交換と再構築</option>
+        <option value="hotspare">ホットスペアによる自動再構築</option>
+        <option value="rebuild-check">再構築の進捗確認</option>
+      </select>
+    </div>
+    <div class="output-display" id="raid-fail-output" style="display:none;"></div>
+  </div>
+
+  <script>
+    const raidFails = {
+      'disk-fail': {
+        color: '#fc8181',
+        text:
+`# RAID 5 でディスク1台が故障した場合
+
+# /proc/mdstat で故障を確認
+$ cat /proc/mdstat
+md2 : active raid5 sde1[3] sdd1[2] sdc1[1] sdb1[0](F)
+      3145728 blocks super 1.2 level 5, 512k chunk [4/3] [_UUU]
+#                                                         ↑ sdb1 が故障（_=Faulty）
+
+# mdadm --detail で詳細確認
+$ sudo mdadm --detail /dev/md2
+    Number   Major   Minor   RaidDevice State
+       -       0        0        0      removed
+       1       8       33        1      active sync   /dev/sdc1
+       2       8       49        2      active sync   /dev/sdd1
+       3       8       65        3      active sync   /dev/sde1
+       0       8       17        -      faulty   /dev/sdb1
+
+# ⚠️  RAID 5 は1台故障でもデータアクセス可能（デグレードモード）
+# ⚠️  この状態でさらに1台故障するとデータが失われる
+# → 早急にディスクを交換して再構築すること！`
+      },
+      'disk-replace': {
+        color: '#f6ad55',
+        text:
+`# 故障ディスクの交換と再構築手順
+
+# ステップ1：故障ディスクを論理的に削除
+$ sudo mdadm --manage /dev/md2 --fail /dev/sdb1
+$ sudo mdadm --manage /dev/md2 --remove /dev/sdb1
+
+# ステップ2：物理的にディスクを交換（ホットスワップ対応の場合）
+# → 新しいディスク /dev/sdb を取り付ける
+
+# ステップ3：新しいディスクをパーティション分割
+$ sudo fdisk /dev/sdb
+# → 同じサイズのパーティションを作成
+
+# ステップ4：新しいディスクを RAID に追加
+$ sudo mdadm --manage /dev/md2 --add /dev/sdb1
+mdadm: added /dev/sdb1
+
+# 再構築が自動的に開始される
+# /proc/mdstat で進捗を確認
+$ cat /proc/mdstat
+md2 : active raid5 sdb1[4] sde1[3] sdd1[2] sdc1[1]
+      3145728 blocks super 1.2 level 5, 512k chunk [4/3] [_UUU]
+      [==>..................]  recovery = 12.5% (131072/1048576) finish=1.2min speed=65536K/sec`
+      },
+      hotspare: {
+        color: '#68d391',
+        text:
+`# ホットスペアによる自動再構築
+
+# ホットスペア付き RAID 5 の構成
+$ cat /proc/mdstat
+md2 : active raid5 sdf1[4](S) sde1[3] sdd1[2] sdc1[1] sdb1[0]
+      3145728 blocks super 1.2 level 5, 512k chunk [4/4] [UUUU]
+#                    ↑ sdf1 がホットスペア（S=Spare）
+
+# sdb1 が故障すると...
+# → ホットスペア（sdf1）が自動的にアクティブになり再構築開始！
+
+$ cat /proc/mdstat
+md2 : active raid5 sdf1[4] sde1[3] sdd1[2] sdc1[1] sdb1[0](F)
+      3145728 blocks super 1.2 level 5, 512k chunk [4/3] [_UUU]
+      [========>............]  recovery = 42.3% finish=0.8min speed=78643K/sec
+
+# 再構築完了後
+$ cat /proc/mdstat
+md2 : active raid5 sdf1[4] sde1[3] sdd1[2] sdc1[1]
+      3145728 blocks super 1.2 level 5, 512k chunk [4/4] [UUUU]
+# ✅ 自動的に正常状態に回復！`
+      },
+      'rebuild-check': {
+        color: '#90cdf4',
+        text:
+`# 再構築の進捗確認
+
+# /proc/mdstat でリアルタイム確認
+$ watch -n 1 cat /proc/mdstat
+md2 : active raid5 sdb1[4] sde1[3] sdd1[2] sdc1[1]
+      3145728 blocks super 1.2 level 5, 512k chunk [4/3] [_UUU]
+      [=============>.......]  recovery = 65.2% (683008/1048576)
+                               finish=0.4min speed=72345K/sec
+
+# mdadm --detail でも確認可能
+$ sudo mdadm --detail /dev/md2 | grep -E "State|Rebuild"
+        State : clean, degraded, recovering
+Rebuild Status : 65% complete
+
+# 再構築完了の確認
+$ cat /proc/mdstat
+md2 : active raid5 sdb1[4] sde1[3] sdd1[2] sdc1[1]
+      3145728 blocks super 1.2 level 5, 512k chunk [4/4] [UUUU]
+# ✅ [UUUU] = 全ディスク正常
+
+# 再構築中のパフォーマンス制限（本番環境への影響を抑える）
+$ echo 10000 | sudo tee /proc/sys/dev/raid/speed_limit_max
+$ echo 1000  | sudo tee /proc/sys/dev/raid/speed_limit_min`
+      }
+    };
+
+    function showRaidFail() {
+      const key = document.getElementById('raid-fail-sel').value;
+      const el  = document.getElementById('raid-fail-output');
+      if (!key) { el.style.display='none'; return; }
+      const d = raidFails[key];
+      el.style.display = 'block';
+      el.style.color   = d.color;
+      el.textContent   = d.text;
+    }
+  </script>
+
+  <h3>その他の mdadm 操作コマンド</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># RAID アレイの停止</span>
+$ <span class="cmd">sudo umount</span> /mnt/raid5
+$ <span class="cmd">sudo mdadm</span> <span class="opt">--stop</span> /dev/md2
+
+<span class="comment"># RAID アレイの再起動（開始）</span>
+$ <span class="cmd">sudo mdadm</span> <span class="opt">--assemble</span> /dev/md2 /dev/sdb1 /dev/sdc1 /dev/sdd1 /dev/sde1
+$ <span class="cmd">sudo mdadm</span> <span class="opt">--assemble</span> <span class="opt">--scan</span>   <span class="comment"># mdadm.conf から自動認識</span>
+
+<span class="comment"># RAID アレイの削除</span>
+$ <span class="cmd">sudo mdadm</span> <span class="opt">--stop</span> /dev/md2
+$ <span class="cmd">sudo mdadm</span> <span class="opt">--remove</span> /dev/md2
+<span class="comment"># 各ディスクのスーパーブロックを消去</span>
+$ <span class="cmd">sudo mdadm</span> <span class="opt">--zero-superblock</span> /dev/sdb1 /dev/sdc1 /dev/sdd1 /dev/sde1
+
+<span class="comment"># ディスクを手動で故障状態にマーク</span>
+$ <span class="cmd">sudo mdadm</span> <span class="opt">--manage</span> /dev/md2 <span class="opt">--fail</span> /dev/sdb1
+
+<span class="comment"># ディスクをアレイから削除</span>
+$ <span class="cmd">sudo mdadm</span> <span class="opt">--manage</span> /dev/md2 <span class="opt">--remove</span> /dev/sdb1
+
+<span class="comment"># ディスクをアレイに追加（再構築開始）</span>
+$ <span class="cmd">sudo mdadm</span> <span class="opt">--manage</span> /dev/md2 <span class="opt">--add</span> /dev/sdb1
+
+<span class="comment"># RAID アレイの拡張（ディスク追加）</span>
+$ <span class="cmd">sudo mdadm</span> <span class="opt">--grow</span> /dev/md2 <span class="opt">--raid-devices</span>=<span class="val">5</span> <span class="opt">--add</span> /dev/sdf1
+
+<span class="comment"># メール通知の設定（/etc/mdadm/mdadm.conf）</span>
+<span class="out">MAILADDR admin@example.com</span>
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- まとめ表 -->
+<!-- ============================================================ -->
+<h2>📌 まとめ一覧</h2>
+<div class="demo-box">
+  <table class="ref-table">
+    <thead><tr><th>カテゴリ</th><th>コマンド / ファイル</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td colspan="3" style="background:#dbeafe; color:#1a365d; font-weight:bold; font-size:0.88em;">▼ RAID の作成</td></tr>
+      <tr><td>RAID 作成</td><td><code>mdadm --create /dev/md0 --level=N --raid-devices=N /dev/sdb1...</code></td><td>RAID アレイを作成</td></tr>
+      <tr><td>設定保存</td><td><code>mdadm --detail --scan >> /etc/mdadm/mdadm.conf</code></td><td>設定を永続化</td></tr>
+      <tr><td colspan="3" style="background:#dbeafe; color:#1a365d; font-weight:bold; font-size:0.88em;">▼ RAID の監視</td></tr>
+      <tr><td>状態確認</td><td><code>cat /proc/mdstat</code></td><td>RAID の状態をリアルタイム確認</td></tr>
+      <tr><td>詳細確認</td><td><code>mdadm --detail /dev/md0</code></td><td>RAID の詳細情報</td></tr>
+      <tr><td colspan="3" style="background:#dbeafe; color:#1a365d; font-weight:bold; font-size:0.88em;">▼ RAID の障害対応</td></tr>
+      <tr><td>故障マーク</td><td><code>mdadm --manage /dev/md0 --fail /dev/sdb1</code></td><td>ディスクを故障状態にマーク</td></tr>
+      <tr><td>ディスク削除</td><td><code>mdadm --manage /dev/md0 --remove /dev/sdb1</code></td><td>アレイからディスクを削除</td></tr>
+      <tr><td>ディスク追加</td><td><code>mdadm --manage /dev/md0 --add /dev/sdb1</code></td><td>アレイにディスクを追加（再構築開始）</td></tr>
+      <tr><td colspan="3" style="background:#dbeafe; color:#1a365d; font-weight:bold; font-size:0.88em;">▼ RAID の管理</td></tr>
+      <tr><td>停止</td><td><code>mdadm --stop /dev/md0</code></td><td>RAID アレイを停止</td></tr>
+      <tr><td>起動</td><td><code>mdadm --assemble --scan</code></td><td>設定ファイルから RAID を起動</td></tr>
+      <tr><td>拡張</td><td><code>mdadm --grow /dev/md0 --raid-devices=N</code></td><td>RAID アレイを拡張</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 穴埋め問題</h3>
+    <p>以下の説明に合うコマンド・ファイルを入力してください。</p>
+    <label>① Linux のソフトウェア RAID を管理するコマンド：</label>
+    <input type="text" id="q1a" placeholder="コマンド名">
+    <label>② RAID の状態をリアルタイムで確認できる仮想ファイル：</label>
+    <input type="text" id="q1b" placeholder="/proc/...">
+    <label>③ RAID 5 で 1TB のディスクを 4 台使用した場合の使用可能容量：</label>
+    <input type="text" id="q1c" placeholder="数字TB">
+    <label>④ RAID の設定を永続化するための設定ファイル（Debian/Ubuntu）：</label>
+    <input type="text" id="q1d" placeholder="/etc/...">
+    <label>⑤ /dev/md0 の詳細情報を表示するコマンド（フルコマンド）：</label>
+    <input type="text" id="q1e" placeholder="mdadm ... /dev/md0">
+    <br>
+    <button class="btn btn-blue" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const a = document.getElementById('q1a').value.trim().toLowerCase().replace(/\s/g,'');
+        const b = document.getElementById('q1b').value.trim().toLowerCase().replace(/\s/g,'');
+        const c = document.getElementById('q1c').value.trim().toLowerCase().replace(/\s/g,'');
+        const d = document.getElementById('q1d').value.trim().toLowerCase().replace(/\s/g,'');
+        const e = document.getElementById('q1e').value.trim().toLowerCase().replace(/\s+/g,'');
+        const r = document.getElementById('q1-result');
+        const ca = a === 'mdadm';
+        const cb = b === '/proc/mdstat';
+        const cc = c === '3tb' || c === '3';
+        const cd = d === '/etc/mdadm/mdadm.conf' || d === '/etc/mdadm.conf';
+        const ce = e === 'mdadm--detail/dev/md0';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ mdadm'}　` +
+            `② ${cb?'✅':'❌ /proc/mdstat'}　` +
+            `③ ${cc?'✅':'❌ 3TB（(4-1)×1TB）'}　` +
+            `④ ${cd?'✅':'❌ /etc/mdadm/mdadm.conf'}　` +
+            `⑤ ${ce?'✅':'❌ mdadm --detail /dev/md0'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 選択問題</h3>
+    <p>
+      RAID 5 で 2TB のディスクを 5 台使用した場合、
+      使用可能な総容量はいくつですか？
+    </p>
+    <select id="q2">
+      <option value="">-- 選択してください --</option>
+      <option value="a">10TB</option>
+      <option value="b">8TB</option>
+      <option value="c">6TB</option>
+      <option value="d">4TB</option>
+    </select>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const v = document.getElementById('q2').value;
+        const r = document.getElementById('q2-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>RAID 5 の容量計算：</strong><br>' +
+            '使用可能容量 = ディスク容量 × (ディスク台数 - 1)<br>' +
+            '= 2TB × (5 - 1) = 2TB × 4 = <strong>8TB</strong><br><br>' +
+            '残りの 2TB（1台分）はパリティとして使用されます。<br>' +
+            '容量効率 = 4/5 = 80%';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            'RAID 5 の使用可能容量 = ディスク容量 × (台数 - 1)<br>' +
+            '= 2TB × (5 - 1) = <strong>8TB</strong><br>' +
+            '1台分（2TB）がパリティとして消費されます。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① RAID 0 は冗長性がなく、1台のディスクが故障するとすべてのデータが失われる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② RAID 1 は最低 3 台のディスクが必要である
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ RAID 5 は 1 台のディスク故障に対応でき、最低 3 台のディスクが必要である
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ RAID 4 と RAID 5 の違いは、パリティを専用ディスクに集中させるか分散させるかである
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ /proc/mdstat の [UUUU] は全ディスクが正常であることを示す
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ ホットスペアは故障時に自動的にアクティブになり再構築を開始する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ RAID 5 は 2 台のディスクが同時に故障してもデータを保護できる
+    </label>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：①③④⑤⑥（a,c,d,e,f）
+        // ② RAID 1 は最低 2 台
+        // ⑦ RAID 5 は 1 台まで（2台同時故障はデータ消失）
+        const correct = { a:true, b:false, c:true, d:true, e:true, f:true, g:false };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>①③④⑤⑥<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・② RAID 1 は最低<strong>2台</strong>のディスクが必要です（3台ではありません）<br>' +
+            '・⑦ RAID 5 は<strong>1台</strong>の故障にしか対応できません。2台同時故障ではデータが失われます。<br>' +
+            '&nbsp;&nbsp;2台の故障に対応するのは <strong>RAID 6</strong> です。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. シナリオ問題</h3>
+    <p>
+      RAID 5 アレイ（<code>/dev/md2</code>）の <code>/dev/sdb1</code> が故障しました。
+      新しいディスクを取り付けて再構築を開始するための<strong>正しい手順</strong>はどれですか？
+    </p>
+    <select id="q4">
+      <option value="">-- 選択してください --</option>
+      <option value="a">mdadm --create で新しい RAID アレイを作り直す</option>
+      <option value="b">mdadm --manage /dev/md2 --fail /dev/sdb1 → --remove /dev/sdb1 → 新ディスク取り付け → --add /dev/sdb1</option>
+      <option value="c">mdadm --stop /dev/md2 してから新しいディスクを追加する</option>
+      <option value="d">fsck /dev/md2 を実行して修復する</option>
+    </select>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const v = document.getElementById('q4').value;
+        const r = document.getElementById('q4-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>正しい手順：</strong><br>' +
+            '① <code>sudo mdadm --manage /dev/md2 --fail /dev/sdb1</code>（故障マーク）<br>' +
+            '② <code>sudo mdadm --manage /dev/md2 --remove /dev/sdb1</code>（アレイから削除）<br>' +
+            '③ 物理的にディスクを交換<br>' +
+            '④ <code>sudo fdisk /dev/sdb</code>（パーティション作成）<br>' +
+            '⑤ <code>sudo mdadm --manage /dev/md2 --add /dev/sdb1</code>（追加・再構築開始）<br><br>' +
+            '<code>/proc/mdstat</code> で再構築の進捗を確認できます。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br><br>' +
+            '正しい手順は <strong>--fail → --remove → 交換 → --add</strong> です。<br>' +
+            'RAID 5 はデグレードモードで動作を継続できるため、<br>' +
+            'アレイを停止せずにディスクを交換できます（ホットスワップ対応の場合）。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-block">
+    <h3>Q5. 選択問題</h3>
+    <p>
+      <code>/proc/mdstat</code> の出力で
+      <code>[4/3] [_UUU]</code> と表示されている場合、何を意味しますか？
+    </p>
+    <select id="q5">
+      <option value="">-- 選択してください --</option>
+      <option value="a">4台中3台が正常で、1台が故障または欠落している</option>
+      <option value="b">4台中3台が再構築中で、1台が正常である</option>
+      <option value="c">3台のディスクで4つのパーティションを使用している</option>
+      <option value="d">4台すべてが正常で、3台がアクティブである</option>
+    </select>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ5()">答え合わせ</button>
+    <div class="result-msg" id="q5-result"></div>
+    <script>
+      function checkQ5() {
+        const v = document.getElementById('q5').value;
+        const r = document.getElementById('q5-result');
+        if (v === 'a') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>/proc/mdstat の読み方：</strong><br>' +
+            '・<code>[4/3]</code>：必要台数4台 / 現在正常台数3台<br>' +
+            '・<code>[_UUU]</code>：各ディスクの状態（U=正常、_=故障/欠落）<br>' +
+            '&nbsp;&nbsp;先頭の _ が1台目のディスクが故障していることを示す<br><br>' +
+            '<strong>正常時：</strong><code>[4/4] [UUUU]</code><br>' +
+            '<strong>1台故障：</strong><code>[4/3] [_UUU]</code>（デグレードモード）<br>' +
+            '<strong>再構築中：</strong><code>[4/3] [_UUU]</code> + recovery 行が表示される';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '<code>[4/3]</code> は「必要4台中3台が正常」を意味します。<br>' +
+            '<code>[_UUU]</code> の <code>_</code> は故障/欠落ディスクを示します。<br>' +
+            'この状態は RAID がデグレードモードで動作していることを示します。';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 「RAID」の学習が完了したら記録しましょう！</p>
+  <button class="btn btn-done" onclick="markComplete()">✅ このセクションを完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch5', '33');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  if (parseInt(localStorage.getItem('lpic201_ch5') || '0') >= 33) {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="../04_filesystem/03_lvm.html">← 第4章：ファイルシステムの保守</a>
+  <a class="home" href="../index.html">🏠 目次へ</a>
+  <a class="next" href="02_lvm.html">次へ：LVM の管理 →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
