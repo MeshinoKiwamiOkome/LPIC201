@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ブートローダ ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em; color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #2f855a; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #1a4731, #2f855a);
+      border-radius: 12px; padding: 32px 32px 24px;
+      margin-bottom: 32px; color: #fff;
+      box-shadow: 0 4px 18px rgba(47,133,90,0.3);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em; font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85; letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .chapter-header h1 { margin: 0 0 10px; font-size: 1.6em; color: #fff; border: none; padding: 0; }
+    .chapter-header p  { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px; padding: 3px 12px;
+      font-size: 0.76em; font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 { color: #1a4731; margin-top: 48px; border-left: 5px solid #2f855a; padding-left: 12px; }
+    h3 { color: #276749; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7; padding: 2px 6px;
+      border-radius: 4px; font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c; color: #e2e8f0;
+      padding: 18px 20px; border-radius: 8px;
+      overflow-x: auto; font-size: 0.88em;
+      line-height: 1.7; font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+    pre .err     { color: #fc8181; }
+    pre .grub    { color: #68d391; font-weight: bold; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #4a5568; color: #e2e8f0;
+      border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 0.75em;
+      cursor: pointer; font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s; z-index: 1;
+    }
+    .copy-btn:hover { background: #2f855a; }
+
+    /* ボックス */
+    .note {
+      background: #fff; border: 1px dashed #9ae6b4;
+      border-radius: 6px; padding: 14px 18px;
+      font-size: 0.93em; color: #4a5568; margin: 14px 0;
+    }
+    .note strong { color: #1a4731; }
+    .warn {
+      background: #fffaf0; border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #744210; margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4; border: 1px solid #68d391;
+      border-left: 5px solid #48bb78; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #276749; margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff; border: 1px solid #9ae6b4;
+      border-radius: 8px; padding: 20px 24px;
+      margin: 12px 0 28px; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff; border: 1px solid #9ae6b4;
+      border-radius: 10px; padding: 18px 22px;
+      margin-bottom: 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 { margin: 0 0 12px; font-size: 0.92em; color: #1a4731; border: none; padding: 0; }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #2f855a; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #1a4731; font-weight: bold; }
+
+    /* GRUB 比較カード */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px; margin: 14px 0;
+    }
+    .compare-card {
+      border-radius: 8px; padding: 18px;
+    }
+    .compare-card.legacy { background: #fffaf0; border: 2px solid #f6ad55; }
+    .compare-card.grub2  { background: #f0fff4; border: 2px solid #48bb78; }
+    .compare-card h4 {
+      margin: 0 0 10px; font-size: 0.95em;
+    }
+    .compare-card.legacy h4 { color: #744210; }
+    .compare-card.grub2  h4 { color: #1a4731; }
+    .compare-card ul {
+      margin: 0; padding-left: 18px;
+      font-size: 0.85em; color: #4a5568; line-height: 1.9;
+    }
+
+    /* GRUB 画面シミュレーター */
+    .grub-screen {
+      background: #000080; color: #fff;
+      border-radius: 8px; padding: 20px 24px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85em; line-height: 1.8;
+      margin: 14px 0; min-height: 280px;
+      border: 3px solid #4a5568;
+      position: relative;
+    }
+    .grub-screen .grub-title {
+      text-align: center; color: #fff;
+      font-weight: bold; margin-bottom: 16px;
+      font-size: 1em; border-bottom: 1px solid #4a5568;
+      padding-bottom: 8px;
+    }
+    .grub-screen .grub-entry {
+      padding: 3px 8px; cursor: pointer;
+      border-radius: 2px; transition: background 0.1s;
+    }
+    .grub-screen .grub-entry.selected {
+      background: #fff; color: #000080;
+    }
+    .grub-screen .grub-entry:hover:not(.selected) {
+      background: rgba(255,255,255,0.1);
+    }
+    .grub-screen .grub-hint {
+      position: absolute; bottom: 12px; left: 0; right: 0;
+      text-align: center; color: #aaa; font-size: 0.82em;
+    }
+    .grub-screen .grub-timer {
+      position: absolute; top: 12px; right: 16px;
+      color: #aaa; font-size: 0.82em;
+    }
+
+    /* インタラクティブデモ */
+    .interactive-demo {
+      background: #f7fafc; border: 1px solid #9ae6b4;
+      border-radius: 8px; padding: 16px 20px; margin: 14px 0;
+    }
+    .slider-row {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em; font-weight: bold;
+      min-width: 180px; color: #1a4731;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row select {
+      border: 2px solid #9ae6b4; border-radius: 6px;
+      padding: 6px 10px; font-size: 0.88em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #2d3748; background: #fff;
+      cursor: pointer; flex: 1;
+    }
+    .slider-row select:focus { border-color: #2f855a; outline: none; }
+    .slider-row input[type="range"] { flex: 1; min-width: 100px; accent-color: #2f855a; }
+    .val-display {
+      min-width: 60px; text-align: right;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85em; color: #2d3748;
+    }
+    .output-display {
+      background: #1a202c; color: #68d391;
+      border-radius: 6px; padding: 12px 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em; margin-top: 10px;
+      white-space: pre; overflow-x: auto; line-height: 1.7;
+    }
+
+    /* 回復フロー */
+    .recovery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px; margin: 14px 0;
+    }
+    .recovery-card {
+      background: #fffaf0; border: 2px solid #f6ad55;
+      border-radius: 8px; padding: 16px;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .recovery-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(246,173,85,0.25);
+      border-color: #c05621;
+    }
+    .recovery-card .rc-icon { font-size: 1.6em; margin-bottom: 6px; }
+    .recovery-card .rc-title { font-weight: bold; color: #744210; font-size: 0.92em; margin-bottom: 4px; }
+    .recovery-card .rc-desc  { font-size: 0.82em; color: #4a5568; line-height: 1.6; }
+
+    /* タブ */
+    .tab-wrap { margin: 14px 0; }
+    .tab-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: -1px; }
+    .tab-btn {
+      padding: 8px 18px; border: 1px solid #9ae6b4;
+      border-bottom: none; border-radius: 6px 6px 0 0;
+      background: #edf2f7; color: #1a4731;
+      font-size: 0.85em; font-weight: bold;
+      font-family: 'Consolas', 'Monaco', monospace;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .tab-btn.active { background: #fff; border-bottom: 1px solid #fff; }
+    .tab-btn:hover:not(.active) { background: #c6f6d5; }
+    .tab-content {
+      display: none; background: #fff;
+      border: 1px solid #9ae6b4;
+      border-radius: 0 6px 6px 6px; padding: 18px 20px;
+    }
+    .tab-content.active { display: block; }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse; width: 100%;
+      background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0; font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #9ae6b4; padding: 10px 14px; text-align: left;
+    }
+    table.ref-table thead tr { background: #1a4731; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #f0fff4; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0; border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0; padding: 24px 28px; margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 18px 22px; margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 8px 12px; font-size: 0.95em;
+      width: 100%; max-width: 440px; margin: 6px 0;
+      outline: none; font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus { border-color: #f6ad55; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block; padding: 9px 20px;
+      border-radius: 6px; border: none; cursor: pointer;
+      font-size: 0.95em; font-weight: bold;
+      transition: opacity 0.2s; margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-green { background: #2f855a; color: #fff; }
+    .btn-done  { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px; padding: 10px 14px;
+      border-radius: 6px; font-weight: bold; display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #c6f6d5; color: #1a4731; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 48px;
+      padding-top: 20px; border-top: 2px solid #9ae6b4;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block; padding: 10px 20px;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.9em; transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #2f855a; color: #fff; }
+    .page-nav .home { background: #fff; color: #2f855a; border: 2px solid #2f855a; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4; border: 2px solid #48bb78;
+      border-radius: 10px; padding: 20px 24px;
+      margin-top: 40px; text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 2px solid #9ae6b4;
+      font-size: 0.82em; color: #a0aec0; text-align: center;
+    }
+    footer a { color: #2f855a; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .compare-grid { grid-template-columns: 1fr; }
+      .recovery-grid { grid-template-columns: 1fr; }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  <a href="index.html">第3章：システムの起動</a> ›
+  ブートローダ
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 03 › SECTION 02</div>
+  <h1>🥾 ブートローダ</h1>
+  <p>GRUB Legacy と GRUB2 の違い、設定ファイルの構造、
+  起動オプションの変更方法、そしてシステム回復の手順を学びます。</p>
+  <div class="badge-row">
+    <span class="badge">GRUB Legacy</span>
+    <span class="badge">GRUB2</span>
+    <span class="badge">grub.cfg</span>
+    <span class="badge">/etc/default/grub</span>
+    <span class="badge">update-grub</span>
+    <span class="badge">grub-install</span>
+    <span class="badge">レスキューモード</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第3章のセクション</h2>
+  <ol>
+    <li><a href="index.html">システム起動プロセス</a></li>
+    <li class="current"><a href="02_bootloader.html">ブートローダ</a></li>
+    <li><a href="03_altboot.html">その他のブートローダ</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：GRUB Legacy vs GRUB2 -->
+<!-- ============================================================ -->
+<h2 id="grub-compare">① GRUB Legacy と GRUB2 の比較</h2>
+
+<div class="note">
+  <strong>重要ポイント①：GRUB Legacy（0.9x系）と GRUB2（1.9x/2.x系）は設定ファイルの場所・書式が大きく異なる</strong><br>
+  現代のディストリビューションはほぼすべて GRUB2 を採用していますが、
+  LPIC-201 では両方の知識が求められます。
+</div>
+
+<div class="demo-box">
+  <div class="compare-grid">
+    <div class="compare-card legacy">
+      <h4>⚠️ GRUB Legacy（0.9x系）</h4>
+      <ul>
+        <li>設定ファイル：<code>/boot/grub/menu.lst</code><br>または <code>/boot/grub/grub.conf</code></li>
+        <li>ディスク表記：<code>(hd0,0)</code>（0始まり）</li>
+        <li>設定を手動で直接編集</li>
+        <li>ステージ構成：Stage1・Stage1.5・Stage2</li>
+        <li>現在はほぼ使用されない（レガシー）</li>
+        <li>インストール：<code>grub-install</code></li>
+      </ul>
+    </div>
+    <div class="compare-card grub2">
+      <h4>✅ GRUB2（1.9x / 2.x系）</h4>
+      <ul>
+        <li>設定ファイル：<code>/boot/grub/grub.cfg</code></li>
+        <li>ディスク表記：<code>(hd0,1)</code>（パーティションは1始まり）</li>
+        <li>設定は <code>/etc/default/grub</code> を編集後 <code>update-grub</code> で自動生成</li>
+        <li>モジュール方式で機能を動的に追加</li>
+        <li>UEFI・GPT・暗号化ディスクに対応</li>
+        <li>インストール：<code>grub-install</code> / <code>grub2-install</code></li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>ファイル・コマンド対応表</h3>
+  <table class="ref-table">
+    <thead><tr><th>項目</th><th>GRUB Legacy</th><th>GRUB2</th></tr></thead>
+    <tbody>
+      <tr><td>メイン設定ファイル</td><td><code>/boot/grub/menu.lst</code><br><code>/boot/grub/grub.conf</code></td><td><code>/boot/grub/grub.cfg</code><br>（自動生成・直接編集不推奨）</td></tr>
+      <tr><td>ユーザー設定</td><td>直接 menu.lst を編集</td><td><code>/etc/default/grub</code></td></tr>
+      <tr><td>カスタムスクリプト</td><td>—</td><td><code>/etc/grub.d/*.sh</code></td></tr>
+      <tr><td>設定の反映</td><td>直接編集で即時反映</td><td><code>update-grub</code> / <code>grub2-mkconfig</code></td></tr>
+      <tr><td>インストール</td><td><code>grub-install /dev/sda</code></td><td><code>grub-install /dev/sda</code></td></tr>
+      <tr><td>ディスク番号</td><td>hd0,0（0始まり）</td><td>hd0,1（パーティションは1始まり）</td></tr>
+      <tr><td>起動エントリ</td><td><code>title</code> キーワード</td><td><code>menuentry</code> キーワード</td></tr>
+      <tr><td>カーネル指定</td><td><code>kernel</code> ディレクティブ</td><td><code>linux</code> ディレクティブ</td></tr>
+      <tr><td>initrd 指定</td><td><code>initrd</code> ディレクティブ</td><td><code>initrd</code> ディレクティブ（同じ）</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：GRUB Legacy の設定 -->
+<!-- ============================================================ -->
+<h2 id="grub-legacy">② GRUB Legacy の設定</h2>
+
+<div class="demo-box">
+  <h3>/boot/grub/menu.lst（または grub.conf）の構造</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /boot/grub/menu.lst（GRUB Legacy の設定ファイル）</span>
+
+<span class="comment"># グローバル設定</span>
+<span class="grub">default</span>=<span class="val">0</span>          <span class="comment"># デフォルトで起動するエントリ番号（0始まり）</span>
+<span class="grub">timeout</span>=<span class="val">5</span>          <span class="comment"># 起動メニューの表示秒数</span>
+<span class="grub">splashimage</span>=<span class="val">(hd0,0)/boot/grub/splash.xpm.gz</span>
+
+<span class="comment"># 起動エントリ 1（デフォルト）</span>
+<span class="grub">title</span>           <span class="val">Ubuntu, kernel 2.6.32-21-generic</span>
+<span class="grub">root</span>            <span class="val">(hd0,0)</span>       <span class="comment"># ← 1番目のディスク・1番目のパーティション（0始まり）</span>
+<span class="grub">kernel</span>          <span class="val">/boot/vmlinuz-2.6.32-21-generic root=/dev/sda1 ro quiet splash</span>
+<span class="grub">initrd</span>          <span class="val">/boot/initrd.img-2.6.32-21-generic</span>
+
+<span class="comment"># 起動エントリ 2（旧カーネル）</span>
+<span class="grub">title</span>           <span class="val">Ubuntu, kernel 2.6.32-20-generic (recovery mode)</span>
+<span class="grub">root</span>            <span class="val">(hd0,0)</span>
+<span class="grub">kernel</span>          <span class="val">/boot/vmlinuz-2.6.32-20-generic root=/dev/sda1 ro single</span>
+<span class="grub">initrd</span>          <span class="val">/boot/initrd.img-2.6.32-20-generic</span>
+</pre>
+  </div>
+
+  <h3>GRUB Legacy のディスク表記</h3>
+  <table class="ref-table">
+    <thead><tr><th>GRUB 表記</th><th>意味</th><th>Linux デバイス名</th></tr></thead>
+    <tbody>
+      <tr><td><code>(hd0)</code></td><td>1番目のハードディスク全体</td><td><code>/dev/sda</code></td></tr>
+      <tr><td><code>(hd0,0)</code></td><td>1番目のディスクの1番目のパーティション</td><td><code>/dev/sda1</code></td></tr>
+      <tr><td><code>(hd0,1)</code></td><td>1番目のディスクの2番目のパーティション</td><td><code>/dev/sda2</code></td></tr>
+      <tr><td><code>(hd1,0)</code></td><td>2番目のディスクの1番目のパーティション</td><td><code>/dev/sdb1</code></td></tr>
+      <tr><td><code>(hd1,4)</code></td><td>2番目のディスクの1番目の論理パーティション</td><td><code>/dev/sdb5</code></td></tr>
+    </tbody>
+  </table>
+
+  <div class="warn">
+    <strong>⚠️ GRUB Legacy と GRUB2 のパーティション番号の違い</strong><br>
+    ・<strong>GRUB Legacy</strong>：<code>(hd0,0)</code> = 1番目のディスクの<strong>1番目</strong>のパーティション（0始まり）<br>
+    ・<strong>GRUB2</strong>：<code>(hd0,1)</code> = 1番目のディスクの<strong>1番目</strong>のパーティション（1始まり）<br>
+    同じパーティションでも番号が異なるため注意が必要です。
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：GRUB2 の設定 -->
+<!-- ============================================================ -->
+<h2 id="grub2">③ GRUB2 の設定</h2>
+
+<div class="note">
+  <strong>重要ポイント②：GRUB2 の設定は /etc/default/grub を編集し、update-grub で /boot/grub/grub.cfg を自動生成する</strong><br>
+  <code>grub.cfg</code> は自動生成ファイルのため直接編集してはいけません。
+</div>
+
+<div class="demo-box">
+  <h3>/etc/default/grub の設定</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /etc/default/grub（GRUB2 のユーザー設定ファイル）</span>
+
+<span class="comment"># デフォルトで起動するエントリ（0始まり、または "saved"）</span>
+<span class="grub">GRUB_DEFAULT</span>=<span class="val">0</span>
+
+<span class="comment"># 前回起動したエントリを記憶して次回もそれを使用</span>
+<span class="comment"># GRUB_DEFAULT=saved</span>
+<span class="comment"># GRUB_SAVEDEFAULT=true</span>
+
+<span class="comment"># 起動メニューの表示秒数（0=即時起動、-1=無制限）</span>
+<span class="grub">GRUB_TIMEOUT</span>=<span class="val">5</span>
+
+<span class="comment"># 通常起動時のカーネルパラメータ</span>
+<span class="hl">GRUB_CMDLINE_LINUX_DEFAULT</span>=<span class="val">"quiet splash"</span>
+
+<span class="comment"># すべてのエントリに追加するカーネルパラメータ</span>
+<span class="hl">GRUB_CMDLINE_LINUX</span>=<span class="val">""</span>
+
+<span class="comment"># ターミナルの設定</span>
+<span class="grub">GRUB_TERMINAL</span>=<span class="val">console</span>
+
+<span class="comment"># 解像度の設定</span>
+<span class="comment"># GRUB_GFXMODE=1024x768</span>
+
+<span class="comment"># ディストリビューション名</span>
+<span class="grub">GRUB_DISTRIBUTOR</span>=<span class="val">`lsb_release -i -s 2> /dev/null || echo Debian`</span>
+</pre>
+  </div>
+
+  <h3>設定変更の反映手順</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># 1. /etc/default/grub を編集</span>
+$ <span class="cmd">sudo vi</span> /etc/default/grub
+
+<span class="comment"># 2. grub.cfg を再生成して反映</span>
+<span class="comment"># Debian / Ubuntu 系</span>
+$ <span class="cmd">sudo update-grub</span>
+<span class="out">Sourcing file `/etc/default/grub'</span>
+<span class="out">Generating grub configuration file ...</span>
+<span class="out">Found linux image: /boot/vmlinuz-6.8.0-51-generic</span>
+<span class="out">Found initrd image: /boot/initrd.img-6.8.0-51-generic</span>
+<span class="out">done</span>
+
+<span class="comment"># RHEL / CentOS 系（BIOS）</span>
+$ <span class="cmd">sudo grub2-mkconfig</span> <span class="opt">-o</span> /boot/grub2/grub.cfg
+
+<span class="comment"># RHEL / CentOS 系（UEFI）</span>
+$ <span class="cmd">sudo grub2-mkconfig</span> <span class="opt">-o</span> /boot/efi/EFI/redhat/grub.cfg
+
+<span class="comment"># 生成された grub.cfg の確認</span>
+$ <span class="cmd">cat</span> /boot/grub/grub.cfg | <span class="cmd">head</span> <span class="opt">-40</span>
+</pre>
+  </div>
+
+  <h3>/boot/grub/grub.cfg の構造（自動生成）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /boot/grub/grub.cfg（自動生成ファイル・直接編集不可）</span>
+<span class="comment"># DO NOT EDIT THIS FILE</span>
+<span class="comment"># It is automatically generated by grub-mkconfig using templates</span>
+<span class="comment"># from /etc/grub.d and settings from /etc/default/grub</span>
+
+<span class="comment"># グローバル設定</span>
+<span class="out">set default="0"</span>
+<span class="out">set timeout=5</span>
+<span class="out">set timeout_style=menu</span>
+
+<span class="comment"># 起動エントリ</span>
+<span class="grub">menuentry</span> <span class="val">'Ubuntu, with Linux 6.8.0-51-generic'</span> {
+    <span class="out">recordfail</span>
+    <span class="out">load_video</span>
+    <span class="out">gfxmode $linux_gfx_mode</span>
+    <span class="out">insmod gzio</span>
+    <span class="out">insmod part_gpt</span>
+    <span class="out">insmod ext2</span>
+    <span class="hl">set root='(hd0,gpt2)'</span>   <span class="comment"># ← 1始まり（GRUB2）</span>
+    <span class="hl">linux   /boot/vmlinuz-6.8.0-51-generic root=UUID=xxxx-xxxx ro quiet splash</span>
+    <span class="hl">initrd  /boot/initrd.img-6.8.0-51-generic</span>
+}
+
+<span class="grub">menuentry</span> <span class="val">'Ubuntu, with Linux 6.8.0-51-generic (recovery mode)'</span> {
+    <span class="out">set root='(hd0,gpt2)'</span>
+    <span class="hl">linux   /boot/vmlinuz-6.8.0-51-generic root=UUID=xxxx-xxxx ro recovery nomodeset</span>
+    <span class="hl">initrd  /boot/initrd.img-6.8.0-51-generic</span>
+}
+</pre>
+  </div>
+
+  <h3>/etc/grub.d/ のスクリプト構成</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+$ <span class="cmd">ls</span> /etc/grub.d/
+<span class="out">00_header        </span><span class="comment"># GRUB の基本設定・ヘッダー生成</span>
+<span class="out">05_debian_theme  </span><span class="comment"># テーマ設定</span>
+<span class="out">10_linux         </span><span class="comment"># インストール済みLinuxカーネルのエントリを自動生成</span>
+<span class="out">20_linux_xen     </span><span class="comment"># Xen ハイパーバイザー用エントリ</span>
+<span class="out">30_os-prober     </span><span class="comment"># 他のOSを自動検出（Windows など）</span>
+<span class="out">40_custom        </span><span class="comment"># カスタムエントリを追加する場所</span>
+<span class="out">41_custom        </span><span class="comment"># 追加のカスタムエントリ</span>
+
+<span class="comment"># カスタムエントリを追加する場合は 40_custom を編集</span>
+$ <span class="cmd">sudo vi</span> /etc/grub.d/40_custom
+<span class="comment"># 以下を追記</span>
+<span class="out">menuentry "My Custom Entry" {</span>
+<span class="out">    set root='(hd0,1)'</span>
+<span class="out">    linux /boot/vmlinuz root=/dev/sda1 ro</span>
+<span class="out">    initrd /boot/initrd.img</span>
+<span class="out">}</span>
+</pre>
+  </div>
+
+  <h3>GRUB2 のインストール</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># MBR に GRUB2 をインストール（BIOS システム）</span>
+$ <span class="cmd">sudo grub-install</span> /dev/sda
+<span class="out">Installing for i386-pc platform.</span>
+<span class="out">Installation finished. No error reported.</span>
+
+<span class="comment"># 特定ディレクトリを指定してインストール</span>
+$ <span class="cmd">sudo grub-install</span> <span class="opt">--boot-directory</span>=/boot /dev/sda
+
+<span class="comment"># UEFI システムへのインストール</span>
+$ <span class="cmd">sudo grub-install</span> <span class="opt">--target</span>=x86_64-efi <span class="opt">--efi-directory</span>=/boot/efi
+
+<span class="comment"># インストール後に grub.cfg を生成</span>
+$ <span class="cmd">sudo update-grub</span>
+
+<span class="comment"># GRUB のバージョン確認</span>
+$ <span class="cmd">grub-install</span> <span class="opt">--version</span>
+<span class="out">grub-install (GRUB) 2.12</span>
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 4：起動オプションの設定 -->
+<!-- ============================================================ -->
+<h2 id="boot-options">④ 起動オプションの設定</h2>
+
+<div class="note">
+  <strong>重要ポイント③：起動オプションは /etc/default/grub の GRUB_CMDLINE_LINUX_DEFAULT に設定するか、GRUB メニューで一時的に変更できる</strong><br>
+  一時的な変更は GRUB メニューで <code>e</code> キーを押して編集します。
+</div>
+
+<div class="demo-box">
+  <h3>GRUB2 メニューシミュレーター（インタラクティブ）</h3>
+  <div class="grub-screen" id="grub-sim">
+    <div class="grub-timer" id="grub-timer">自動起動まで: 5秒</div>
+    <div class="grub-title">GNU GRUB version 2.12</div>
+    <div class="grub-entry selected" id="ge0" onclick="selectGrubEntry(0)">
+      *Ubuntu, with Linux 6.8.0-51-generic
+    </div>
+    <div class="grub-entry" id="ge1" onclick="selectGrubEntry(1)">
+       Ubuntu, with Linux 6.8.0-51-generic (recovery mode)
+    </div>
+    <div class="grub-entry" id="ge2" onclick="selectGrubEntry(2)">
+       Ubuntu, with Linux 6.8.0-49-generic
+    </div>
+    <div class="grub-entry" id="ge3" onclick="selectGrubEntry(3)">
+       Ubuntu, with Linux 6.8.0-49-generic (recovery mode)
+    </div>
+    <div style="margin-top:16px; color:#aaa; font-size:0.82em;">
+      Use the ↑ and ↓ keys to select which entry is highlighted.<br>
+      Press enter to boot the selected OS.
+    </div>
+    <div class="grub-hint">
+      e = edit entry &nbsp;|&nbsp; c = command line &nbsp;|&nbsp; Esc = cancel
+    </div>
+  </div>
+
+  <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+    <button class="btn btn-green" onclick="grubAction('edit')" style="font-size:0.85em; padding:6px 14px;">
+      e キー：エントリを編集
+    </button>
+    <button class="btn" style="background:#553c9a; color:#fff; font-size:0.85em; padding:6px 14px;"
+            onclick="grubAction('cmdline')">
+      c キー：コマンドライン
+    </button>
+  </div>
+
+  <div id="grub-action-output" style="display:none; margin-top:10px;"></div>
+
+  <script>
+    let grubSelected = 0;
+    let grubCountdown = 5;
+    let grubTimer = null;
+
+    function startGrubTimer() {
+      grubTimer = setInterval(() => {
+        grubCountdown--;
+        const el = document.getElementById('grub-timer');
+        if (el) el.textContent = `自動起動まで: ${grubCountdown}秒`;
+        if (grubCountdown <= 0) {
+          clearInterval(grubTimer);
+          if (el) el.textContent = '起動中...';
+        }
+      }, 1000);
+    }
+
+    function selectGrubEntry(n) {
+      clearInterval(grubTimer);
+      document.getElementById('grub-timer').textContent = '（タイマー停止）';
+      document.querySelectorAll('.grub-entry').forEach((el, i) => {
+        el.classList.toggle('selected', i === n);
+        el.textContent = (i === n ? '*' : ' ') + el.textContent.replace(/^[* ]/, '');
+      });
+      grubSelected = n;
+    }
+
+    function grubAction(type) {
+      const el = document.getElementById('grub-action-output');
+      el.style.display = 'block';
+      if (type === 'edit') {
+        el.innerHTML = `
+          <div style="background:#1a202c; border-radius:8px; padding:14px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8;">
+            <div style="color:#68d391; margin-bottom:8px;">── エントリ編集モード（e キー）──</div>
+            <div style="color:#b794f4;">setparams 'Ubuntu, with Linux 6.8.0-51-generic'</div>
+            <div>&nbsp;&nbsp;recordfail</div>
+            <div>&nbsp;&nbsp;load_video</div>
+            <div>&nbsp;&nbsp;insmod gzio</div>
+            <div>&nbsp;&nbsp;set root='(hd0,gpt2)'</div>
+            <div style="color:#f6ad55;">&nbsp;&nbsp;linux /boot/vmlinuz-6.8.0-51-generic root=UUID=xxxx ro quiet splash</div>
+            <div>&nbsp;&nbsp;initrd /boot/initrd.img-6.8.0-51-generic</div>
+            <div style="margin-top:12px; color:#68d391;">
+              ↑ この画面で linux 行の末尾に起動オプションを追加できます<br>
+              例：quiet splash を削除して <span style="color:#f6ad55;">single</span> を追加 → シングルユーザーモード<br>
+              例：末尾に <span style="color:#f6ad55;">init=/bin/bash</span> を追加 → bash シェルで起動<br>
+              Ctrl+X または F10 で起動 &nbsp;|&nbsp; Esc でメニューに戻る
+            </div>
+          </div>`;
+      } else {
+        el.innerHTML = `
+          <div style="background:#1a202c; border-radius:8px; padding:14px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8;">
+            <div style="color:#68d391; margin-bottom:8px;">── GRUB コマンドライン（c キー）──</div>
+            <div style="color:#90cdf4;">grub&gt; <span style="color:#e2e8f0;">ls</span></div>
+            <div style="color:#e2e8f0;">(hd0) (hd0,gpt1) (hd0,gpt2) (hd0,gpt3)</div>
+            <div style="color:#90cdf4;">grub&gt; <span style="color:#e2e8f0;">ls (hd0,gpt2)/boot/</span></div>
+            <div style="color:#e2e8f0;">vmlinuz-6.8.0-51-generic initrd.img-6.8.0-51-generic grub/</div>
+            <div style="color:#90cdf4;">grub&gt; <span style="color:#e2e8f0;">set root=(hd0,gpt2)</span></div>
+            <div style="color:#90cdf4;">grub&gt; <span style="color:#e2e8f0;">linux /boot/vmlinuz-6.8.0-51-generic root=/dev/sda2 ro</span></div>
+            <div style="color:#90cdf4;">grub&gt; <span style="color:#e2e8f0;">initrd /boot/initrd.img-6.8.0-51-generic</span></div>
+            <div style="color:#90cdf4;">grub&gt; <span style="color:#e2e8f0;">boot</span></div>
+            <div style="margin-top:10px; color:#68d391;">
+              コマンドラインから手動でカーネルを指定して起動できます。<br>
+              grub.cfg が壊れた場合の緊急起動に使用します。
+            </div>
+          </div>`;
+      }
+    }
+
+    // タイマー開始
+    window.addEventListener('load', startGrubTimer);
+  </script>
+
+  <h3>主要な起動オプション（GRUB_CMDLINE_LINUX_DEFAULT）</h3>
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#1a4731; margin:0 0 12px;">
+      起動オプションを選択して設定例を確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>起動オプション</label>
+      <select id="boot-opt-sel" onchange="showBootOpt()">
+        <option value="">-- 選択してください --</option>
+        <option value="quiet">quiet splash（通常起動）</option>
+        <option value="single">single（シングルユーザーモード）</option>
+        <option value="recovery">recovery（回復モード）</option>
+        <option value="nomodeset">nomodeset（グラフィック問題回避）</option>
+        <option value="netnames">net.ifnames=0（旧インターフェース名）</option>
+        <option value="mem">mem=2G（メモリ制限）</option>
+        <option value="debug">debug（デバッグモード）</option>
+      </select>
+    </div>
+    <div class="output-display" id="boot-opt-output" style="display:none;"></div>
+  </div>
+
+  <script>
+    const bootOpts = {
+      quiet: {
+        color: '#68d391',
+        text:
+`# 通常起動（デフォルト）
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
+
+quiet  : カーネルの起動メッセージを抑制
+splash : スプラッシュスクリーン（ロゴ）を表示
+
+# /boot/grub/grub.cfg での反映例
+linux /boot/vmlinuz-6.8.0-51-generic root=UUID=xxxx ro quiet splash`
+      },
+      single: {
+        color: '#f6ad55',
+        text:
+`# シングルユーザーモードで起動
+GRUB_CMDLINE_LINUX_DEFAULT="single"
+# または
+GRUB_CMDLINE_LINUX_DEFAULT="1"
+
+用途：
+・root パスワードのリセット
+・ファイルシステムの修復
+・問題のあるサービスの無効化
+
+# GRUB メニューで一時的に変更する場合：
+# e キー → linux 行の末尾に "single" を追加 → Ctrl+X で起動`
+      },
+      recovery: {
+        color: '#f6ad55',
+        text:
+`# 回復モードで起動（Ubuntu 系）
+# GRUB メニューの recovery mode エントリを選択
+
+linux /boot/vmlinuz-6.8.0-51-generic root=UUID=xxxx ro recovery nomodeset
+
+recovery : 回復モードメニューを表示
+nomodeset: グラフィックドライバを無効化
+
+# 回復モードメニューの主な選択肢：
+# resume   : 通常起動を続行
+# clean    : ディスクの空き容量を確保
+# dpkg     : 壊れたパッケージを修復
+# fsck     : ファイルシステムを検査・修復
+# root     : root シェルを起動`
+      },
+      nomodeset: {
+        color: '#90cdf4',
+        text:
+`# グラフィック問題を回避して起動
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash nomodeset"
+
+nomodeset : カーネルモード設定（KMS）を無効化
+            グラフィックドライバの問題で画面が映らない場合に使用
+
+用途：
+・NVIDIAドライバのインストール前
+・グラフィックドライバの不具合回避
+・仮想マシン環境での表示問題
+
+# 永続的に設定する場合：
+# /etc/default/grub を編集して update-grub を実行`
+      },
+      netnames: {
+        color: '#b794f4',
+        text:
+`# ネットワークインターフェース名を旧形式（eth0）に戻す
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash net.ifnames=0 biosdevname=0"
+
+net.ifnames=0  : systemd の Predictable Network Interface Names を無効化
+biosdevname=0  : BIOS ベースのデバイス名を無効化
+
+効果：
+・enp3s0 → eth0
+・wlp2s0 → wlan0
+
+用途：
+・スクリプトが eth0 形式を前提としている場合
+・旧来の設定ファイルとの互換性確保`
+      },
+      mem: {
+        color: '#fbd38d',
+        text:
+`# 使用するメモリ量を制限
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash mem=2G"
+
+mem=2G : カーネルが使用するメモリを 2GB に制限
+
+用途：
+・メモリテスト（特定容量での動作確認）
+・メモリの一部が不良の場合の回避策
+・仮想マシンのメモリ制限テスト
+
+# 単位：K（キロバイト）、M（メガバイト）、G（ギガバイト）
+# 例：mem=512M、mem=4G`
+      },
+      debug: {
+        color: '#fc8181',
+        text:
+`# デバッグモードで起動（詳細メッセージを表示）
+GRUB_CMDLINE_LINUX_DEFAULT="debug"
+# quiet と splash を削除して debug を追加
+
+debug : 詳細なカーネルメッセージを表示
+
+用途：
+・起動時の問題を詳細に調査
+・ドライバのロードエラーを確認
+・ハードウェア認識の問題を調査
+
+# 関連オプション：
+# loglevel=7   : 最大ログレベルで表示
+# ignore_loglevel : すべてのカーネルメッセージを強制表示`
+      }
+    };
+
+    function showBootOpt() {
+      const key = document.getElementById('boot-opt-sel').value;
+      const el  = document.getElementById('boot-opt-output');
+      if (!key) { el.style.display='none'; return; }
+      const d = bootOpts[key];
+      el.style.display = 'block';
+      el.style.color   = d.color;
+      el.textContent   = d.text;
+    }
+  </script>
+
+  <h3>GRUB_CMDLINE_LINUX と GRUB_CMDLINE_LINUX_DEFAULT の違い</h3>
+  <table class="ref-table">
+    <thead><tr><th>変数名</th><th>適用範囲</th><th>用途</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>GRUB_CMDLINE_LINUX</code></td>
+        <td>すべての起動エントリ<br>（通常・回復モード両方）</td>
+        <td>常に必要なパラメータ<br>例：<code>net.ifnames=0</code></td>
+      </tr>
+      <tr>
+        <td><code>GRUB_CMDLINE_LINUX_DEFAULT</code></td>
+        <td>通常起動エントリのみ<br>（回復モードには適用されない）</td>
+        <td>通常起動時のみ必要なパラメータ<br>例：<code>quiet splash</code></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 5：システムの回復 -->
+<!-- ============================================================ -->
+<h2 id="recovery">⑤ システムの回復</h2>
+
+<div class="note">
+  <strong>重要ポイント④：システムが起動しない場合は GRUB メニューの編集・レスキューモード・Live CD・chroot を使って回復する</strong><br>
+  状況に応じた適切な回復手段を選択することが重要です。
+</div>
+
+<div class="demo-box">
+  <h3>回復手段の選択（クリックで詳細手順を表示）</h3>
+  <div class="recovery-grid">
+    <div class="recovery-card" onclick="showRecovery('grub-edit')">
+      <div class="rc-icon">✏️</div>
+      <div class="rc-title">GRUB メニューの一時編集</div>
+      <div class="rc-desc">起動時に e キーでカーネルパラメータを一時変更。設定ミスの回避に</div>
+    </div>
+    <div class="recovery-card" onclick="showRecovery('single')">
+      <div class="rc-icon">🔧</div>
+      <div class="rc-title">シングルユーザーモード</div>
+      <div class="rc-desc">root パスワードリセット・ファイルシステム修復・サービス無効化</div>
+    </div>
+    <div class="recovery-card" onclick="showRecovery('rescue')">
+      <div class="rc-icon">🆘</div>
+      <div class="rc-title">GRUB レスキューモード</div>
+      <div class="rc-desc">grub.cfg が壊れた場合にコマンドラインから手動起動</div>
+    </div>
+    <div class="recovery-card" onclick="showRecovery('livecdchroot')">
+      <div class="rc-icon">💿</div>
+      <div class="rc-title">Live CD + chroot</div>
+      <div class="rc-desc">起動不能時に Live CD から chroot してシステムを修復</div>
+    </div>
+  </div>
+
+  <div id="recovery-detail" style="display:none; margin-top:14px; background:#fff; border:1px solid #9ae6b4; border-left:5px solid #2f855a; border-radius:0 8px 8px 0; padding:16px 20px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const recoveryData = {
+      'grub-edit': {
+        title: '✏️ GRUB メニューの一時編集',
+        body: `<strong>手順：</strong><br>
+          ① 起動時に <strong>Shift</strong>（BIOS）または <strong>Esc</strong>（UEFI）を押して GRUB メニューを表示<br>
+          ② 起動したいエントリを選択して <strong>e キー</strong> を押す<br>
+          ③ <code>linux</code> 行を見つけて末尾にパラメータを追加<br>
+          ④ <strong>Ctrl+X</strong> または <strong>F10</strong> で起動<br><br>
+          <strong>よく使うパラメータ：</strong><br>
+          ・<code>single</code>：シングルユーザーモード<br>
+          ・<code>init=/bin/bash</code>：bash シェルで起動（root パスワードリセット）<br>
+          ・<code>nomodeset</code>：グラフィック問題の回避<br>
+          ・<code>ro</code> を <code>rw</code> に変更：読み書き可能でマウント<br><br>
+          <strong>注意：</strong>この変更は一時的で、再起動後は元に戻ります。<br>
+          永続的に変更するには <code>/etc/default/grub</code> を編集して <code>update-grub</code> を実行します。`
+      },
+      single: {
+        title: '🔧 シングルユーザーモードでの回復',
+        body: `<strong>起動方法：</strong><br>
+          ・GRUB メニューで <code>e</code> → <code>linux</code> 行末尾に <code>single</code> または <code>1</code> を追加 → Ctrl+X<br>
+          ・または recovery mode エントリを選択<br><br>
+          <strong>root パスワードのリセット手順：</strong><br>
+          <div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; margin:8px 0; line-height:1.7;">
+            <div style="color:#68d391;"># ルートファイルシステムを読み書き可能で再マウント</div>
+            <div>$ mount -o remount,rw /</div>
+            <div style="color:#68d391;"># パスワードを変更</div>
+            <div>$ passwd root</div>
+            <div style="color:#68d391;"># 再起動</div>
+            <div>$ exec /sbin/init</div>
+          </div>
+          <strong>ファイルシステムの修復：</strong><br>
+          <div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; margin:8px 0; line-height:1.7;">
+            <div>$ fsck /dev/sda1</div>
+            <div style="color:#68d391;"># 修復後に再起動</div>
+            <div>$ reboot</div>
+          </div>`
+      },
+      rescue: {
+        title: '🆘 GRUB レスキューモード',
+        body: `<code>grub.cfg</code> が壊れた・削除されたなど、GRUB が正常に起動できない場合に使用します。<br><br>
+          <strong>GRUB レスキューモードからの手動起動：</strong><br>
+          <div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; margin:8px 0; line-height:1.7;">
+            <div style="color:#68d391;"># パーティションを確認</div>
+            <div style="color:#90cdf4;">grub rescue&gt; ls</div>
+            <div>(hd0) (hd0,gpt1) (hd0,gpt2)</div>
+            <div style="color:#68d391;"># 各パーティションの内容を確認</div>
+            <div style="color:#90cdf4;">grub rescue&gt; ls (hd0,gpt2)/boot/</div>
+            <div>vmlinuz-6.8.0-51-generic initrd.img-6.8.0-51-generic grub/</div>
+            <div style="color:#68d391;"># root パーティションを設定</div>
+            <div style="color:#90cdf4;">grub rescue&gt; set root=(hd0,gpt2)</div>
+            <div style="color:#68d391;"># GRUB モジュールをロード</div>
+            <div style="color:#90cdf4;">grub rescue&gt; insmod normal</div>
+            <div style="color:#90cdf4;">grub rescue&gt; normal</div>
+            <div style="color:#68d391;"># 通常の GRUB メニューが表示される</div>
+          </div>
+          <strong>起動後に GRUB を再インストール：</strong><br>
+          <code>sudo grub-install /dev/sda && sudo update-grub</code>`
+      },
+      livecdchroot: {
+        title: '💿 Live CD + chroot による回復',
+        body: `システムが完全に起動しない場合に、Live CD/USB から起動してシステムを修復します。<br><br>
+          <strong>手順：</strong><br>
+          <div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; margin:8px 0; line-height:1.7;">
+            <div style="color:#68d391;"># 1. Live CD から起動してターミナルを開く</div>
+            <div style="color:#68d391;"># 2. 修復対象のパーティションをマウント</div>
+            <div>$ sudo mount /dev/sda2 /mnt</div>
+            <div>$ sudo mount /dev/sda1 /mnt/boot/efi  <span style="color:#68d391;"># UEFI の場合</span></div>
+            <div style="color:#68d391;"># 3. 仮想ファイルシステムをバインドマウント</div>
+            <div>$ sudo mount --bind /dev  /mnt/dev</div>
+            <div>$ sudo mount --bind /proc /mnt/proc</div>
+            <div>$ sudo mount --bind /sys  /mnt/sys</div>
+            <div style="color:#68d391;"># 4. chroot で修復対象システムに入る</div>
+            <div>$ sudo chroot /mnt</div>
+            <div style="color:#68d391;"># 5. 修復作業（GRUB再インストール・パスワードリセットなど）</div>
+            <div>$ grub-install /dev/sda</div>
+            <div>$ update-grub</div>
+            <div>$ passwd root</div>
+            <div style="color:#68d391;"># 6. chroot を抜けてアンマウント</div>
+            <div>$ exit</div>
+            <div>$ sudo umount /mnt/sys /mnt/proc /mnt/dev /mnt</div>
+            <div>$ sudo reboot</div>
+          </div>`
+      }
+    };
+
+    function showRecovery(key) {
+      const d = recoveryData[key];
+      const el = document.getElementById('recovery-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display='none'; el.dataset.current=''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.innerHTML = `<strong style="color:#1a4731; font-size:0.95em;">${d.title}</strong><br><br>${d.body}`;
+      el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+  </script>
+
+  <h3>GRUB パスワードの設定（セキュリティ）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># GRUB2 にパスワードを設定して不正な起動オプション変更を防ぐ</span>
+
+<span class="comment"># 1. パスワードをハッシュ化</span>
+$ <span class="cmd">grub-mkpasswd-pbkdf2</span>
+<span class="out">Enter password: </span>
+<span class="out">Reenter password: </span>
+<span class="out">PBKDF2 hash of your password is grub.pbkdf2.sha512.10000.xxxxxx...</span>
+
+<span class="comment"># 2. /etc/grub.d/40_custom に追記</span>
+<span class="out">set superusers="admin"</span>
+<span class="out">password_pbkdf2 admin grub.pbkdf2.sha512.10000.xxxxxx...</span>
+
+<span class="comment"># 3. update-grub で反映</span>
+$ <span class="cmd">sudo update-grub</span>
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- まとめ表 -->
+<!-- ============================================================ -->
+<h2>📌 まとめ一覧</h2>
+<div class="demo-box">
+  <table class="ref-table">
+    <thead><tr><th>カテゴリ</th><th>コマンド / ファイル</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td colspan="3" style="background:#dcfce7; color:#1a4731; font-weight:bold; font-size:0.88em;">▼ GRUB Legacy</td></tr>
+      <tr><td>設定ファイル</td><td><code>/boot/grub/menu.lst</code><br><code>/boot/grub/grub.conf</code></td><td>起動エントリを直接記述</td></tr>
+      <tr><td>エントリ定義</td><td><code>title</code> / <code>kernel</code> / <code>initrd</code></td><td>エントリの各ディレクティブ</td></tr>
+      <tr><td>ディスク表記</td><td><code>(hd0,0)</code>（0始まり）</td><td>1番目のディスクの1番目のパーティション</td></tr>
+      <tr><td colspan="3" style="background:#dcfce7; color:#1a4731; font-weight:bold; font-size:0.88em;">▼ GRUB2</td></tr>
+      <tr><td>ユーザー設定</td><td><code>/etc/default/grub</code></td><td>タイムアウト・カーネルパラメータなどを設定</td></tr>
+      <tr><td>自動生成設定</td><td><code>/boot/grub/grub.cfg</code></td><td>直接編集不可・update-grub で生成</td></tr>
+      <tr><td>カスタムエントリ</td><td><code>/etc/grub.d/40_custom</code></td><td>カスタム起動エントリを追加</td></tr>
+      <tr><td>設定反映（Debian）</td><td><code>update-grub</code></td><td>grub.cfg を再生成</td></tr>
+      <tr><td>設定反映（RHEL）</td><td><code>grub2-mkconfig -o /boot/grub2/grub.cfg</code></td><td>grub.cfg を再生成</td></tr>
+      <tr><td>インストール</td><td><code>grub-install /dev/sda</code></td><td>MBR に GRUB2 をインストール</td></tr>
+      <tr><td>ディスク表記</td><td><code>(hd0,1)</code>（パーティションは1始まり）</td><td>1番目のディスクの1番目のパーティション</td></tr>
+      <tr><td colspan="3" style="background:#dcfce7; color:#1a4731; font-weight:bold; font-size:0.88em;">▼ システム回復</td></tr>
+      <tr><td>一時編集</td><td>GRUB メニューで <code>e</code> キー → Ctrl+X</td><td>カーネルパラメータを一時変更して起動</td></tr>
+      <tr><td>シングルユーザー</td><td>linux 行末尾に <code>single</code> を追加</td><td>root のみのメンテナンスモード</td></tr>
+      <tr><td>レスキューモード</td><td><code>grub rescue&gt;</code> で手動起動</td><td>grub.cfg 破損時の緊急起動</td></tr>
+      <tr><td>chroot 回復</td><td>Live CD → mount → chroot → 修復</td><td>完全起動不能時の回復手順</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 穴埋め問題</h3>
+    <p>以下の説明に合うファイル・コマンドを入力してください。</p>
+    <label>① GRUB2 のユーザー設定ファイル（編集対象）：</label>
+    <input type="text" id="q1a" placeholder="/etc/...">
+    <label>② GRUB2 の自動生成設定ファイル（直接編集不可）：</label>
+    <input type="text" id="q1b" placeholder="/boot/...">
+    <label>③ Debian/Ubuntu で grub.cfg を再生成するコマンド：</label>
+    <input type="text" id="q1c" placeholder="コマンド名">
+    <label>④ GRUB Legacy の設定ファイル（Debian 系）：</label>
+    <input type="text" id="q1d" placeholder="/boot/grub/...">
+    <label>⑤ GRUB2 で MBR にブートローダをインストールするコマンド（/dev/sda に対して）：</label>
+    <input type="text" id="q1e" placeholder="コマンド /dev/sda">
+    <br>
+    <button class="btn btn-green" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const a = document.getElementById('q1a').value.trim().toLowerCase().replace(/\s/g,'');
+        const b = document.getElementById('q1b').value.trim().toLowerCase().replace(/\s/g,'');
+        const c = document.getElementById('q1c').value.trim().toLowerCase().replace(/\s+/g,'');
+        const d = document.getElementById('q1d').value.trim().toLowerCase().replace(/\s/g,'');
+        const e = document.getElementById('q1e').value.trim().toLowerCase().replace(/\s+/g,'');
+        const r = document.getElementById('q1-result');
+        const ca = a === '/etc/default/grub';
+        const cb = b === '/boot/grub/grub.cfg';
+        const cc = c === 'update-grub';
+        const cd = d === '/boot/grub/menu.lst' || d === '/boot/grub/grub.conf';
+        const ce = e === 'grub-install/dev/sda' || e === 'grub2-install/dev/sda';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ /etc/default/grub'}　` +
+            `② ${cb?'✅':'❌ /boot/grub/grub.cfg'}　` +
+            `③ ${cc?'✅':'❌ update-grub'}　` +
+            `④ ${cd?'✅':'❌ /boot/grub/menu.lst（または grub.conf）'}　` +
+            `⑤ ${ce?'✅':'❌ grub-install /dev/sda'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 選択問題</h3>
+    <p>
+      GRUB Legacy の設定ファイルで <code>(hd1,2)</code> と記述されている場合、
+      これが示す Linux のデバイス名として正しいものはどれですか？
+    </p>
+    <select id="q2">
+      <option value="">-- 選択してください --</option>
+      <option value="a">/dev/sda2</option>
+      <option value="b">/dev/sdb2</option>
+      <option value="c">/dev/sdb3</option>
+      <option value="d">/dev/sdc2</option>
+    </select>
+    <br>
+    <button class="btn btn-green" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const v = document.getElementById('q2').value;
+        const r = document.getElementById('q2-result');
+        if (v === 'c') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>GRUB Legacy のディスク表記（0始まり）：</strong><br>' +
+            '・<code>hd1</code> = 2番目のディスク = <code>/dev/sdb</code><br>' +
+            '・<code>,2</code> = 3番目のパーティション = <code>/dev/sdb3</code><br><br>' +
+            '<strong>対応表：</strong><br>' +
+            '・<code>(hd0,0)</code> = <code>/dev/sda1</code><br>' +
+            '・<code>(hd0,1)</code> = <code>/dev/sda2</code><br>' +
+            '・<code>(hd1,0)</code> = <code>/dev/sdb1</code><br>' +
+            '・<code>(hd1,2)</code> = <code>/dev/sdb3</code>';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            'GRUB Legacy では <strong>0始まり</strong> でディスク・パーティションを数えます。<br>' +
+            '・<code>hd1</code> = 2番目のディスク（/dev/sdb）<br>' +
+            '・<code>,2</code> = 3番目のパーティション（sdb3）<br>' +
+            'よって <code>(hd1,2)</code> = <code>/dev/sdb3</code> です。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① GRUB2 の <code>/boot/grub/grub.cfg</code> は直接編集せず、<code>update-grub</code> で自動生成する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② GRUB Legacy では <code>(hd0,0)</code> が1番目のディスクの1番目のパーティションを示す
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ GRUB2 では <code>(hd0,1)</code> が1番目のディスクの1番目のパーティションを示す
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ <code>GRUB_CMDLINE_LINUX_DEFAULT</code> に設定したパラメータは回復モードにも適用される
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ GRUB メニューで <code>e</code> キーを押すと起動パラメータを一時的に編集できる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ Live CD から起動して <code>chroot</code> することで、起動不能なシステムを修復できる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ GRUB2 のカスタムエントリは <code>/etc/grub.d/40_custom</code> に記述する
+    </label>
+    <br>
+    <button class="btn btn-green" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：①②③⑤⑥⑦（a,b,c,e,f,g）
+        // ④ GRUB_CMDLINE_LINUX_DEFAULT は通常起動のみ（回復モードには適用されない）
+        const correct = { a:true, b:true, c:true, d:false, e:true, f:true, g:true };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>①②③⑤⑥⑦<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・④ <code>GRUB_CMDLINE_LINUX_DEFAULT</code> は<strong>通常起動エントリのみ</strong>に適用されます。<br>' +
+            '&nbsp;&nbsp;回復モードを含むすべてのエントリに適用するには <code>GRUB_CMDLINE_LINUX</code> を使います。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. シナリオ問題</h3>
+    <p>
+      サーバーの起動時に画面が真っ黒になって先に進まない問題が発生しています。
+      グラフィックドライバの問題が疑われます。<br>
+      <strong>最初に試みるべき対処法</strong>として最も適切なものはどれですか？
+    </p>
+    <select id="q4">
+      <option value="">-- 選択してください --</option>
+      <option value="a">システムを再インストールする</option>
+      <option value="b">GRUB メニューで e キーを押し、linux 行に nomodeset を追加して起動する</option>
+      <option value="c">/etc/default/grub を直接編集して再起動する</option>
+      <option value="d">カーネルを再コンパイルする</option>
+    </select>
+    <br>
+    <button class="btn btn-green" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const v = document.getElementById('q4').value;
+        const r = document.getElementById('q4-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>手順：</strong><br>' +
+            '① 起動時に Shift/Esc を押して GRUB メニューを表示<br>' +
+            '② 起動エントリを選択して <code>e</code> キーを押す<br>' +
+            '③ <code>linux</code> 行の末尾に <code>nomodeset</code> を追加<br>' +
+            '④ <code>Ctrl+X</code> で起動<br><br>' +
+            'この変更は一時的です。起動できたら <code>/etc/default/grub</code> の<br>' +
+            '<code>GRUB_CMDLINE_LINUX_DEFAULT</code> に <code>nomodeset</code> を追加して<br>' +
+            '<code>sudo update-grub</code> で永続化します。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br><br>' +
+            'グラフィック問題の場合、まず GRUB メニューで <code>e</code> キーを押して<br>' +
+            '<code>linux</code> 行に <code>nomodeset</code> を追加して起動を試みます。<br>' +
+            'これは一時的な変更で、システムを再インストールする前に試みるべき最初のステップです。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-block">
+    <h3>Q5. 選択問題</h3>
+    <p>
+      GRUB2 で <code>/etc/default/grub</code> を編集した後、
+      設定を反映させるために実行するコマンドはどれですか？（Debian/Ubuntu 系）
+    </p>
+    <select id="q5">
+      <option value="">-- 選択してください --</option>
+      <option value="a">grub-install /dev/sda</option>
+      <option value="b">update-grub</option>
+      <option value="c">systemctl restart grub</option>
+      <option value="d">source /etc/default/grub</option>
+    </select>
+    <br>
+    <button class="btn btn-green" onclick="checkQ5()">答え合わせ</button>
+    <div class="result-msg" id="q5-result"></div>
+    <script>
+      function checkQ5() {
+        const v = document.getElementById('q5').value;
+        const r = document.getElementById('q5-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<code>update-grub</code> は <code>/etc/default/grub</code> と <code>/etc/grub.d/</code> の内容を元に<br>' +
+            '<code>/boot/grub/grub.cfg</code> を自動生成します。<br><br>' +
+            '<strong>ディストリビューション別の対応コマンド：</strong><br>' +
+            '・Debian/Ubuntu：<code>update-grub</code>（grub-mkconfig のラッパー）<br>' +
+            '・RHEL/CentOS（BIOS）：<code>grub2-mkconfig -o /boot/grub2/grub.cfg</code><br>' +
+            '・RHEL/CentOS（UEFI）：<code>grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg</code>';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            'Debian/Ubuntu 系で <code>/etc/default/grub</code> の変更を反映するには<br>' +
+            '<code>update-grub</code> を実行します。<br>' +
+            '<code>grub-install</code> はブートローダ自体をディスクにインストールするコマンドです。';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 「ブートローダ」の学習が完了したら記録しましょう！</p>
+  <button class="btn btn-done" onclick="markComplete()">✅ このセクションを完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch3', '66');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  if (parseInt(localStorage.getItem('lpic201_ch3') || '0') >= 66) {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="index.html">← システム起動プロセス</a>
+  <a class="home" href="../index.html">🏠 目次へ</a>
+  <a class="next" href="03_altboot.html">次へ：その他のブートローダ →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
