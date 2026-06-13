@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>バックアップ ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em; color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #276749; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #1a4731, #276749);
+      border-radius: 12px; padding: 32px 32px 24px;
+      margin-bottom: 32px; color: #fff;
+      box-shadow: 0 4px 18px rgba(39,103,73,0.35);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em; font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85; letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .chapter-header h1 { margin: 0 0 10px; font-size: 1.6em; color: #fff; border: none; padding: 0; }
+    .chapter-header p  { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px; padding: 3px 12px;
+      font-size: 0.76em; font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 { color: #1a4731; margin-top: 48px; border-left: 5px solid #276749; padding-left: 12px; }
+    h3 { color: #2c5282; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7; padding: 2px 6px;
+      border-radius: 4px; font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c; color: #e2e8f0;
+      padding: 18px 20px; border-radius: 8px;
+      overflow-x: auto; font-size: 0.88em;
+      line-height: 1.7; font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+    pre .err     { color: #fc8181; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #4a5568; color: #e2e8f0;
+      border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 0.75em;
+      cursor: pointer; font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s; z-index: 1;
+    }
+    .copy-btn:hover { background: #276749; }
+
+    /* ボックス */
+    .note {
+      background: #fff; border: 1px dashed #9ae6b4;
+      border-radius: 6px; padding: 14px 18px;
+      font-size: 0.93em; color: #4a5568; margin: 14px 0;
+    }
+    .note strong { color: #1a4731; }
+    .warn {
+      background: #fffaf0; border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #744210; margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4; border: 1px solid #68d391;
+      border-left: 5px solid #48bb78; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #276749; margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff; border: 1px solid #9ae6b4;
+      border-radius: 8px; padding: 20px 24px;
+      margin: 12px 0 28px; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff; border: 1px solid #9ae6b4;
+      border-radius: 10px; padding: 18px 22px;
+      margin-bottom: 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 { margin: 0 0 12px; font-size: 0.92em; color: #1a4731; border: none; padding: 0; }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #276749; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #1a4731; font-weight: bold; }
+
+    /* バックアップ種類カード */
+    .backup-type-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px; margin: 14px 0;
+    }
+    .backup-type-card {
+      border-radius: 8px; padding: 18px;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .backup-type-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+    .backup-type-card .bt-title {
+      font-weight: bold; font-size: 0.95em; margin-bottom: 8px;
+    }
+    .backup-type-card .bt-bar-row {
+      margin-bottom: 4px;
+    }
+    .backup-type-card .bt-bar-label {
+      font-size: 0.75em; color: #718096; margin-bottom: 2px;
+    }
+    .backup-type-card .bt-bar-bg {
+      background: rgba(0,0,0,0.12); border-radius: 4px; height: 8px; overflow: hidden;
+    }
+    .backup-type-card .bt-bar-fill {
+      height: 100%; border-radius: 4px;
+    }
+
+    /* バックアップデバイスグリッド */
+    .device-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px; margin: 14px 0;
+    }
+    .device-card {
+      background: #f0fff4; border: 1px solid #9ae6b4;
+      border-radius: 8px; padding: 14px 16px;
+      cursor: pointer; transition: transform 0.15s;
+    }
+    .device-card:hover { transform: translateY(-2px); }
+    .device-card .dc-icon { font-size: 1.6em; margin-bottom: 4px; }
+    .device-card .dc-name { font-weight: bold; font-size: 0.88em; color: #1a4731; margin-bottom: 4px; }
+    .device-card .dc-desc { font-size: 0.80em; color: #4a5568; line-height: 1.5; }
+
+    /* インタラクティブデモ */
+    .interactive-demo {
+      background: #f0fff4; border: 1px solid #9ae6b4;
+      border-radius: 8px; padding: 16px 20px; margin: 14px 0;
+    }
+    .slider-row {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em; font-weight: bold;
+      min-width: 180px; color: #1a4731;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row select {
+      border: 2px solid #9ae6b4; border-radius: 6px;
+      padding: 6px 10px; font-size: 0.88em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #2d3748; background: #fff;
+      cursor: pointer; flex: 1;
+    }
+    .slider-row select:focus { border-color: #276749; outline: none; }
+    .output-display {
+      background: #1a202c; color: #68d391;
+      border-radius: 6px; padding: 12px 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em; margin-top: 10px;
+      white-space: pre; overflow-x: auto; line-height: 1.7;
+    }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse; width: 100%;
+      background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0; font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #9ae6b4; padding: 10px 14px; text-align: left;
+    }
+    table.ref-table thead tr { background: #1a4731; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #f0fff4; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0; border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0; padding: 24px 28px; margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 18px 22px; margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 8px 12px; font-size: 0.95em;
+      width: 100%; max-width: 440px; margin: 6px 0;
+      outline: none; font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus { border-color: #f6ad55; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block; padding: 9px 20px;
+      border-radius: 6px; border: none; cursor: pointer;
+      font-size: 0.95em; font-weight: bold;
+      transition: opacity 0.2s; margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-green { background: #276749; color: #fff; }
+    .btn-done  { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px; padding: 10px 14px;
+      border-radius: 6px; font-weight: bold; display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #c6f6d5; color: #1a4731; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 48px;
+      padding-top: 20px; border-top: 2px solid #9ae6b4;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block; padding: 10px 20px;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.9em; transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #276749; color: #fff; }
+    .page-nav .home { background: #fff; color: #276749; border: 2px solid #276749; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4; border: 2px solid #48bb78;
+      border-radius: 10px; padding: 20px 24px;
+      margin-top: 40px; text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 2px solid #9ae6b4;
+      font-size: 0.82em; color: #a0aec0; text-align: center;
+    }
+    footer a { color: #276749; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .backup-type-grid { grid-template-columns: 1fr; }
+      .device-grid { grid-template-columns: repeat(2, 1fr); }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  <a href="index.html">第7章：システムメンテナンス</a> ›
+  バックアップ
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 07 › SECTION 02</div>
+  <h1>💾 バックアップ</h1>
+  <p>バックアップの種類（完全・差分・増分）の特徴と使い分け、
+  各種バックアップデバイス、tar・cpio・dd・dump・restore・mt コマンドによる
+  ローカル・ネットワーク経由のバックアップ手順を学びます。</p>
+  <div class="badge-row">
+    <span class="badge">tar</span>
+    <span class="badge">cpio</span>
+    <span class="badge">dd</span>
+    <span class="badge">dump</span>
+    <span class="badge">restore</span>
+    <span class="badge">mt</span>
+    <span class="badge">rsync</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第7章のセクション</h2>
+  <ol>
+    <li><a href="index.html">ソースからのソフトウェアインストール</a></li>
+    <li class="current"><a href="02_backup.html">バックアップ</a></li>
+    <li><a href="03_notify.html">システム管理者への通知</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：バックアップの種類 -->
+<!-- ============================================================ -->
+<h2 id="backup-types">① バックアップの種類</h2>
+
+<div class="note">
+  <strong>重要ポイント①：バックアップには完全・差分・増分の3種類がある。バックアップ時間・リストア時間・必要容量のトレードオフを理解することが重要</strong>
+</div>
+
+<div class="demo-box">
+  <h3>バックアップ種類の比較（クリックで詳細）</h3>
+  <div class="backup-type-grid">
+
+    <div class="backup-type-card" style="background:#ebf8ff; border:2px solid #90cdf4;"
+         onclick="showBackupType('full')">
+      <div class="bt-title" style="color:#2b4c7e;">🔵 完全バックアップ（フルバックアップ）</div>
+      <div class="bt-bar-row">
+        <div class="bt-bar-label">バックアップ時間</div>
+        <div class="bt-bar-bg"><div class="bt-bar-fill" style="width:95%; background:#fc8181;"></div></div>
+      </div>
+      <div class="bt-bar-row">
+        <div class="bt-bar-label">リストア時間</div>
+        <div class="bt-bar-bg"><div class="bt-bar-fill" style="width:30%; background:#68d391;"></div></div>
+      </div>
+      <div class="bt-bar-row">
+        <div class="bt-bar-label">必要容量</div>
+        <div class="bt-bar-bg"><div class="bt-bar-fill" style="width:95%; background:#f6ad55;"></div></div>
+      </div>
+    </div>
+
+    <div class="backup-type-card" style="background:#faf5ff; border:2px solid #b794f4;"
+         onclick="showBackupType('diff')">
+      <div class="bt-title" style="color:#553c9a;">🟣 差分バックアップ</div>
+      <div class="bt-bar-row">
+        <div class="bt-bar-label">バックアップ時間</div>
+        <div class="bt-bar-bg"><div class="bt-bar-fill" style="width:55%; background:#f6ad55;"></div></div>
+      </div>
+      <div class="bt-bar-row">
+        <div class="bt-bar-label">リストア時間</div>
+        <div class="bt-bar-bg"><div class="bt-bar-fill" style="width:50%; background:#68d391;"></div></div>
+      </div>
+      <div class="bt-bar-row">
+        <div class="bt-bar-label">必要容量</div>
+        <div class="bt-bar-bg"><div class="bt-bar-fill" style="width:55%; background:#f6ad55;"></div></div>
+      </div>
+    </div>
+
+    <div class="backup-type-card" style="background:#f0fff4; border:2px solid #68d391;"
+         onclick="showBackupType('incr')">
+      <div class="bt-title" style="color:#1a4731;">🟢 増分バックアップ</div>
+      <div class="bt-bar-row">
+        <div class="bt-bar-label">バックアップ時間</div>
+        <div class="bt-bar-bg"><div class="bt-bar-fill" style="width:20%; background:#68d391;"></div></div>
+      </div>
+      <div class="bt-bar-row">
+        <div class="bt-bar-label">リストア時間</div>
+        <div class="bt-bar-bg"><div class="bt-bar-fill" style="width:90%; background:#fc8181;"></div></div>
+      </div>
+      <div class="bt-bar-row">
+        <div class="bt-bar-label">必要容量</div>
+        <div class="bt-bar-bg"><div class="bt-bar-fill" style="width:20%; background:#68d391;"></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- バックアップ種類詳細 -->
+  <div id="backup-type-detail" style="display:none; margin-top:14px; background:#fff; border:1px solid #9ae6b4; border-left:5px solid #276749; border-radius:0 8px 8px 0; padding:16px 20px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const backupTypes = {
+      full: {
+        title: '🔵 完全バックアップ（フルバックアップ）',
+        color: '#2b4c7e',
+        body: `すべてのデータを毎回バックアップします。<br><br>
+          <strong>特徴：</strong><br>
+          ・<strong>バックアップ時間</strong>：最も長い（全データをコピー）<br>
+          ・<strong>リストア時間</strong>：最も短い（1つのバックアップから復元）<br>
+          ・<strong>必要容量</strong>：最も多い（毎回全データを保存）<br><br>
+          <strong>リストア手順：</strong><br>
+          完全バックアップ → 完了（1ステップ）<br><br>
+          <strong>dump レベル：</strong><code>dump -0</code>（レベル0 = 完全バックアップ）<br><br>
+          <strong>用途：</strong><br>
+          ・週次・月次バックアップの基準点<br>
+          ・差分・増分バックアップの起点`
+      },
+      diff: {
+        title: '🟣 差分バックアップ',
+        color: '#553c9a',
+        body: `前回の<strong>完全バックアップ以降</strong>に変更されたデータをバックアップします。<br><br>
+          <strong>特徴：</strong><br>
+          ・<strong>バックアップ時間</strong>：中程度（完全より短く、増分より長い）<br>
+          ・<strong>リストア時間</strong>：中程度（完全 + 最新の差分の2ステップ）<br>
+          ・<strong>必要容量</strong>：中程度（時間とともに増加）<br><br>
+          <strong>リストア手順：</strong><br>
+          ① 完全バックアップを復元<br>
+          ② 最新の差分バックアップを適用<br><br>
+          <strong>dump レベル：</strong><code>dump -1</code>（レベル1 = レベル0以降の変更）<br><br>
+          <strong>用途：</strong><br>
+          ・週次完全 + 日次差分の組み合わせが一般的`
+      },
+      incr: {
+        title: '🟢 増分バックアップ',
+        color: '#1a4731',
+        body: `前回の<strong>バックアップ（完全または増分）以降</strong>に変更されたデータをバックアップします。<br><br>
+          <strong>特徴：</strong><br>
+          ・<strong>バックアップ時間</strong>：最も短い（前回以降の変更のみ）<br>
+          ・<strong>リストア時間</strong>：最も長い（完全 + すべての増分を順番に適用）<br>
+          ・<strong>必要容量</strong>：最も少ない<br><br>
+          <strong>リストア手順：</strong><br>
+          ① 完全バックアップを復元<br>
+          ② 増分1を適用<br>
+          ③ 増分2を適用<br>
+          ④ ... すべての増分を順番に適用<br><br>
+          <strong>dump レベル：</strong><code>dump -1</code>〜<code>dump -9</code>（前のレベルより大きいレベル）<br><br>
+          <strong>用途：</strong><br>
+          ・毎日バックアップしたいが容量を節約したい場合`
+      }
+    };
+
+    function showBackupType(key) {
+      const d = backupTypes[key];
+      const el = document.getElementById('backup-type-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display='none'; el.dataset.current=''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-size:0.95em;">${d.title}</strong><br><br>${d.body}`;
+      el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+  </script>
+
+  <h3>バックアップ種類の比較表</h3>
+  <table class="ref-table">
+    <thead><tr><th>種類</th><th>対象データ</th><th>バックアップ時間</th><th>リストア時間</th><th>必要容量</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>完全</strong></td>
+        <td>すべてのデータ</td>
+        <td>長い</td>
+        <td>短い（1ステップ）</td>
+        <td>多い</td>
+      </tr>
+      <tr>
+        <td><strong>差分</strong></td>
+        <td>前回の完全以降の変更</td>
+        <td>中程度</td>
+        <td>中程度（完全+差分）</td>
+        <td>中程度</td>
+      </tr>
+      <tr>
+        <td><strong>増分</strong></td>
+        <td>前回のバックアップ以降の変更</td>
+        <td>短い</td>
+        <td>長い（完全+全増分）</td>
+        <td>少ない</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：バックアップデバイス -->
+<!-- ============================================================ -->
+<h2 id="backup-devices">② バックアップデバイス</h2>
+
+<div class="demo-box">
+  <h3>主なバックアップデバイス（クリックで詳細）</h3>
+  <div class="device-grid">
+
+    <div class="device-card" onclick="showDevice('cdr')">
+      <div class="dc-icon">💿</div>
+      <div class="dc-name">CD-R / CD-RW</div>
+      <div class="dc-desc">容量：700MB<br>CD-R：1回書き込み<br>CD-RW：書き換え可能</div>
+    </div>
+
+    <div class="device-card" onclick="showDevice('dvd')">
+      <div class="dc-icon">📀</div>
+      <div class="dc-name">DVD-R / DVD-RW</div>
+      <div class="dc-desc">容量：4.7GB（片面）<br>DVD-R：1回書き込み<br>DVD-RW：書き換え可能</div>
+    </div>
+
+    <div class="device-card" onclick="showDevice('bd')">
+      <div class="dc-icon">🔵</div>
+      <div class="dc-name">BD-R / BD-RE</div>
+      <div class="dc-desc">容量：25GB〜100GB<br>BD-R：1回書き込み<br>BD-RE：書き換え可能</div>
+    </div>
+
+    <div class="device-card" onclick="showDevice('tape')">
+      <div class="dc-icon">📼</div>
+      <div class="dc-name">磁気テープ</div>
+      <div class="dc-desc">容量：数TB〜数十TB<br>大容量・低コスト<br>シーケンシャルアクセス</div>
+    </div>
+
+    <div class="device-card" onclick="showDevice('hdd')">
+      <div class="dc-icon">🖴</div>
+      <div class="dc-name">リムーバブル HDD</div>
+      <div class="dc-desc">容量：数TB<br>高速・持ち運び可能<br>USB/eSATA 接続</div>
+    </div>
+
+    <div class="device-card" onclick="showDevice('network')">
+      <div class="dc-icon">🌐</div>
+      <div class="dc-name">ネットワーク</div>
+      <div class="dc-desc">NFS・rsync・SSH<br>リモートサーバー<br>クラウドストレージ</div>
+    </div>
+
+  </div>
+
+  <!-- デバイス詳細 -->
+  <div id="device-detail" style="display:none; margin-top:12px; background:#fff; border:1px solid #9ae6b4; border-left:5px solid #276749; border-radius:0 8px 8px 0; padding:14px 18px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const deviceData = {
+      cdr: {
+        title: '💿 CD-R / CD-RW',
+        color: '#2b4c7e',
+        body: `<strong>CD-R（Compact Disc Recordable）：</strong><br>
+          ・容量：700MB（80分）<br>
+          ・1回のみ書き込み可能（追記は可能）<br>
+          ・長期保存に適している<br><br>
+          <strong>CD-RW（Compact Disc ReWritable）：</strong><br>
+          ・容量：700MB<br>
+          ・約1,000回の書き換えが可能<br>
+          ・繰り返しバックアップに使用可能<br><br>
+          <strong>Linux でのデバイスファイル：</strong><code>/dev/sr0</code>（光学ドライブ）<br>
+          <strong>書き込みコマンド：</strong><code>cdrecord</code> / <code>wodim</code>`
+      },
+      dvd: {
+        title: '📀 DVD-R / DVD-RW',
+        color: '#553c9a',
+        body: `<strong>DVD-R（Digital Versatile Disc Recordable）：</strong><br>
+          ・容量：4.7GB（片面1層）/ 8.5GB（片面2層）<br>
+          ・1回のみ書き込み可能<br><br>
+          <strong>DVD-RW（DVD ReWritable）：</strong><br>
+          ・容量：4.7GB<br>
+          ・約1,000回の書き換えが可能<br><br>
+          <strong>DVD+R / DVD+RW：</strong><br>
+          ・DVD-R/RW と互換性があるが別規格<br><br>
+          <strong>書き込みコマンド：</strong><code>growisofs</code> / <code>dvd+rw-tools</code>`
+      },
+      bd: {
+        title: '🔵 BD-R / BD-RE（Blu-ray Disc）',
+        color: '#1a4731',
+        body: `<strong>BD-R（Blu-ray Disc Recordable）：</strong><br>
+          ・容量：25GB（1層）/ 50GB（2層）/ 100GB（3層）<br>
+          ・1回のみ書き込み可能<br><br>
+          <strong>BD-RE（Blu-ray Disc Rewritable）：</strong><br>
+          ・容量：25GB〜100GB<br>
+          ・書き換え可能<br><br>
+          <strong>用途：</strong><br>
+          ・大容量データのアーカイブ<br>
+          ・長期保存（50年以上の保存が可能とされる）`
+      },
+      tape: {
+        title: '📼 磁気テープ',
+        color: '#744210',
+        body: `大容量・低コストの長期保存メディアです。企業の大規模バックアップに広く使用されています。<br><br>
+          <strong>主な規格：</strong><br>
+          ・LTO（Linear Tape-Open）：最も一般的。LTO-9 で 18TB（非圧縮）<br>
+          ・DDS/DAT：小規模向け（現在はほぼ廃止）<br><br>
+          <strong>特徴：</strong><br>
+          ・シーケンシャルアクセス（ランダムアクセスは遅い）<br>
+          ・大容量・低コスト（HDD より安価）<br>
+          ・長期保存に適している（30年以上）<br><br>
+          <strong>Linux でのデバイスファイル：</strong><br>
+          ・<code>/dev/st0</code>：巻き戻しあり<br>
+          ・<code>/dev/nst0</code>：巻き戻しなし（Non-rewind）<br><br>
+          <strong>管理コマンド：</strong><code>mt</code>（磁気テープ操作）`
+      },
+      hdd: {
+        title: '🖴 リムーバブルハードディスクドライブ',
+        color: '#9b2335',
+        body: `取り外し可能な外付け HDD/SSD です。<br><br>
+          <strong>特徴：</strong><br>
+          ・大容量（数TB）で高速なランダムアクセス<br>
+          ・USB 3.0/3.1・eSATA で接続<br>
+          ・持ち運びが容易（オフサイトバックアップに適している）<br><br>
+          <strong>用途：</strong><br>
+          ・日次・週次バックアップ<br>
+          ・オフサイトバックアップ（災害対策）<br>
+          ・システムのクローン作成`
+      },
+      network: {
+        title: '🌐 ネットワーク経由のバックアップ',
+        color: '#2b4c7e',
+        body: `ネットワーク経由でリモートサーバーにバックアップします。<br><br>
+          <strong>主な方法：</strong><br>
+          ・<strong>rsync</strong>：差分同期・SSH 経由で安全に転送<br>
+          ・<strong>tar + SSH</strong>：<code>tar czf - /data | ssh server "cat > backup.tar.gz"</code><br>
+          ・<strong>NFS</strong>：NFS マウントしてローカルと同様にバックアップ<br>
+          ・<strong>Amanda</strong>：ネットワークバックアップソフトウェア<br>
+          ・<strong>Bacula</strong>：エンタープライズ向けバックアップ<br>
+          ・<strong>クラウド</strong>：AWS S3・Google Cloud Storage など`
+      }
+    };
+
+    function showDevice(key) {
+      const d = deviceData[key];
+      const el = document.getElementById('device-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display='none'; el.dataset.current=''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-size:0.95em;">${d.title}</strong><br><br>${d.body}`;
+      el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：ローカルでのバックアップ -->
+<!-- ============================================================ -->
+<h2 id="local-backup">③ ローカルでのバックアップ</h2>
+
+<div class="demo-box">
+  <h3>バックアップコマンドの選択（インタラクティブ）</h3>
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#1a4731; margin:0 0 12px;">
+      コマンドを選択して使い方を確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>コマンド</label>
+      <select id="backup-cmd-sel" onchange="showBackupCmd()">
+        <option value="">-- 選択してください --</option>
+        <option value="tar">tar（アーカイブ作成）</option>
+        <option value="cpio">cpio（ファイルアーカイブ）</option>
+        <option value="dd">dd（ディスクイメージ）</option>
+        <option value="dump">dump（ext2/3/4 バックアップ）</option>
+        <option value="restore">restore（dump からのリストア）</option>
+        <option value="mt">mt（磁気テープ操作）</option>
+      </select>
+    </div>
+    <div class="output-display" id="backup-cmd-output" style="display:none;"></div>
+  </div>
+
+  <script>
+    const backupCmds = {
+      tar: {
+        color: '#68d391',
+        text:
+`# tar コマンドによるバックアップ
+
+# 基本的なアーカイブ作成
+$ tar czf backup.tar.gz /home/user/
+
+# 詳細表示付き
+$ tar czvf backup.tar.gz /home/user/
+
+# 増分バックアップ（--newer-mtime で変更日時を指定）
+$ tar czf backup-incr.tar.gz --newer-mtime="2026-01-01" /home/user/
+
+# スナップショットファイルを使った増分バックアップ
+$ tar czf backup-full.tar.gz -g /var/backup/snapshot.snar /home/
+$ tar czf backup-incr1.tar.gz -g /var/backup/snapshot.snar /home/
+
+# 特定ファイルを除外（--exclude）
+$ tar czf backup.tar.gz --exclude="*.log" --exclude="/tmp" /home/
+
+# 磁気テープにバックアップ
+$ tar czf /dev/st0 /home/user/
+$ tar czf /dev/nst0 /home/user/  # 巻き戻しなし
+
+# アーカイブの内容確認
+$ tar tzf backup.tar.gz
+
+# リストア（展開）
+$ tar xzf backup.tar.gz -C /restore/
+$ tar xzf backup.tar.gz -C / home/user/specific_file  # 特定ファイルのみ`
+      },
+      cpio: {
+        color: '#90cdf4',
+        text:
+`# cpio コマンドによるバックアップ
+
+# find と組み合わせてアーカイブを作成（-o = output）
+$ find /home/user -print | cpio -ov > backup.cpio
+
+# gzip 圧縮して保存
+$ find /home/user -print | cpio -ov | gzip > backup.cpio.gz
+
+# 磁気テープにバックアップ
+$ find /home/user -print | cpio -ov > /dev/st0
+
+# アーカイブの内容確認（-t = table of contents）
+$ cpio -tv < backup.cpio
+
+# リストア（-i = input）
+$ cpio -iv < backup.cpio
+$ gunzip -c backup.cpio.gz | cpio -iv
+
+# 特定ディレクトリにリストア（-D）
+$ cpio -iv -D /restore/ < backup.cpio
+
+# cpio の主なオプション
+# -o : アーカイブを作成（output）
+# -i : アーカイブから展開（input）
+# -p : ファイルをコピー（pass-through）
+# -v : 詳細表示
+# -d : 必要なディレクトリを作成
+# -u : 既存ファイルを上書き`
+      },
+      dd: {
+        color: '#b794f4',
+        text:
+`# dd コマンドによるディスクイメージのバックアップ
+
+# ディスク全体をイメージファイルにバックアップ
+$ sudo dd if=/dev/sda of=/backup/sda.img bs=4M status=progress
+
+# 圧縮しながらバックアップ
+$ sudo dd if=/dev/sda bs=4M | gzip > /backup/sda.img.gz
+
+# ネットワーク経由でバックアップ（SSH）
+$ sudo dd if=/dev/sda bs=4M | ssh backup-server "dd of=/backup/sda.img"
+
+# イメージからリストア
+$ sudo dd if=/backup/sda.img of=/dev/sda bs=4M status=progress
+
+# 圧縮イメージからリストア
+$ gunzip -c /backup/sda.img.gz | sudo dd of=/dev/sda bs=4M
+
+# パーティションのバックアップ
+$ sudo dd if=/dev/sda1 of=/backup/sda1.img bs=4M
+
+# MBR のバックアップ（先頭 512 バイト）
+$ sudo dd if=/dev/sda of=/backup/mbr.img bs=512 count=1
+
+# dd の主なオプション
+# if=  : 入力ファイル（input file）
+# of=  : 出力ファイル（output file）
+# bs=  : ブロックサイズ
+# count= : コピーするブロック数
+# status=progress : 進捗を表示`
+      },
+      dump: {
+        color: '#f6ad55',
+        text:
+`# dump コマンドによる ext2/3/4 バックアップ
+
+# インストール
+$ sudo apt install dump
+
+# レベル0（完全バックアップ）
+$ sudo dump -0uf /backup/home.dump /home
+# -0 : バックアップレベル（0=完全）
+# -u : /etc/dumpdates を更新
+# -f : バックアップ先ファイル
+
+# レベル1（差分バックアップ：レベル0以降の変更）
+$ sudo dump -1uf /backup/home-diff.dump /home
+
+# 増分バックアップ（レベル2：レベル1以降の変更）
+$ sudo dump -2uf /backup/home-incr.dump /home
+
+# 磁気テープにバックアップ
+$ sudo dump -0uf /dev/st0 /home
+
+# バックアップ履歴の確認
+$ cat /etc/dumpdates
+/dev/sda2 0 Mon Jan  1 10:00:00 2026 +0900
+/dev/sda2 1 Tue Jan  2 10:00:00 2026 +0900
+
+# dump の主なオプション
+# -N  : ドライラン（実際には実行しない）
+# -W  : バックアップが必要なファイルシステムを表示
+# -w  : バックアップが必要なファイルシステムを簡潔に表示`
+      },
+      restore: {
+        color: '#fbd38d',
+        text:
+`# restore コマンドによる dump からのリストア
+
+# 対話式リストア（-i = interactive）
+$ sudo restore -if /backup/home.dump
+restore > ls          # ファイル一覧
+restore > add /home   # リストア対象に追加
+restore > extract     # 実際にリストア
+restore > quit        # 終了
+
+# 完全リストア（-r = restore）
+$ cd /mnt/restore/
+$ sudo restore -rf /backup/home.dump
+
+# 特定ファイルのリストア（-x = extract）
+$ sudo restore -xf /backup/home.dump ./home/user/important.txt
+
+# アーカイブの内容確認（-t = table of contents）
+$ sudo restore -tf /backup/home.dump
+
+# 磁気テープからリストア
+$ sudo restore -rf /dev/st0
+
+# restore の主なオプション
+# -i : 対話式モード
+# -r : 完全リストア
+# -x : 特定ファイルを抽出
+# -t : 内容一覧を表示
+# -f : バックアップファイルを指定`
+      },
+      mt: {
+        color: '#fc8181',
+        text:
+`# mt コマンドによる磁気テープの操作
+
+# テープの状態確認
+$ mt -f /dev/st0 status
+
+# テープを巻き戻す（rewind）
+$ mt -f /dev/st0 rewind
+
+# テープを取り出す（eject）
+$ mt -f /dev/st0 eject
+
+# テープの末尾に移動（eom = end of media）
+$ mt -f /dev/st0 eom
+
+# 次のファイルマークに移動（fsf = forward space file）
+$ mt -f /dev/st0 fsf 1   # 1ファイル分進む
+$ mt -f /dev/st0 fsf 3   # 3ファイル分進む
+
+# 前のファイルマークに移動（bsf = backward space file）
+$ mt -f /dev/st0 bsf 1
+
+# テープを消去（erase）
+$ mt -f /dev/st0 erase
+
+# デバイスファイルの違い
+# /dev/st0  : 操作後に自動巻き戻し
+# /dev/nst0 : 操作後に巻き戻しなし（Non-rewind）
+#             複数のバックアップを1本のテープに書く場合に使用`
+      }
+    };
+
+    function showBackupCmd() {
+      const key = document.getElementById('backup-cmd-sel').value;
+      const el  = document.getElementById('backup-cmd-output');
+      if (!key) { el.style.display='none'; return; }
+      const d = backupCmds[key];
+      el.style.display = 'block';
+      el.style.color   = d.color;
+      el.textContent   = d.text;
+    }
+  </script>
+
+  <h3>バックアップコマンドの比較</h3>
+  <table class="ref-table">
+    <thead><tr><th>コマンド</th><th>主な用途</th><th>対象</th><th>特徴</th></tr></thead>
+    <tbody>
+      <tr><td><code>tar</code></td><td>ファイル・ディレクトリのアーカイブ</td><td>ファイルシステム</td><td>最も汎用的・圧縮対応</td></tr>
+      <tr><td><code>cpio</code></td><td>ファイルアーカイブ</td><td>ファイルシステム</td><td>find と組み合わせて使用</td></tr>
+      <tr><td><code>dd</code></td><td>ディスク・パーティションのイメージ</td><td>ブロックデバイス</td><td>ビット単位のコピー</td></tr>
+      <tr><td><code>dump</code></td><td>ext2/3/4 の増分バックアップ</td><td>ext2/3/4 FS</td><td>レベル指定で増分対応</td></tr>
+      <tr><td><code>restore</code></td><td>dump からのリストア</td><td>dump アーカイブ</td><td>対話式・完全・部分リストア</td></tr>
+      <tr><td><code>mt</code></td><td>磁気テープの操作</td><td>磁気テープ</td><td>テープの巻き戻し・位置移動</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 4：ネットワーク経由でのバックアップ -->
+<!-- ============================================================ -->
+<h2 id="network-backup">④ ネットワーク経由でのバックアップ</h2>
+
+<div class="demo-box">
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment">## rsync によるネットワークバックアップ（最も一般的）</span>
+
+<span class="comment"># ローカルからリモートへのバックアップ</span>
+$ <span class="cmd">rsync</span> <span class="opt">-avz</span> /home/user/ backup-server:/backup/home/
+<span class="comment"># -a : アーカイブモード（-rlptgoD の組み合わせ）</span>
+<span class="comment"># -v : 詳細表示</span>
+<span class="comment"># -z : 転送時に圧縮</span>
+
+<span class="comment"># SSH 経由で安全にバックアップ（-e ssh）</span>
+$ <span class="cmd">rsync</span> <span class="opt">-avz</span> <span class="opt">-e</span> <span class="val">ssh</span> /home/user/ user@backup-server:/backup/home/
+
+<span class="comment"># 削除されたファイルも同期（--delete）</span>
+$ <span class="cmd">rsync</span> <span class="opt">-avz</span> <span class="opt">--delete</span> /home/user/ backup-server:/backup/home/
+
+<span class="comment"># 特定ファイルを除外（--exclude）</span>
+$ <span class="cmd">rsync</span> <span class="opt">-avz</span> <span class="opt">--exclude</span>=<span class="val">"*.log"</span> <span class="opt">--exclude</span>=<span class="val">".cache"</span> /home/ backup-server:/backup/
+
+<span class="comment"># ドライラン（実際には実行しない）</span>
+$ <span class="cmd">rsync</span> <span class="opt">-avzn</span> /home/user/ backup-server:/backup/home/
+
+<span class="comment"># リモートからローカルへのリストア</span>
+$ <span class="cmd">rsync</span> <span class="opt">-avz</span> backup-server:/backup/home/ /home/user/
+
+<span class="comment">## tar + SSH によるバックアップ</span>
+
+<span class="comment"># ローカルで tar して SSH 経由で転送</span>
+$ <span class="cmd">tar</span> <span class="opt">czf</span> <span class="opt">-</span> /home/user/ | <span class="cmd">ssh</span> backup-server <span class="val">"cat > /backup/home.tar.gz"</span>
+
+<span class="comment"># SSH 経由でリモートから取得</span>
+$ <span class="cmd">ssh</span> backup-server <span class="val">"tar czf - /home/user/"</span> | <span class="cmd">tar</span> <span class="opt">xzf</span> <span class="opt">-</span> <span class="opt">-C</span> /restore/
+
+<span class="comment">## dump + rmt によるリモートテープバックアップ</span>
+
+<span class="comment"># リモートの磁気テープにバックアップ（rmt プロトコル）</span>
+$ <span class="cmd">sudo dump</span> <span class="opt">-0uf</span> backup-server:/dev/st0 /home
+
+<span class="comment">## cron による定期バックアップの設定</span>
+$ <span class="cmd">crontab</span> <span class="opt">-e</span>
+<span class="comment"># 毎日深夜2時に rsync でバックアップ</span>
+<span class="out">0 2 * * * rsync -avz --delete /home/ backup-server:/backup/home/ >> /var/log/backup.log 2>&1</span>
+<span class="comment"># 毎週日曜日に完全バックアップ</span>
+<span class="out">0 1 * * 0 tar czf /backup/full-$(date +%Y%m%d).tar.gz /home/ >> /var/log/backup.log 2>&1</span>
+</pre>
+  </div>
+
+  <h3>rsync の主要オプション</h3>
+  <table class="ref-table">
+    <thead><tr><th>オプション</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td><code>-a</code></td><td>アーカイブモード（-rlptgoD）：再帰・シンボリックリンク・パーミッション・タイムスタンプ・所有者を保持</td></tr>
+      <tr><td><code>-v</code></td><td>詳細表示（verbose）</td></tr>
+      <tr><td><code>-z</code></td><td>転送時に圧縮</td></tr>
+      <tr><td><code>-n</code></td><td>ドライラン（実際には実行しない）</td></tr>
+      <tr><td><code>--delete</code></td><td>送信元にないファイルを送信先から削除（完全同期）</td></tr>
+      <tr><td><code>--exclude=パターン</code></td><td>指定パターンのファイルを除外</td></tr>
+      <tr><td><code>-e ssh</code></td><td>SSH 経由で転送</td></tr>
+      <tr><td><code>--progress</code></td><td>転送の進捗を表示</td></tr>
+      <tr><td><code>-P</code></td><td><code>--progress --partial</code> の組み合わせ（中断後の再開）</td></tr>
+      <tr><td><code>--link-dest=ディレクトリ</code></td><td>ハードリンクを使った増分バックアップ</td></tr>
+    </tbody>
+  </table>
+
+  <div class="good">
+    ✅ <strong>rsync によるハードリンク増分バックアップ</strong><br>
+    <code>--link-dest</code> オプションを使うと、変更のないファイルはハードリンクで参照するため、
+    容量を節約しながら完全バックアップのように見える増分バックアップが実現できます。<br>
+    <code>rsync -avz --link-dest=/backup/prev /home/ /backup/$(date +%Y%m%d)/</code>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- まとめ表 -->
+<!-- ============================================================ -->
+<h2>📌 まとめ一覧</h2>
+<div class="demo-box">
+  <table class="ref-table">
+    <thead><tr><th>カテゴリ</th><th>コマンド / 概念</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td colspan="3" style="background:#c6f6d5; color:#1a4731; font-weight:bold; font-size:0.88em;">▼ バックアップの種類</td></tr>
+      <tr><td>完全バックアップ</td><td>dump -0 / tar（全体）</td><td>すべてのデータをバックアップ。リストアが最も簡単</td></tr>
+      <tr><td>差分バックアップ</td><td>dump -1（完全以降）</td><td>前回の完全バックアップ以降の変更のみ</td></tr>
+      <tr><td>増分バックアップ</td><td>dump -2〜-9</td><td>前回のバックアップ以降の変更のみ。容量が最小</td></tr>
+      <tr><td colspan="3" style="background:#c6f6d5; color:#1a4731; font-weight:bold; font-size:0.88em;">▼ ローカルバックアップコマンド</td></tr>
+      <tr><td>tar アーカイブ作成</td><td><code>tar czf backup.tar.gz /home/</code></td><td>ファイル・ディレクトリをアーカイブ</td></tr>
+      <tr><td>cpio バックアップ</td><td><code>find /home -print | cpio -ov > backup.cpio</code></td><td>find と組み合わせてアーカイブ</td></tr>
+      <tr><td>dd ディスクイメージ</td><td><code>dd if=/dev/sda of=sda.img bs=4M</code></td><td>ディスク全体をイメージとしてコピー</td></tr>
+      <tr><td>dump 完全バックアップ</td><td><code>dump -0uf /backup/home.dump /home</code></td><td>ext2/3/4 の完全バックアップ</td></tr>
+      <tr><td>restore リストア</td><td><code>restore -rf /backup/home.dump</code></td><td>dump アーカイブからリストア</td></tr>
+      <tr><td colspan="3" style="background:#c6f6d5; color:#1a4731; font-weight:bold; font-size:0.88em;">▼ 磁気テープ操作（mt）</td></tr>
+      <tr><td>テープ巻き戻し</td><td><code>mt -f /dev/st0 rewind</code></td><td>テープを先頭に巻き戻す</td></tr>
+      <tr><td>テープ取り出し</td><td><code>mt -f /dev/st0 eject</code></td><td>テープを取り出す</td></tr>
+      <tr><td>ファイル位置移動</td><td><code>mt -f /dev/st0 fsf 1</code></td><td>次のファイルマークに移動</td></tr>
+      <tr><td colspan="3" style="background:#c6f6d5; color:#1a4731; font-weight:bold; font-size:0.88em;">▼ ネットワークバックアップ</td></tr>
+      <tr><td>rsync バックアップ</td><td><code>rsync -avz /home/ server:/backup/</code></td><td>差分同期によるバックアップ</td></tr>
+      <tr><td>rsync + SSH</td><td><code>rsync -avz -e ssh /home/ user@server:/backup/</code></td><td>SSH 経由の安全なバックアップ</td></tr>
+      <tr><td>tar + SSH</td><td><code>tar czf - /home/ | ssh server "cat > backup.tar.gz"</code></td><td>SSH 経由でリモートに転送</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 穴埋め問題</h3>
+    <p>以下の説明に合うコマンドを入力してください。</p>
+    <label>① /home を完全バックアップして /backup/home.dump に保存するコマンド（dump を使用）：</label>
+    <input type="text" id="q1a" placeholder="dump -Xuf /backup/home.dump /home">
+    <label>② 磁気テープ（/dev/st0）を先頭に巻き戻すコマンド：</label>
+    <input type="text" id="q1b" placeholder="mt -f /dev/st0 xxx">
+    <label>③ /home を SSH 経由で backup-server の /backup/ に rsync するコマンド（基本形）：</label>
+    <input type="text" id="q1c" placeholder="rsync -avz -e ssh /home/ ...">
+    <label>④ /dev/sda のディスクイメージを /backup/sda.img に作成するコマンド：</label>
+    <input type="text" id="q1d" placeholder="dd if=/dev/sda of=...">
+    <label>⑤ dump アーカイブから対話式でリストアするコマンド（/backup/home.dump から）：</label>
+    <input type="text" id="q1e" placeholder="restore -Xf /backup/home.dump">
+    <br>
+    <button class="btn btn-green" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const a = document.getElementById('q1a').value.trim().toLowerCase().replace(/\s+/g,'');
+        const b = document.getElementById('q1b').value.trim().toLowerCase().replace(/\s+/g,'');
+        const c = document.getElementById('q1c').value.trim().toLowerCase().replace(/\s+/g,'');
+        const d = document.getElementById('q1d').value.trim().toLowerCase().replace(/\s+/g,'');
+        const e = document.getElementById('q1e').value.trim().toLowerCase().replace(/\s+/g,'');
+        const r = document.getElementById('q1-result');
+        const ca = a === 'dump-0uf/backup/home.dump/home';
+        const cb = b === 'mt-f/dev/st0rewind';
+        const cc = c === 'rsync-avz-essh/home/user@backup-server:/backup/' ||
+                   c === 'rsync-avz-essh/home/backup-server:/backup/';
+        const cd = d === 'ddif=/dev/sdaof=/backup/sda.imgbs=4m' ||
+                   d === 'ddif=/dev/sdaof=/backup/sda.img';
+        const ce = e === 'restore-if/backup/home.dump';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ dump -0uf /backup/home.dump /home'}　` +
+            `② ${cb?'✅':'❌ mt -f /dev/st0 rewind'}　` +
+            `③ ${cc?'✅':'❌ rsync -avz -e ssh /home/ user@backup-server:/backup/'}　` +
+            `④ ${cd?'✅':'❌ dd if=/dev/sda of=/backup/sda.img bs=4M'}　` +
+            `⑤ ${ce?'✅':'❌ restore -if /backup/home.dump'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 選択問題</h3>
+    <p>
+      差分バックアップとして正しい説明はどれですか？
+    </p>
+    <select id="q2">
+      <option value="">-- 選択してください --</option>
+      <option value="a">前回の増分バックアップ以降に変更されたデータをバックアップする</option>
+      <option value="b">前回の完全バックアップ以降に変更されたデータをバックアップする</option>
+      <option value="c">すべてのデータを毎回バックアップする</option>
+      <option value="d">前回のバックアップ（完全または差分）以降に変更されたデータをバックアップする</option>
+    </select>
+    <br>
+    <button class="btn btn-green" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const v = document.getElementById('q2').value;
+        const r = document.getElementById('q2-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>バックアップ種類の違い：</strong><br>' +
+            '・<strong>完全</strong>：すべてのデータ<br>' +
+            '・<strong>差分</strong>：前回の<strong>完全</strong>バックアップ以降の変更<br>' +
+            '・<strong>増分</strong>：前回の<strong>バックアップ（完全または増分）</strong>以降の変更<br><br>' +
+            '差分はリストアが「完全 + 最新の差分」の2ステップで済みます。<br>' +
+            '増分は「完全 + すべての増分」を順番に適用する必要があります。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '差分バックアップは<strong>前回の完全バックアップ以降</strong>に変更されたデータをバックアップします。<br>' +
+            '（選択肢 D は増分バックアップの説明です）';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① <code>dump -0</code> は完全バックアップ（レベル0）を実行する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② <code>/dev/nst0</code> は操作後に自動巻き戻しを行う磁気テープデバイスである
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ <code>rsync --delete</code> オプションは送信元にないファイルを送信先からも削除する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ <code>dd</code> コマンドはファイル単位ではなくビット単位でディスクをコピーする
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ 増分バックアップはリストアに最も時間がかかる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ <code>cpio</code> コマンドは通常 <code>find</code> コマンドと組み合わせて使用する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ <code>mt -f /dev/st0 fsf 1</code> はテープを1ファイル分前方に移動する
+    </label>
+    <br>
+    <button class="btn btn-green" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：①③④⑤⑥⑦（a,c,d,e,f,g）
+        // ② /dev/nst0 は巻き戻しなし（Non-rewind）。自動巻き戻しは /dev/st0
+        const correct = { a:true, b:false, c:true, d:true, e:true, f:true, g:true };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>①③④⑤⑥⑦<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・② <code>/dev/nst0</code> は<strong>巻き戻しなし（Non-rewind）</strong>のデバイスです。<br>' +
+            '&nbsp;&nbsp;操作後に自動巻き戻しを行うのは <code>/dev/st0</code> です。<br>' +
+            '&nbsp;&nbsp;複数のバックアップを1本のテープに書く場合は <code>/dev/nst0</code> を使います。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. シナリオ問題</h3>
+    <p>
+      毎週日曜日に完全バックアップ、月〜土曜日に増分バックアップを行う運用で、
+      水曜日のデータをリストアする場合の正しい手順はどれですか？
+    </p>
+    <select id="q4">
+      <option value="">-- 選択してください --</option>
+      <option value="a">水曜日の増分バックアップのみを適用する</option>
+      <option value="b">日曜日の完全バックアップを復元してから、水曜日の増分バックアップのみを適用する</option>
+      <option value="c">日曜日の完全バックアップを復元してから、月・火・水の増分バックアップを順番に適用する</option>
+      <option value="d">日曜日の完全バックアップのみを復元する</option>
+    </select>
+    <br>
+    <button class="btn btn-green" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const v = document.getElementById('q4').value;
+        const r = document.getElementById('q4-result');
+        if (v === 'c') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>増分バックアップのリストア手順：</strong><br>' +
+            '① 日曜日の完全バックアップを復元（ベースライン）<br>' +
+            '② 月曜日の増分バックアップを適用<br>' +
+            '③ 火曜日の増分バックアップを適用<br>' +
+            '④ 水曜日の増分バックアップを適用<br><br>' +
+            '<strong>増分バックアップの特徴：</strong><br>' +
+            '各増分は「前回のバックアップ以降の変更」のみを含むため、<br>' +
+            '完全バックアップから順番にすべての増分を適用する必要があります。<br>' +
+            'これが増分バックアップのリストアが最も複雑な理由です。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br><br>' +
+            '増分バックアップのリストアでは、<br>' +
+            '<strong>完全バックアップ → 月曜増分 → 火曜増分 → 水曜増分</strong><br>' +
+            'の順番ですべてを適用する必要があります。<br>' +
+            '各増分は「前回のバックアップ以降の変更」のみを含むため、<br>' +
+            '途中の増分を飛ばすことはできません。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-block">
+    <h3>Q5. 選択問題</h3>
+    <p>
+      <code>rsync -avz --delete /home/ backup-server:/backup/home/</code> コマンドの
+      <code>--delete</code> オプションの説明として正しいものはどれですか？
+    </p>
+    <select id="q5">
+      <option value="">-- 選択してください --</option>
+      <option value="a">バックアップ先のファイルをすべて削除してから転送する</option>
+      <option value="b">送信元（/home/）に存在しないファイルをバックアップ先からも削除する</option>
+      <option value="c">転送後に送信元のファイルを削除する</option>
+      <option value="d">バックアップ先の古いバックアップファイルを自動的に削除する</option>
+    </select>
+    <br>
+    <button class="btn btn-green" onclick="checkQ5()">答え合わせ</button>
+    <div class="result-msg" id="q5-result"></div>
+    <script>
+      function checkQ5() {
+        const v = document.getElementById('q5').value;
+        const r = document.getElementById('q5-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<code>rsync --delete</code> は送信元に存在しないファイルを<br>' +
+            'バックアップ先からも削除します（完全な同期を実現）。<br><br>' +
+            '<strong>例：</strong><br>' +
+            '送信元で <code>old_file.txt</code> を削除した場合、<br>' +
+            '<code>--delete</code> なし：バックアップ先に <code>old_file.txt</code> が残る<br>' +
+            '<code>--delete</code> あり：バックアップ先からも <code>old_file.txt</code> が削除される<br><br>' +
+            '<strong>注意：</strong>誤って重要なファイルを削除した場合、バックアップからも消えてしまうため慎重に使用すること。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '<code>rsync --delete</code> は<strong>送信元に存在しないファイルをバックアップ先からも削除</strong>します。<br>' +
+            'これにより送信元とバックアップ先が完全に同期された状態になります。';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 「バックアップ」の学習が完了したら記録しましょう！</p>
+  <button class="btn btn-done" onclick="markComplete()">✅ このセクションを完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch7', '66');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  if (parseInt(localStorage.getItem('lpic201_ch7') || '0') >= 66) {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="index.html">← ソースからのソフトウェアインストール</a>
+  <a class="home" href="../index.html">🏠 目次へ</a>
+  <a class="next" href="03_notify.html">次へ：システム管理者への通知 →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
