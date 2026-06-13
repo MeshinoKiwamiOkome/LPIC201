@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>高度なネットワークの設定と問題解決 ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em; color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #553c9a; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #322659, #553c9a);
+      border-radius: 12px; padding: 32px 32px 24px;
+      margin-bottom: 32px; color: #fff;
+      box-shadow: 0 4px 18px rgba(85,60,154,0.35);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em; font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85; letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .chapter-header h1 { margin: 0 0 10px; font-size: 1.6em; color: #fff; border: none; padding: 0; }
+    .chapter-header p  { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px; padding: 3px 12px;
+      font-size: 0.76em; font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 { color: #322659; margin-top: 48px; border-left: 5px solid #553c9a; padding-left: 12px; }
+    h3 { color: #276749; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7; padding: 2px 6px;
+      border-radius: 4px; font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c; color: #e2e8f0;
+      padding: 18px 20px; border-radius: 8px;
+      overflow-x: auto; font-size: 0.88em;
+      line-height: 1.7; font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+    pre .err     { color: #fc8181; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #4a5568; color: #e2e8f0;
+      border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 0.75em;
+      cursor: pointer; font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s; z-index: 1;
+    }
+    .copy-btn:hover { background: #553c9a; }
+
+    /* ボックス */
+    .note {
+      background: #fff; border: 1px dashed #b794f4;
+      border-radius: 6px; padding: 14px 18px;
+      font-size: 0.93em; color: #4a5568; margin: 14px 0;
+    }
+    .note strong { color: #322659; }
+    .warn {
+      background: #fffaf0; border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #744210; margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4; border: 1px solid #68d391;
+      border-left: 5px solid #48bb78; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #276749; margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff; border: 1px solid #e9d8fd;
+      border-radius: 8px; padding: 20px 24px;
+      margin: 12px 0 28px; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff; border: 1px solid #e9d8fd;
+      border-radius: 10px; padding: 18px 22px;
+      margin-bottom: 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 { margin: 0 0 12px; font-size: 0.92em; color: #322659; border: none; padding: 0; }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #553c9a; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #322659; font-weight: bold; }
+
+    /* ファイルカードグリッド */
+    .file-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px; margin: 14px 0;
+    }
+    .file-card {
+      background: #faf5ff; border: 1px solid #b794f4;
+      border-radius: 8px; padding: 14px 16px;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .file-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(85,60,154,0.18);
+      border-color: #553c9a;
+    }
+    .file-card .fc-path {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.88em; font-weight: bold;
+      color: #322659; margin-bottom: 4px;
+    }
+    .file-card .fc-desc {
+      font-size: 0.82em; color: #4a5568; line-height: 1.6;
+    }
+
+    /* 名前解決フロー */
+    .nsswitch-flow {
+      display: flex; align-items: center;
+      gap: 6px; flex-wrap: wrap;
+      justify-content: center; margin: 16px 0;
+    }
+    .ns-box {
+      border-radius: 8px; padding: 10px 14px;
+      text-align: center; font-size: 0.82em;
+      font-weight: bold; min-width: 100px;
+    }
+    .ns-arrow { font-size: 1.2em; color: #718096; }
+
+    /* トラブルシューティングフロー */
+    .trouble-flow {
+      display: flex; flex-direction: column; gap: 0; margin: 16px 0;
+    }
+    .trouble-step {
+      display: flex; gap: 16px; align-items: flex-start; position: relative;
+    }
+    .trouble-step::before {
+      content: ''; position: absolute;
+      left: 19px; top: 40px;
+      width: 2px; height: calc(100% - 8px);
+      background: #e9d8fd;
+    }
+    .trouble-step:last-child::before { display: none; }
+    .trouble-num {
+      flex-shrink: 0; width: 40px; height: 40px;
+      background: #553c9a; color: #fff;
+      border-radius: 50%; display: flex;
+      align-items: center; justify-content: center;
+      font-weight: bold; font-size: 0.95em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      z-index: 1; margin-top: 4px;
+    }
+    .trouble-body {
+      flex: 1; background: #fff;
+      border: 1px solid #e9d8fd; border-radius: 8px;
+      padding: 12px 16px; margin-bottom: 10px;
+      cursor: pointer; transition: border-color 0.15s;
+    }
+    .trouble-body:hover { border-color: #553c9a; }
+    .trouble-body h4 { margin: 0 0 4px; color: #322659; font-size: 0.95em; }
+    .trouble-body p  { margin: 0; font-size: 0.85em; color: #4a5568; }
+
+    /* インタラクティブデモ */
+    .interactive-demo {
+      background: #faf5ff; border: 1px solid #e9d8fd;
+      border-radius: 8px; padding: 16px 20px; margin: 14px 0;
+    }
+    .slider-row {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em; font-weight: bold;
+      min-width: 180px; color: #322659;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row select {
+      border: 2px solid #e9d8fd; border-radius: 6px;
+      padding: 6px 10px; font-size: 0.88em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #2d3748; background: #fff;
+      cursor: pointer; flex: 1;
+    }
+    .slider-row select:focus { border-color: #553c9a; outline: none; }
+    .output-display {
+      background: #1a202c; color: #68d391;
+      border-radius: 6px; padding: 12px 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em; margin-top: 10px;
+      white-space: pre; overflow-x: auto; line-height: 1.7;
+    }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse; width: 100%;
+      background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0; font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #e9d8fd; padding: 10px 14px; text-align: left;
+    }
+    table.ref-table thead tr { background: #322659; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #faf5ff; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0; border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0; padding: 24px 28px; margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 18px 22px; margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 8px 12px; font-size: 0.95em;
+      width: 100%; max-width: 440px; margin: 6px 0;
+      outline: none; font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus { border-color: #f6ad55; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block; padding: 9px 20px;
+      border-radius: 6px; border: none; cursor: pointer;
+      font-size: 0.95em; font-weight: bold;
+      transition: opacity 0.2s; margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-purple { background: #553c9a; color: #fff; }
+    .btn-done   { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px; padding: 10px 14px;
+      border-radius: 6px; font-weight: bold; display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #e9d8fd; color: #322659; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 48px;
+      padding-top: 20px; border-top: 2px solid #e9d8fd;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block; padding: 10px 20px;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.9em; transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #553c9a; color: #fff; }
+    .page-nav .home { background: #fff; color: #553c9a; border: 2px solid #553c9a; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4; border: 2px solid #48bb78;
+      border-radius: 10px; padding: 20px 24px;
+      margin-top: 40px; text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 2px solid #e9d8fd;
+      font-size: 0.82em; color: #a0aec0; text-align: center;
+    }
+    footer a { color: #553c9a; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .file-grid { grid-template-columns: 1fr; }
+      .nsswitch-flow { gap: 4px; }
+      .ns-box { min-width: 80px; font-size: 0.75em; padding: 8px 10px; }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  <a href="index.html">第6章：ネットワーク</a> ›
+  高度なネットワークの設定と問題解決
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 06 › SECTION 02</div>
+  <h1>🔍 高度なネットワークの設定と問題解決</h1>
+  <p>ネットワーク関連の設定ファイル（/etc/hosts・/etc/resolv.conf・nsswitch.conf など）の役割と書式、
+  そして疎通確認・名前解決の問題解決手順を体系的に学びます。</p>
+  <div class="badge-row">
+    <span class="badge">/etc/hosts</span>
+    <span class="badge">/etc/resolv.conf</span>
+    <span class="badge">/etc/nsswitch.conf</span>
+    <span class="badge">dig</span>
+    <span class="badge">nslookup</span>
+    <span class="badge">host</span>
+    <span class="badge">hostname</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第6章のセクション</h2>
+  <ol>
+    <li><a href="index.html">ネットワークの設定</a></li>
+    <li class="current"><a href="02_dns.html">高度なネットワークの設定と問題解決</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：ネットワーク関連ファイル -->
+<!-- ============================================================ -->
+<h2 id="netfiles">① ネットワーク関連ファイル</h2>
+
+<div class="note">
+  <strong>重要ポイント①：Linux のネットワーク設定は複数の設定ファイルで管理される。各ファイルの役割と書式を正確に理解することが重要</strong>
+</div>
+
+<div class="demo-box">
+  <h3>主要なネットワーク関連ファイル（クリックで詳細）</h3>
+  <div class="file-grid">
+
+    <div class="file-card" onclick="showNetFile('hostname')">
+      <div class="fc-path">/etc/hostname</div>
+      <div class="fc-desc">システムのホスト名を設定する</div>
+    </div>
+
+    <div class="file-card" onclick="showNetFile('hosts')">
+      <div class="fc-path">/etc/hosts</div>
+      <div class="fc-desc">IP アドレスとホスト名の静的マッピング</div>
+    </div>
+
+    <div class="file-card" onclick="showNetFile('networks')">
+      <div class="fc-path">/etc/networks</div>
+      <div class="fc-desc">ネットワーク名と IP アドレスのマッピング</div>
+    </div>
+
+    <div class="file-card" onclick="showNetFile('nsswitch')">
+      <div class="fc-path">/etc/nsswitch.conf</div>
+      <div class="fc-desc">名前解決の優先順位（hosts/DNS/NIS）を設定</div>
+    </div>
+
+    <div class="file-card" onclick="showNetFile('resolv')">
+      <div class="fc-path">/etc/resolv.conf</div>
+      <div class="fc-desc">DNS サーバーの設定（nameserver・search・domain）</div>
+    </div>
+
+    <div class="file-card" onclick="showNetFile('sysconfig-network')">
+      <div class="fc-path">/etc/sysconfig/network</div>
+      <div class="fc-desc">RHEL/CentOS 系のネットワーク全体設定</div>
+    </div>
+
+    <div class="file-card" onclick="showNetFile('sysconfig-scripts')">
+      <div class="fc-path">/etc/sysconfig/network-scripts/</div>
+      <div class="fc-desc">RHEL/CentOS 系のインターフェース設定ディレクトリ</div>
+    </div>
+
+    <div class="file-card" onclick="showNetFile('interfaces')">
+      <div class="fc-path">/etc/network/interfaces</div>
+      <div class="fc-desc">Debian/Ubuntu 系のインターフェース設定ファイル</div>
+    </div>
+
+  </div>
+
+  <!-- ファイル詳細 -->
+  <div id="net-file-detail" style="display:none; margin-top:14px; background:#fff; border:1px solid #e9d8fd; border-left:5px solid #553c9a; border-radius:0 8px 8px 0; padding:16px 20px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const netFiles = {
+      hostname: {
+        title: '/etc/hostname',
+        color: '#553c9a',
+        body: `システムのホスト名（FQDN の短縮形）を設定するファイルです。<br><br>
+          <strong>ファイルの内容例：</strong><br>
+          <div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; color:#fbd38d; margin:8px 0;">
+            myserver
+          </div>
+          <strong>ホスト名の確認・変更：</strong><br>
+          <div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8; margin:8px 0;">
+            <div style="color:#68d391;"># ホスト名を確認</div>
+            <div>$ hostname</div>
+            <div>myserver</div>
+            <div>$ hostname -f  # FQDN を表示</div>
+            <div>myserver.example.com</div>
+            <div style="color:#68d391;"># ホスト名を一時的に変更</div>
+            <div>$ sudo hostname newname</div>
+            <div style="color:#68d391;"># 永続的に変更（systemd）</div>
+            <div>$ sudo hostnamectl set-hostname newname</div>
+            <div>$ hostnamectl status</div>
+          </div>`
+      },
+      hosts: {
+        title: '/etc/hosts',
+        color: '#2b4c7e',
+        body: `IP アドレスとホスト名の静的マッピングを定義するファイルです。DNS より優先されます（nsswitch.conf の設定による）。<br><br>
+          <strong>ファイルの書式：</strong><br>
+          <code>IPアドレス  ホスト名  [エイリアス ...]</code><br><br>
+          <div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8; margin:8px 0;">
+            <div style="color:#68d391;"># /etc/hosts の例</div>
+            <div style="color:#f6ad55;">127.0.0.1   localhost</div>
+            <div style="color:#f6ad55;">127.0.1.1   myserver.example.com  myserver</div>
+            <div style="color:#f6ad55;">::1         localhost ip6-localhost ip6-loopback</div>
+            <div></div>
+            <div style="color:#68d391;"># 社内サーバーの静的エントリ</div>
+            <div>192.168.1.10  webserver.local  webserver</div>
+            <div>192.168.1.20  dbserver.local   dbserver</div>
+            <div>192.168.1.30  fileserver.local fileserver</div>
+          </div>
+          <strong>用途：</strong><br>
+          ・DNS が使えない環境での名前解決<br>
+          ・ローカル開発環境でのホスト名設定<br>
+          ・特定ドメインのブロック（広告ブロックなど）`
+      },
+      networks: {
+        title: '/etc/networks',
+        color: '#1a4731',
+        body: `ネットワーク名とネットワークアドレスのマッピングを定義するファイルです。現在はほとんど使用されません。<br><br>
+          <strong>ファイルの書式：</strong><br>
+          <code>ネットワーク名  ネットワークアドレス</code><br><br>
+          <div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8; margin:8px 0;">
+            <div style="color:#68d391;"># /etc/networks の例</div>
+            <div>default     0.0.0.0</div>
+            <div>loopback    127.0.0.0</div>
+            <div>link-local  169.254.0.0</div>
+            <div>localnet    192.168.1.0</div>
+          </div>
+          <code>route</code> コマンドや <code>netstat -r</code> でネットワーク名として表示されます。`
+      },
+      nsswitch: {
+        title: '/etc/nsswitch.conf',
+        color: '#553c9a',
+        body: `名前解決サービスの優先順位を設定するファイルです。ホスト名解決・ユーザー情報・グループ情報などの参照順序を制御します。<br><br>
+          <strong>ファイルの書式：</strong><br>
+          <code>データベース名: サービス1 サービス2 ...</code><br><br>
+          <div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8; margin:8px 0;">
+            <div style="color:#68d391;"># /etc/nsswitch.conf の主要設定</div>
+            <div>passwd:     files systemd</div>
+            <div>group:      files systemd</div>
+            <div>shadow:     files</div>
+            <div style="color:#f6ad55;">hosts:      files mdns4_minimal [NOTFOUND=return] dns myhostname</div>
+            <div>networks:   files</div>
+            <div>protocols:  db files</div>
+            <div>services:   db files</div>
+          </div>
+          <strong>hosts 行の解説：</strong><br>
+          ① <code>files</code>：/etc/hosts を参照<br>
+          ② <code>mdns4_minimal</code>：mDNS（Avahi）で解決<br>
+          ③ <code>[NOTFOUND=return]</code>：見つからなければここで終了<br>
+          ④ <code>dns</code>：DNS サーバーに問い合わせ<br>
+          ⑤ <code>myhostname</code>：自ホスト名を解決`
+      },
+      resolv: {
+        title: '/etc/resolv.conf',
+        color: '#744210',
+        body: `DNS サーバーの設定ファイルです。<code>nameserver</code>・<code>search</code>・<code>domain</code> ディレクティブを設定します。<br><br>
+          <div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8; margin:8px 0;">
+            <div style="color:#68d391;"># /etc/resolv.conf の例</div>
+            <div style="color:#f6ad55;">nameserver 8.8.8.8</div>
+            <div style="color:#f6ad55;">nameserver 8.8.4.4</div>
+            <div style="color:#f6ad55;">search example.com local.example.com</div>
+            <div style="color:#f6ad55;">domain example.com</div>
+            <div>options ndots:5 timeout:2 attempts:3</div>
+          </div>
+          <strong>各ディレクティブの説明：</strong><br>
+          ・<code>nameserver</code>：DNS サーバーの IP（最大3つ）<br>
+          ・<code>search</code>：短縮名解決時に試みるドメインリスト<br>
+          ・<code>domain</code>：ローカルドメイン名（search の代替）<br>
+          ・<code>options ndots:N</code>：ドットが N 個未満の場合に search を適用<br><br>
+          <strong>注意：</strong><br>
+          systemd-resolved や NetworkManager が自動管理する場合は直接編集しないこと。<br>
+          <code>/run/systemd/resolve/resolv.conf</code> へのシンボリックリンクになっている場合がある。`
+      },
+      'sysconfig-network': {
+        title: '/etc/sysconfig/network',
+        color: '#9b2335',
+        body: `RHEL/CentOS 系でネットワーク全体の設定を行うファイルです。<br><br>
+          <div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8; margin:8px 0;">
+            <div style="color:#68d391;"># /etc/sysconfig/network の例（RHEL/CentOS 6以前）</div>
+            <div>NETWORKING=yes</div>
+            <div>HOSTNAME=myserver.example.com</div>
+            <div>GATEWAY=192.168.1.1</div>
+            <div>GATEWAYDEV=eth0</div>
+            <div>NISDOMAIN=example.com</div>
+          </div>
+          <strong>注意：</strong><br>
+          RHEL/CentOS 7 以降では <code>hostnamectl</code> でホスト名を管理します。<br>
+          ネットワーク設定は NetworkManager が担当します。`
+      },
+      'sysconfig-scripts': {
+        title: '/etc/sysconfig/network-scripts/',
+        color: '#9b2335',
+        body: `RHEL/CentOS 系でインターフェースごとの設定を行うディレクトリです。<br><br>
+          <div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8; margin:8px 0;">
+            <div style="color:#68d391;"># /etc/sysconfig/network-scripts/ifcfg-enp3s0 の例</div>
+            <div>TYPE=Ethernet</div>
+            <div>BOOTPROTO=static</div>
+            <div>NAME=enp3s0</div>
+            <div>DEVICE=enp3s0</div>
+            <div>ONBOOT=yes</div>
+            <div>IPADDR=192.168.1.10</div>
+            <div>NETMASK=255.255.255.0</div>
+            <div>GATEWAY=192.168.1.1</div>
+            <div>DNS1=8.8.8.8</div>
+            <div>DNS2=8.8.4.4</div>
+          </div>
+          <strong>ファイル命名規則：</strong><br>
+          <code>ifcfg-インターフェース名</code>（例：ifcfg-enp3s0、ifcfg-eth0）`
+      },
+      interfaces: {
+        title: '/etc/network/interfaces',
+        color: '#2b4c7e',
+        body: `Debian/Ubuntu 系でネットワークインターフェースの設定を行うファイルです。<br><br>
+          <div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8; margin:8px 0;">
+            <div style="color:#68d391;"># /etc/network/interfaces の例</div>
+            <div style="color:#f6ad55;">auto lo</div>
+            <div style="color:#f6ad55;">iface lo inet loopback</div>
+            <div></div>
+            <div style="color:#68d391;"># 静的 IP の設定</div>
+            <div style="color:#f6ad55;">auto enp3s0</div>
+            <div style="color:#f6ad55;">iface enp3s0 inet static</div>
+            <div>    address 192.168.1.10</div>
+            <div>    netmask 255.255.255.0</div>
+            <div>    gateway 192.168.1.1</div>
+            <div>    dns-nameservers 8.8.8.8 8.8.4.4</div>
+            <div>    dns-search example.com</div>
+            <div></div>
+            <div style="color:#68d391;"># DHCP の設定</div>
+            <div style="color:#f6ad55;">auto enp3s0</div>
+            <div style="color:#f6ad55;">iface enp3s0 inet dhcp</div>
+          </div>
+          <strong>適用コマンド：</strong><br>
+          <code>sudo ifup enp3s0</code>（インターフェースを起動）<br>
+          <code>sudo ifdown enp3s0</code>（インターフェースを停止）`
+      }
+    };
+
+    function showNetFile(key) {
+      const d = netFiles[key];
+      const el = document.getElementById('net-file-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display='none'; el.dataset.current=''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-family:'Consolas','Monaco',monospace; font-size:0.95em;">${d.title}</strong><br><br>${d.body}`;
+      el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：名前解決の仕組み（nsswitch.conf） -->
+<!-- ============================================================ -->
+<h2 id="nsswitch">② 名前解決の仕組み（nsswitch.conf）</h2>
+
+<div class="demo-box">
+  <h3>名前解決の優先順位フロー</h3>
+  <div class="nsswitch-flow">
+    <div class="ns-box" style="background:#1a202c; color:#e2e8f0; border:2px solid #4a5568;">
+      アプリケーションが<br>ホスト名を解決
+    </div>
+    <div class="ns-arrow">→</div>
+    <div class="ns-box" style="background:#e9d8fd; border:2px solid #b794f4; color:#322659;">
+      nsswitch.conf<br>の hosts 行を確認
+    </div>
+    <div class="ns-arrow">→</div>
+    <div class="ns-box" style="background:#ebf8ff; border:2px solid #90cdf4; color:#2b4c7e;">
+      ① files<br>/etc/hosts
+    </div>
+    <div class="ns-arrow">→</div>
+    <div class="ns-box" style="background:#fefcbf; border:2px solid #f6e05e; color:#744210;">
+      ② dns<br>resolv.conf
+    </div>
+    <div class="ns-arrow">→</div>
+    <div class="ns-box" style="background:#f0fff4; border:2px solid #68d391; color:#1a4731;">
+      ③ 解決済み<br>または失敗
+    </div>
+  </div>
+
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /etc/nsswitch.conf の hosts 行の設定例</span>
+
+<span class="comment"># 標準的な設定（/etc/hosts → DNS）</span>
+<span class="hl">hosts:      files dns</span>
+
+<span class="comment"># mDNS を含む設定（Ubuntu のデフォルト）</span>
+<span class="hl">hosts:      files mdns4_minimal [NOTFOUND=return] dns myhostname</span>
+
+<span class="comment"># NIS を使用する場合</span>
+<span class="hl">hosts:      files nis dns</span>
+
+<span class="comment"># サービスの意味</span>
+<span class="comment"># files        : /etc/hosts を参照</span>
+<span class="comment"># dns          : /etc/resolv.conf の DNS サーバーに問い合わせ</span>
+<span class="comment"># nis          : NIS（Yellow Pages）サーバーに問い合わせ</span>
+<span class="comment"># mdns4_minimal: mDNS（Avahi）で .local ドメインを解決</span>
+<span class="comment"># myhostname   : 自ホスト名を解決</span>
+
+<span class="comment"># アクションの意味（[STATUS=ACTION]）</span>
+<span class="comment"># [NOTFOUND=return]  : 見つからなければ次のサービスを試さず終了</span>
+<span class="comment"># [NOTFOUND=continue]: 見つからなければ次のサービスを試す（デフォルト）</span>
+<span class="comment"># [SUCCESS=return]   : 成功したら終了</span>
+<span class="comment"># [UNAVAIL=continue] : サービスが利用不可なら次を試す</span>
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：/etc/resolv.conf の詳細 -->
+<!-- ============================================================ -->
+<h2 id="resolv">③ /etc/resolv.conf の詳細</h2>
+
+<div class="demo-box">
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /etc/resolv.conf の完全な設定例</span>
+
+<span class="comment"># DNS サーバーを最大3つ指定</span>
+<span class="hl">nameserver 192.168.1.1</span>     <span class="comment"># プライマリ DNS</span>
+<span class="hl">nameserver 8.8.8.8</span>         <span class="comment"># セカンダリ DNS</span>
+<span class="hl">nameserver 8.8.4.4</span>         <span class="comment"># ターシャリ DNS</span>
+
+<span class="comment"># 短縮名の検索ドメインリスト</span>
+<span class="hl">search example.com local.example.com</span>
+<span class="comment"># → "webserver" を解決する際に以下を順番に試みる</span>
+<span class="comment">#   webserver.example.com → webserver.local.example.com</span>
+
+<span class="comment"># ローカルドメイン（search の代替、どちらか一方のみ有効）</span>
+<span class="comment"># domain example.com</span>
+
+<span class="comment"># オプション設定</span>
+<span class="out">options ndots:5</span>     <span class="comment"># ドットが5個未満の場合に search を適用</span>
+<span class="out">options timeout:2</span>   <span class="comment"># タイムアウト秒数</span>
+<span class="out">options attempts:3</span>  <span class="comment"># リトライ回数</span>
+<span class="out">options rotate</span>      <span class="comment"># nameserver をラウンドロビンで使用</span>
+
+<span class="comment"># systemd-resolved との連携確認</span>
+$ <span class="cmd">ls</span> <span class="opt">-la</span> /etc/resolv.conf
+<span class="out">lrwxrwxrwx 1 root root 39 /etc/resolv.conf -> ../run/systemd/resolve/stub-resolv.conf</span>
+<span class="comment"># シンボリックリンクの場合は systemd-resolved が管理している</span>
+
+<span class="comment"># systemd-resolved の設定確認</span>
+$ <span class="cmd">resolvectl</span> status
+$ <span class="cmd">resolvectl</span> dns
+</pre>
+  </div>
+
+  <h3>search と domain の違い</h3>
+  <table class="ref-table">
+    <thead><tr><th>ディレクティブ</th><th>説明</th><th>例</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>search</code></td>
+        <td>複数のドメインを指定可能。短縮名解決時に順番に試みる</td>
+        <td><code>search example.com sub.example.com</code></td>
+      </tr>
+      <tr>
+        <td><code>domain</code></td>
+        <td>1つのドメインのみ指定。search の代替（両方書いた場合は後者が有効）</td>
+        <td><code>domain example.com</code></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 4：ネットワークの問題解決 -->
+<!-- ============================================================ -->
+<h2 id="troubleshoot">④ ネットワークの問題解決</h2>
+
+<div class="note">
+  <strong>重要ポイント②：ネットワーク問題は「物理層→IP層→名前解決→アプリケーション層」の順に確認する。問題を切り分けることが重要</strong>
+</div>
+
+<div class="demo-box">
+  <h3>問題解決の手順（クリックで詳細コマンドを表示）</h3>
+  <div class="trouble-flow">
+
+    <div class="trouble-step">
+      <div class="trouble-num">1</div>
+      <div class="trouble-body" onclick="showTrouble('interface')">
+        <h4>🔌 インターフェースの確認</h4>
+        <p>NIC が認識されているか・IP アドレスが設定されているか確認</p>
+      </div>
+    </div>
+
+    <div class="trouble-step">
+      <div class="trouble-num">2</div>
+      <div class="trouble-body" onclick="showTrouble('local')">
+        <h4>🏠 ローカル疎通確認</h4>
+        <p>ループバック・同一セグメントのホストへの疎通を確認</p>
+      </div>
+    </div>
+
+    <div class="trouble-step">
+      <div class="trouble-num">3</div>
+      <div class="trouble-body" onclick="showTrouble('gateway')">
+        <h4>🔀 デフォルトゲートウェイの確認</h4>
+        <p>ゲートウェイへの疎通・ルーティングテーブルを確認</p>
+      </div>
+    </div>
+
+    <div class="trouble-step">
+      <div class="trouble-num">4</div>
+      <div class="trouble-body" onclick="showTrouble('external')">
+        <h4>🌐 外部疎通確認</h4>
+        <p>インターネット（IP アドレス直接指定）への疎通を確認</p>
+      </div>
+    </div>
+
+    <div class="trouble-step">
+      <div class="trouble-num">5</div>
+      <div class="trouble-body" onclick="showTrouble('dns')">
+        <h4>🔤 名前解決の確認</h4>
+        <p>DNS による名前解決が正常に動作しているか確認</p>
+      </div>
+    </div>
+
+    <div class="trouble-step">
+      <div class="trouble-num">6</div>
+      <div class="trouble-body" onclick="showTrouble('port')">
+        <h4>🚪 ポート・サービスの確認</h4>
+        <p>目的のポートが開いているか・サービスが動作しているか確認</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- トラブルシューティング詳細 -->
+  <div id="trouble-detail" style="display:none; margin-top:14px; background:#fff; border:1px solid #e9d8fd; border-left:5px solid #553c9a; border-radius:0 8px 8px 0; padding:16px 20px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const troubleData = {
+      interface: {
+        title: '🔌 ステップ1：インターフェースの確認',
+        color: '#4a5568',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:12px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8; margin-top:8px;">
+<div style="color:#68d391;"># インターフェースと IP アドレスを確認</div>
+<div>$ ip addr show</div>
+<div style="color:#68d391;"># インターフェースが UP 状態か確認</div>
+<div>$ ip link show</div>
+<div style="color:#f6ad55;">2: enp3s0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; ← UP が必要</div>
+<div style="color:#68d391;"># インターフェースが DOWN の場合は起動</div>
+<div>$ sudo ip link set enp3s0 up</div>
+<div style="color:#68d391;"># IP アドレスが設定されていない場合</div>
+<div>$ sudo ip addr add 192.168.1.10/24 dev enp3s0</div>
+<div style="color:#68d391;"># DHCP でアドレスを取得</div>
+<div>$ sudo dhclient enp3s0</div>
+</div>`
+      },
+      local: {
+        title: '🏠 ステップ2：ローカル疎通確認',
+        color: '#553c9a',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:12px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8; margin-top:8px;">
+<div style="color:#68d391;"># ループバックへの疎通確認（TCP/IP スタックの確認）</div>
+<div>$ ping -c 3 127.0.0.1</div>
+<div style="color:#68d391;"># 自分自身の IP への疎通確認</div>
+<div>$ ping -c 3 192.168.1.10</div>
+<div style="color:#68d391;"># 同一セグメントのホストへの疎通確認</div>
+<div>$ ping -c 3 192.168.1.20</div>
+<div style="color:#68d391;"># ARP で MAC アドレスを確認</div>
+<div>$ ip neigh show</div>
+<div>$ arping -I enp3s0 192.168.1.20</div>
+<div style="color:#f6ad55;"># ループバックは OK だが同一セグメントが NG</div>
+<div style="color:#f6ad55;"># → IP アドレス・サブネットマスクの設定ミスの可能性</div>
+</div>`
+      },
+      gateway: {
+        title: '🔀 ステップ3：デフォルトゲートウェイの確認',
+        color: '#2b4c7e',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:12px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8; margin-top:8px;">
+<div style="color:#68d391;"># ルーティングテーブルを確認</div>
+<div>$ ip route show</div>
+<div style="color:#f6ad55;">default via 192.168.1.1 dev enp3s0  ← デフォルトGWが必要</div>
+<div style="color:#68d391;"># デフォルト GW がない場合は設定</div>
+<div>$ sudo ip route add default via 192.168.1.1</div>
+<div style="color:#68d391;"># ゲートウェイへの疎通確認</div>
+<div>$ ping -c 3 192.168.1.1</div>
+<div style="color:#f6ad55;"># GW への疎通が NG</div>
+<div style="color:#f6ad55;"># → GW の IP アドレスが正しいか確認</div>
+<div style="color:#f6ad55;"># → ファイアウォールで ICMP がブロックされていないか確認</div>
+</div>`
+      },
+      external: {
+        title: '🌐 ステップ4：外部疎通確認',
+        color: '#1a4731',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:12px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8; margin-top:8px;">
+<div style="color:#68d391;"># IP アドレスで外部に疎通確認（DNS を使わない）</div>
+<div>$ ping -c 3 8.8.8.8</div>
+<div style="color:#68d391;"># traceroute で経路を確認</div>
+<div>$ traceroute 8.8.8.8</div>
+<div style="color:#f6ad55;"># 8.8.8.8 への疎通は OK だが名前解決が NG</div>
+<div style="color:#f6ad55;"># → DNS の問題（ステップ5へ）</div>
+<div style="color:#f6ad55;"># 8.8.8.8 への疎通も NG</div>
+<div style="color:#f6ad55;"># → ルーティング・ファイアウォール・ISP の問題</div>
+<div style="color:#68d391;"># curl で HTTP 接続テスト</div>
+<div>$ curl -v http://93.184.216.34/  # example.com の IP</div>
+</div>`
+      },
+      dns: {
+        title: '🔤 ステップ5：名前解決の確認',
+        color: '#744210',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:12px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8; margin-top:8px;">
+<div style="color:#68d391;"># DNS サーバーの設定を確認</div>
+<div>$ cat /etc/resolv.conf</div>
+<div style="color:#68d391;"># dig で名前解決を確認（詳細）</div>
+<div>$ dig google.com</div>
+<div>$ dig @8.8.8.8 google.com  # 特定の DNS サーバーに問い合わせ</div>
+<div style="color:#68d391;"># nslookup で確認</div>
+<div>$ nslookup google.com</div>
+<div>$ nslookup google.com 8.8.8.8</div>
+<div style="color:#68d391;"># host コマンドで確認</div>
+<div>$ host google.com</div>
+<div style="color:#68d391;"># /etc/hosts を確認</div>
+<div>$ cat /etc/hosts</div>
+<div style="color:#68d391;"># nsswitch.conf の hosts 行を確認</div>
+<div>$ grep hosts /etc/nsswitch.conf</div>
+<div style="color:#f6ad55;"># DNS サーバーに到達できない場合</div>
+<div style="color:#f6ad55;"># → nameserver の IP アドレスを確認</div>
+<div style="color:#f6ad55;"># → UDP ポート 53 が開いているか確認</div>
+</div>`
+      },
+      port: {
+        title: '🚪 ステップ6：ポート・サービスの確認',
+        color: '#9b2335',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:12px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8; margin-top:8px;">
+<div style="color:#68d391;"># LISTEN 中のポートを確認</div>
+<div>$ ss -tlnp</div>
+<div style="color:#68d391;"># 特定ポートへの接続テスト（nc）</div>
+<div>$ nc -zv 192.168.1.20 80</div>
+<div>$ nc -zv 192.168.1.20 443</div>
+<div style="color:#68d391;"># curl で HTTP 接続テスト</div>
+<div>$ curl -v http://webserver.example.com/</div>
+<div style="color:#68d391;"># ファイアウォールの確認</div>
+<div>$ sudo iptables -L -n</div>
+<div>$ sudo firewall-cmd --list-all  # RHEL 系</div>
+<div>$ sudo ufw status               # Ubuntu 系</div>
+<div style="color:#f6ad55;"># ポートは開いているがサービスが応答しない</div>
+<div style="color:#f6ad55;"># → サービスの状態を確認</div>
+<div>$ sudo systemctl status nginx</div>
+<div>$ sudo journalctl -u nginx -n 50</div>
+</div>`
+      }
+    };
+
+    function showTrouble(key) {
+      const d = troubleData[key];
+      const el = document.getElementById('trouble-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display='none'; el.dataset.current=''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-size:0.95em;">${d.title}</strong>${d.body}`;
+      el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 5：名前解決の確認コマンド -->
+<!-- ============================================================ -->
+<h2 id="dns-cmds">⑤ 名前解決の確認コマンド</h2>
+
+<div class="demo-box">
+  <h3>dig・nslookup・host コマンド</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment">## dig コマンド（最も詳細・推奨）</span>
+
+<span class="comment"># 基本的な名前解決</span>
+$ <span class="cmd">dig</span> google.com
+<span class="hdr">;; ANSWER SECTION:</span>
+<span class="hl">google.com.             300     IN      A       142.250.196.78</span>
+
+<span class="comment"># 特定の DNS サーバーに問い合わせ</span>
+$ <span class="cmd">dig</span> @8.8.8.8 google.com
+
+<span class="comment"># レコードタイプを指定</span>
+$ <span class="cmd">dig</span> google.com <span class="val">MX</span>      <span class="comment"># メールサーバー</span>
+$ <span class="cmd">dig</span> google.com <span class="val">NS</span>      <span class="comment"># ネームサーバー</span>
+$ <span class="cmd">dig</span> google.com <span class="val">AAAA</span>    <span class="comment"># IPv6 アドレス</span>
+$ <span class="cmd">dig</span> google.com <span class="val">TXT</span>     <span class="comment"># TXT レコード</span>
+$ <span class="cmd">dig</span> google.com <span class="val">ANY</span>     <span class="comment"># すべてのレコード</span>
+
+<span class="comment"># 逆引き（IP → ホスト名）</span>
+$ <span class="cmd">dig</span> <span class="opt">-x</span> 8.8.8.8
+<span class="hl">8.8.8.8.in-addr.arpa.  21599 IN PTR dns.google.</span>
+
+<span class="comment"># 簡潔な出力（+short）</span>
+$ <span class="cmd">dig</span> google.com <span class="opt">+short</span>
+<span class="out">142.250.196.78</span>
+
+<span class="comment"># トレース（ルートから順に解決過程を表示）</span>
+$ <span class="cmd">dig</span> google.com <span class="opt">+trace</span>
+
+<span class="comment">## nslookup コマンド（対話式・Windows との互換性）</span>
+$ <span class="cmd">nslookup</span> google.com
+<span class="out">Server:         127.0.0.53</span>
+<span class="out">Address:        127.0.0.53#53</span>
+<span class="out">Non-authoritative answer:</span>
+<span class="out">Name:   google.com</span>
+<span class="out">Address: 142.250.196.78</span>
+
+<span class="comment"># 特定の DNS サーバーに問い合わせ</span>
+$ <span class="cmd">nslookup</span> google.com 8.8.8.8
+
+<span class="comment"># 逆引き</span>
+$ <span class="cmd">nslookup</span> 8.8.8.8
+
+<span class="comment">## host コマンド（シンプル）</span>
+$ <span class="cmd">host</span> google.com
+<span class="out">google.com has address 142.250.196.78</span>
+<span class="out">google.com has IPv6 address 2404:6800:4004:81d::200e</span>
+<span class="out">google.com mail is handled by 10 smtp.google.com.</span>
+
+<span class="comment"># 逆引き</span>
+$ <span class="cmd">host</span> 8.8.8.8
+<span class="out">8.8.8.8.in-addr.arpa domain name pointer dns.google.</span>
+</pre>
+  </div>
+
+  <h3>名前解決のトラブルシューティング（インタラクティブ）</h3>
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#322659; margin:0 0 12px;">
+      問題のシナリオを選択して確認コマンドを表示しましょう
+    </p>
+    <div class="slider-row">
+      <label>問題シナリオ</label>
+      <select id="dns-trouble-sel" onchange="showDnsTrouble()">
+        <option value="">-- シナリオを選択 --</option>
+        <option value="no-dns">名前解決ができない（ping google.com が失敗）</option>
+        <option value="slow-dns">名前解決が遅い</option>
+        <option value="wrong-ip">名前解決は成功するが間違った IP が返る</option>
+        <option value="local-only">社内ホスト名のみ解決できない</option>
+        <option value="check-all">総合的な確認手順</option>
+      </select>
+    </div>
+    <div class="output-display" id="dns-trouble-output" style="display:none;"></div>
+  </div>
+
+  <script>
+    const dnsTroubles = {
+      'no-dns': {
+        color: '#fc8181',
+        text:
+`# 名前解決ができない場合の確認手順
+
+# 1. IP アドレスで疎通確認（DNS を使わない）
+$ ping -c 3 8.8.8.8
+# → 成功なら DNS の問題、失敗なら接続の問題
+
+# 2. DNS サーバーの設定を確認
+$ cat /etc/resolv.conf
+nameserver 8.8.8.8  ← 設定されているか確認
+
+# 3. DNS サーバーへの疎通確認
+$ ping -c 3 8.8.8.8
+
+# 4. dig で直接 DNS に問い合わせ
+$ dig @8.8.8.8 google.com
+# → 成功なら /etc/resolv.conf の設定問題
+# → 失敗なら DNS サーバーへの接続問題
+
+# 5. nsswitch.conf を確認
+$ grep hosts /etc/nsswitch.conf
+hosts: files dns  ← dns が含まれているか確認
+
+# 6. systemd-resolved の状態確認
+$ systemctl status systemd-resolved
+$ resolvectl status`
+      },
+      'slow-dns': {
+        color: '#f6ad55',
+        text:
+`# 名前解決が遅い場合の確認手順
+
+# 1. DNS 応答時間を計測
+$ dig google.com | grep "Query time"
+;; Query time: 250 msec  ← 通常は数ms以下が理想
+
+# 2. 各 DNS サーバーの応答時間を比較
+$ dig @8.8.8.8 google.com | grep "Query time"
+$ dig @8.8.4.4 google.com | grep "Query time"
+$ dig @192.168.1.1 google.com | grep "Query time"
+
+# 3. /etc/resolv.conf のタイムアウト設定を確認
+$ cat /etc/resolv.conf
+# options timeout:2 attempts:3
+
+# 4. nsswitch.conf の設定を確認
+$ grep hosts /etc/nsswitch.conf
+# mdns4_minimal [NOTFOUND=return] が遅延の原因になることがある
+
+# 5. DNS キャッシュの確認
+$ systemd-resolve --statistics`
+      },
+      'wrong-ip': {
+        color: '#b794f4',
+        text:
+`# 名前解決で間違った IP が返る場合
+
+# 1. /etc/hosts を確認（DNS より優先される）
+$ cat /etc/hosts | grep google.com
+# → 間違ったエントリがあれば削除
+
+# 2. nsswitch.conf の優先順位を確認
+$ grep hosts /etc/nsswitch.conf
+hosts: files dns
+# files（/etc/hosts）が dns より先に評価される
+
+# 3. 複数の DNS サーバーで確認
+$ dig @8.8.8.8 example.com +short
+$ dig @1.1.1.1 example.com +short
+# → 結果が異なる場合は DNS キャッシュポイズニングの可能性
+
+# 4. DNS キャッシュをクリア
+$ sudo systemd-resolve --flush-caches
+$ sudo resolvectl flush-caches`
+      },
+      'local-only': {
+        color: '#90cdf4',
+        text:
+`# 社内ホスト名のみ解決できない場合
+
+# 1. /etc/resolv.conf の search ドメインを確認
+$ cat /etc/resolv.conf
+search example.com  ← 社内ドメインが設定されているか
+
+# 2. 社内 DNS サーバーへの疎通確認
+$ ping -c 3 192.168.1.1  # 社内 DNS サーバー
+
+# 3. 社内 DNS に直接問い合わせ
+$ dig @192.168.1.1 webserver.example.com
+
+# 4. FQDN で解決を試みる
+$ dig webserver.example.com
+$ nslookup webserver.example.com
+
+# 5. /etc/hosts に手動で追加（一時的な対処）
+$ echo "192.168.1.10 webserver.example.com webserver" | sudo tee -a /etc/hosts`
+      },
+      'check-all': {
+        color: '#68d391',
+        text:
+`# ネットワーク問題の総合確認手順
+
+# === 物理・インターフェース層 ===
+$ ip link show           # インターフェースの状態
+$ ip addr show           # IP アドレスの確認
+
+# === IP 層 ===
+$ ping -c 3 127.0.0.1   # ループバック
+$ ping -c 3 192.168.1.1 # デフォルト GW
+$ ping -c 3 8.8.8.8     # 外部 IP（DNS なし）
+
+# === ルーティング ===
+$ ip route show          # ルーティングテーブル
+$ traceroute 8.8.8.8     # 経路確認
+
+# === 名前解決 ===
+$ cat /etc/resolv.conf   # DNS 設定
+$ cat /etc/nsswitch.conf # 解決順序
+$ dig google.com +short  # DNS 解決テスト
+$ ping -c 3 google.com   # 名前解決 + 疎通
+
+# === サービス層 ===
+$ ss -tlnp               # LISTEN ポート
+$ nc -zv 8.8.8.8 53      # DNS ポート確認
+$ curl -v http://google.com  # HTTP 接続テスト`
+      }
+    };
+
+    function showDnsTrouble() {
+      const key = document.getElementById('dns-trouble-sel').value;
+      const el  = document.getElementById('dns-trouble-output');
+      if (!key) { el.style.display='none'; return; }
+      const d = dnsTroubles[key];
+      el.style.display = 'block';
+      el.style.color   = d.color;
+      el.textContent   = d.text;
+    }
+  </script>
+
+  <h3>名前解決コマンドの比較</h3>
+  <table class="ref-table">
+    <thead><tr><th>コマンド</th><th>特徴</th><th>主な用途</th></tr></thead>
+    <tbody>
+      <tr><td><code>dig</code></td><td>最も詳細な情報・スクリプト向き</td><td>DNS の詳細調査・トラブルシューティング</td></tr>
+      <tr><td><code>nslookup</code></td><td>対話式・Windows との互換性</td><td>簡易的な名前解決確認</td></tr>
+      <tr><td><code>host</code></td><td>シンプルな出力</td><td>素早い名前解決確認</td></tr>
+      <tr><td><code>resolvectl</code></td><td>systemd-resolved の管理</td><td>systemd 環境での DNS 設定確認</td></tr>
+      <tr><td><code>getent hosts</code></td><td>nsswitch.conf の設定を使用</td><td>実際の名前解決順序での確認</td></tr>
+    </tbody>
+  </table>
+
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># getent：nsswitch.conf の設定通りに名前解決を確認</span>
+$ <span class="cmd">getent</span> hosts google.com
+<span class="out">142.250.196.78  google.com</span>
+
+<span class="comment"># /etc/hosts に登録されたホストも解決できる</span>
+$ <span class="cmd">getent</span> hosts webserver
+<span class="out">192.168.1.10    webserver.local webserver</span>
+
+<span class="comment"># hostname コマンド</span>
+$ <span class="cmd">hostname</span>                  <span class="comment"># 現在のホスト名を表示</span>
+$ <span class="cmd">hostname</span> <span class="opt">-f</span>              <span class="comment"># FQDN を表示</span>
+$ <span class="cmd">hostname</span> <span class="opt">-i</span>              <span class="comment"># ホストの IP アドレスを表示</span>
+$ <span class="cmd">hostname</span> <span class="opt">-I</span>              <span class="comment"># すべての IP アドレスを表示</span>
+$ <span class="cmd">sudo hostname</span> newname    <span class="comment"># ホスト名を一時的に変更</span>
+
+<span class="comment"># hostnamectl（systemd 環境）</span>
+$ <span class="cmd">hostnamectl</span> status
+<span class="out">   Static hostname: myserver</span>
+<span class="out">   Pretty hostname: My Server</span>
+<span class="out">         Icon name: computer-laptop</span>
+<span class="out">           Chassis: laptop</span>
+<span class="out">        Machine ID: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>
+<span class="out">           Boot ID: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy</span>
+<span class="out">  Operating System: Ubuntu 24.04 LTS</span>
+<span class="out">            Kernel: Linux 6.8.0-51-generic</span>
+$ <span class="cmd">sudo hostnamectl</span> set-hostname newserver
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- まとめ表 -->
+<!-- ============================================================ -->
+<h2>📌 まとめ一覧</h2>
+<div class="demo-box">
+  <table class="ref-table">
+    <thead><tr><th>カテゴリ</th><th>ファイル / コマンド</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td colspan="3" style="background:#e9d8fd; color:#322659; font-weight:bold; font-size:0.88em;">▼ ネットワーク設定ファイル</td></tr>
+      <tr><td>ホスト名</td><td><code>/etc/hostname</code></td><td>システムのホスト名</td></tr>
+      <tr><td>静的名前解決</td><td><code>/etc/hosts</code></td><td>IP アドレスとホスト名の静的マッピング</td></tr>
+      <tr><td>名前解決順序</td><td><code>/etc/nsswitch.conf</code></td><td>hosts・dns・nis などの優先順位</td></tr>
+      <tr><td>DNS 設定</td><td><code>/etc/resolv.conf</code></td><td>nameserver・search・domain の設定</td></tr>
+      <tr><td>インターフェース（Debian）</td><td><code>/etc/network/interfaces</code></td><td>Debian/Ubuntu 系のインターフェース設定</td></tr>
+      <tr><td>インターフェース（RHEL）</td><td><code>/etc/sysconfig/network-scripts/ifcfg-*</code></td><td>RHEL/CentOS 系のインターフェース設定</td></tr>
+      <tr><td colspan="3" style="background:#e9d8fd; color:#322659; font-weight:bold; font-size:0.88em;">▼ 名前解決コマンド</td></tr>
+      <tr><td>詳細な DNS 確認</td><td><code>dig google.com</code></td><td>DNS の詳細情報を表示</td></tr>
+      <tr><td>特定 DNS に問い合わせ</td><td><code>dig @8.8.8.8 google.com</code></td><td>指定した DNS サーバーに問い合わせ</td></tr>
+      <tr><td>逆引き</td><td><code>dig -x 8.8.8.8</code></td><td>IP アドレスからホスト名を解決</td></tr>
+      <tr><td>簡易確認</td><td><code>host google.com</code></td><td>シンプルな名前解決確認</td></tr>
+      <tr><td>nsswitch 経由で確認</td><td><code>getent hosts ホスト名</code></td><td>実際の名前解決順序で確認</td></tr>
+      <tr><td>ホスト名確認</td><td><code>hostname</code> / <code>hostnamectl status</code></td><td>システムのホスト名を確認</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 穴埋め問題</h3>
+    <p>以下の説明に合うファイル・コマンドを入力してください。</p>
+    <label>① IP アドレスとホスト名の静的マッピングを定義するファイル：</label>
+    <input type="text" id="q1a" placeholder="/etc/...">
+    <label>② 名前解決の優先順位（files/dns/nis など）を設定するファイル：</label>
+    <input type="text" id="q1b" placeholder="/etc/...">
+    <label>③ DNS サーバーの IP アドレスを設定するファイル：</label>
+    <input type="text" id="q1c" placeholder="/etc/...">
+    <label>④ dig コマンドで 8.8.8.8 の DNS サーバーに google.com を問い合わせるコマンド：</label>
+    <input type="text" id="q1d" placeholder="dig @... ...">
+    <label>⑤ nsswitch.conf の設定通りに名前解決を確認するコマンド（google.com に対して）：</label>
+    <input type="text" id="q1e" placeholder="コマンド hosts google.com">
+    <br>
+    <button class="btn btn-purple" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const a = document.getElementById('q1a').value.trim().toLowerCase().replace(/\s/g,'');
+        const b = document.getElementById('q1b').value.trim().toLowerCase().replace(/\s/g,'');
+        const c = document.getElementById('q1c').value.trim().toLowerCase().replace(/\s/g,'');
+        const d = document.getElementById('q1d').value.trim().toLowerCase().replace(/\s+/g,'');
+        const e = document.getElementById('q1e').value.trim().toLowerCase().replace(/\s+/g,'');
+        const r = document.getElementById('q1-result');
+        const ca = a === '/etc/hosts';
+        const cb = b === '/etc/nsswitch.conf';
+        const cc = c === '/etc/resolv.conf';
+        const cd = d === 'dig@8.8.8.8google.com';
+        const ce = e === 'getentgoogle.com' || e === 'getenthostsgoogle.com';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ /etc/hosts'}　` +
+            `② ${cb?'✅':'❌ /etc/nsswitch.conf'}　` +
+            `③ ${cc?'✅':'❌ /etc/resolv.conf'}　` +
+            `④ ${cd?'✅':'❌ dig @8.8.8.8 google.com'}　` +
+            `⑤ ${ce?'✅':'❌ getent hosts google.com'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 選択問題</h3>
+    <p>
+      <code>/etc/nsswitch.conf</code> の以下の設定で、
+      ホスト名解決の順序として正しいものはどれですか？<br>
+      <code style="background:#edf2f7; padding:4px 8px; border-radius:4px;">hosts: files dns</code>
+    </p>
+    <select id="q2">
+      <option value="">-- 選択してください --</option>
+      <option value="a">DNS サーバーに問い合わせてから /etc/hosts を参照する</option>
+      <option value="b">/etc/hosts を参照してから DNS サーバーに問い合わせる</option>
+      <option value="c">/etc/hosts と DNS を同時に参照して速い方を使う</option>
+      <option value="d">DNS サーバーのみを使用し /etc/hosts は無視する</option>
+    </select>
+    <br>
+    <button class="btn btn-purple" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const v = document.getElementById('q2').value;
+        const r = document.getElementById('q2-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<code>hosts: files dns</code> の解釈：<br>' +
+            '① <code>files</code>：まず <code>/etc/hosts</code> を参照<br>' +
+            '② <code>dns</code>：/etc/hosts で見つからなければ DNS サーバーに問い合わせ<br><br>' +
+            '<strong>重要：</strong>/etc/hosts に登録されたホスト名は DNS より優先されます。<br>' +
+            'そのため、/etc/hosts に誤ったエントリがあると DNS の正しい結果が返らなくなります。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '<code>hosts: files dns</code> は左から順に参照します。<br>' +
+            '① <code>files</code>（/etc/hosts）→ ② <code>dns</code>（DNS サーバー）の順です。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① <code>/etc/hosts</code> の設定は <code>/etc/nsswitch.conf</code> の設定によって DNS より優先される場合がある
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② <code>/etc/resolv.conf</code> の <code>search</code> ディレクティブは短縮名解決時に試みるドメインリストを指定する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ <code>dig @8.8.8.8 google.com</code> は 8.8.8.8 の DNS サーバーに google.com を問い合わせる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ <code>/etc/resolv.conf</code> には最大10個の <code>nameserver</code> を指定できる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ <code>getent hosts ホスト名</code> は <code>/etc/nsswitch.conf</code> の設定に従って名前解決を行う
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ Debian/Ubuntu 系のインターフェース設定ファイルは <code>/etc/network/interfaces</code> である
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ <code>dig -x 8.8.8.8</code> は IP アドレスからホスト名を逆引きする
+    </label>
+    <br>
+    <button class="btn btn-purple" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：①②③⑤⑥⑦（a,b,c,e,f,g）
+        // ④ nameserver は最大3つまで
+        const correct = { a:true, b:true, c:true, d:false, e:true, f:true, g:true };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>①②③⑤⑥⑦<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・④ <code>/etc/resolv.conf</code> の <code>nameserver</code> は<strong>最大3つ</strong>まで指定できます。<br>' +
+            '&nbsp;&nbsp;10個ではありません。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. シナリオ問題</h3>
+    <p>
+      サーバーで <code>ping google.com</code> が失敗しますが、
+      <code>ping 8.8.8.8</code> は成功します。
+      この問題の原因として最も可能性が高いものはどれですか？
+    </p>
+    <select id="q4">
+      <option value="">-- 選択してください --</option>
+      <option value="a">ネットワークケーブルが抜けている</option>
+      <option value="b">デフォルトゲートウェイが設定されていない</option>
+      <option value="c">DNS の設定に問題がある（名前解決ができない）</option>
+      <option value="d">ファイアウォールが ICMP をブロックしている</option>
+    </select>
+    <br>
+    <button class="btn btn-purple" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const v = document.getElementById('q4').value;
+        const r = document.getElementById('q4-result');
+        if (v === 'c') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>問題の切り分け：</strong><br>' +
+            '・<code>ping 8.8.8.8</code> が成功 → ネットワーク接続・ルーティングは正常<br>' +
+            '・<code>ping google.com</code> が失敗 → <strong>名前解決（DNS）に問題がある</strong><br><br>' +
+            '<strong>確認すべき項目：</strong><br>' +
+            '① <code>cat /etc/resolv.conf</code>（nameserver が設定されているか）<br>' +
+            '② <code>dig @8.8.8.8 google.com</code>（DNS サーバーへの直接問い合わせ）<br>' +
+            '③ <code>grep hosts /etc/nsswitch.conf</code>（名前解決の順序）';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br><br>' +
+            '<code>ping 8.8.8.8</code> が成功しているため、ネットワーク接続・ルーティングは正常です。<br>' +
+            '<code>ping google.com</code> が失敗するのは <strong>DNS による名前解決</strong>ができないためです。<br>' +
+            '<code>/etc/resolv.conf</code> の <code>nameserver</code> 設定を確認してください。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-block">
+    <h3>Q5. 選択問題</h3>
+    <p>
+      RHEL/CentOS 系でネットワークインターフェース（enp3s0）の設定ファイルのパスとして正しいものはどれですか？
+    </p>
+    <select id="q5">
+      <option value="">-- 選択してください --</option>
+      <option value="a">/etc/network/interfaces</option>
+      <option value="b">/etc/netplan/01-netcfg.yaml</option>
+      <option value="c">/etc/sysconfig/network-scripts/ifcfg-enp3s0</option>
+      <option value="d">/etc/systemd/network/enp3s0.network</option>
+    </select>
+    <br>
+    <button class="btn btn-purple" onclick="checkQ5()">答え合わせ</button>
+    <div class="result-msg" id="q5-result"></div>
+    <script>
+      function checkQ5() {
+        const v = document.getElementById('q5').value;
+        const r = document.getElementById('q5-result');
+        if (v === 'c') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>ディストリビューション別のインターフェース設定ファイル：</strong><br>' +
+            '・<strong>RHEL/CentOS</strong>：<code>/etc/sysconfig/network-scripts/ifcfg-インターフェース名</code><br>' +
+            '・<strong>Debian/Ubuntu</strong>：<code>/etc/network/interfaces</code><br>' +
+            '・<strong>Ubuntu 18.04以降</strong>：<code>/etc/netplan/*.yaml</code><br>' +
+            '・<strong>systemd-networkd</strong>：<code>/etc/systemd/network/*.network</code>';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            'RHEL/CentOS 系のインターフェース設定ファイルは<br>' +
+            '<code>/etc/sysconfig/network-scripts/ifcfg-インターフェース名</code> です。<br>' +
+            '・<code>/etc/network/interfaces</code> は Debian/Ubuntu 系<br>' +
+            '・<code>/etc/netplan/*.yaml</code> は Ubuntu 18.04 以降';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 第6章「ネットワーク」の全セクションが完了しました！</p>
+  <button class="btn btn-done" onclick="markComplete()">✅ 第6章を完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch6', '100');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  if (parseInt(localStorage.getItem('lpic201_ch6') || '0') >= 100) {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="index.html">← ネットワークの設定</a>
+  <a class="home" href="../index.html">🏠 目次へ</a>
+  <a class="next" href="../07_security/index.html">次章へ：システムのセキュリティ →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
