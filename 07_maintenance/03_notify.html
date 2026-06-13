@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ユーザへのシステム管理情報の通知 ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em; color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #276749; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #1a4731, #276749);
+      border-radius: 12px; padding: 32px 32px 24px;
+      margin-bottom: 32px; color: #fff;
+      box-shadow: 0 4px 18px rgba(39,103,73,0.35);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em; font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85; letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .chapter-header h1 { margin: 0 0 10px; font-size: 1.6em; color: #fff; border: none; padding: 0; }
+    .chapter-header p  { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px; padding: 3px 12px;
+      font-size: 0.76em; font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 { color: #1a4731; margin-top: 48px; border-left: 5px solid #276749; padding-left: 12px; }
+    h3 { color: #2c5282; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7; padding: 2px 6px;
+      border-radius: 4px; font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c; color: #e2e8f0;
+      padding: 18px 20px; border-radius: 8px;
+      overflow-x: auto; font-size: 0.88em;
+      line-height: 1.7; font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+    pre .err     { color: #fc8181; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #4a5568; color: #e2e8f0;
+      border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 0.75em;
+      cursor: pointer; font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s; z-index: 1;
+    }
+    .copy-btn:hover { background: #276749; }
+
+    /* ボックス */
+    .note {
+      background: #fff; border: 1px dashed #9ae6b4;
+      border-radius: 6px; padding: 14px 18px;
+      font-size: 0.93em; color: #4a5568; margin: 14px 0;
+    }
+    .note strong { color: #1a4731; }
+    .warn {
+      background: #fffaf0; border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #744210; margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4; border: 1px solid #68d391;
+      border-left: 5px solid #48bb78; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #276749; margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff; border: 1px solid #9ae6b4;
+      border-radius: 8px; padding: 20px 24px;
+      margin: 12px 0 28px; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff; border: 1px solid #9ae6b4;
+      border-radius: 10px; padding: 18px 22px;
+      margin-bottom: 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 { margin: 0 0 12px; font-size: 0.92em; color: #1a4731; border: none; padding: 0; }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #276749; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #1a4731; font-weight: bold; }
+
+    /* ログインフロー図 */
+    .login-flow {
+      display: flex; align-items: stretch;
+      gap: 0; margin: 16px 0; flex-wrap: wrap;
+    }
+    .lf-step {
+      flex: 1; min-width: 130px;
+      display: flex; flex-direction: column;
+      align-items: center; position: relative;
+    }
+    .lf-step:not(:last-child)::after {
+      content: '→';
+      position: absolute; right: -12px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.3em; color: #718096; z-index: 1;
+    }
+    .lf-box {
+      border-radius: 8px; padding: 12px 10px;
+      text-align: center; font-size: 0.82em;
+      font-weight: bold; width: 100%;
+      margin: 0 14px 0 0;
+    }
+    .lf-file {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.75em; color: #718096;
+      margin-top: 6px; text-align: center;
+    }
+
+    /* ターミナルシミュレーター */
+    .terminal {
+      background: #0d1117; border-radius: 8px;
+      padding: 0; overflow: hidden; margin: 14px 0;
+      border: 2px solid #30363d;
+    }
+    .terminal-bar {
+      background: #21262d; padding: 8px 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .terminal-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+    }
+    .terminal-title {
+      font-size: 0.82em; color: #8b949e;
+      font-family: 'Consolas', 'Monaco', monospace;
+      margin-left: 8px;
+    }
+    .terminal-body {
+      padding: 16px 18px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85em; line-height: 1.8;
+    }
+    .t-prompt { color: #58a6ff; }
+    .t-cmd    { color: #e2e8f0; }
+    .t-out    { color: #8b949e; }
+    .t-warn   { color: #f6ad55; }
+    .t-info   { color: #68d391; }
+    .t-motd   { color: #b794f4; }
+
+    /* インタラクティブデモ */
+    .interactive-demo {
+      background: #f0fff4; border: 1px solid #9ae6b4;
+      border-radius: 8px; padding: 16px 20px; margin: 14px 0;
+    }
+    .slider-row {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em; font-weight: bold;
+      min-width: 180px; color: #1a4731;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row select {
+      border: 2px solid #9ae6b4; border-radius: 6px;
+      padding: 6px 10px; font-size: 0.88em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #2d3748; background: #fff;
+      cursor: pointer; flex: 1;
+    }
+    .slider-row select:focus { border-color: #276749; outline: none; }
+    .output-display {
+      background: #1a202c; color: #68d391;
+      border-radius: 6px; padding: 12px 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em; margin-top: 10px;
+      white-space: pre; overflow-x: auto; line-height: 1.7;
+    }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse; width: 100%;
+      background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0; font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #9ae6b4; padding: 10px 14px; text-align: left;
+    }
+    table.ref-table thead tr { background: #1a4731; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #f0fff4; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0; border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0; padding: 24px 28px; margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 18px 22px; margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 8px 12px; font-size: 0.95em;
+      width: 100%; max-width: 440px; margin: 6px 0;
+      outline: none; font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus { border-color: #f6ad55; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block; padding: 9px 20px;
+      border-radius: 6px; border: none; cursor: pointer;
+      font-size: 0.95em; font-weight: bold;
+      transition: opacity 0.2s; margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-green { background: #276749; color: #fff; }
+    .btn-done  { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px; padding: 10px 14px;
+      border-radius: 6px; font-weight: bold; display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #c6f6d5; color: #1a4731; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 48px;
+      padding-top: 20px; border-top: 2px solid #9ae6b4;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block; padding: 10px 20px;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.9em; transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .home { background: #276749; color: #fff; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4; border: 2px solid #48bb78;
+      border-radius: 10px; padding: 20px 24px;
+      margin-top: 40px; text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* 全章完了バナー */
+    .all-complete-banner {
+      background: linear-gradient(135deg, #1a4731, #276749);
+      border-radius: 12px; padding: 28px 32px;
+      margin-top: 32px; text-align: center; color: #fff;
+      box-shadow: 0 4px 18px rgba(39,103,73,0.35);
+    }
+    .all-complete-banner h3 {
+      color: #fff; margin: 0 0 10px; font-size: 1.3em;
+    }
+    .all-complete-banner p { margin: 0 0 16px; opacity: 0.9; font-size: 0.95em; }
+    .all-complete-banner a {
+      display: inline-block; padding: 10px 24px;
+      background: #fff; color: #1a4731;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.95em;
+      transition: opacity 0.2s;
+    }
+    .all-complete-banner a:hover { opacity: 0.85; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 2px solid #9ae6b4;
+      font-size: 0.82em; color: #a0aec0; text-align: center;
+    }
+    footer a { color: #276749; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .login-flow { flex-direction: column; gap: 8px; }
+      .lf-step::after { display: none; }
+      .lf-box { margin: 0; }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  <a href="index.html">第7章：システムメンテナンス</a> ›
+  ユーザへのシステム管理情報の通知
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 07 › SECTION 03（最終セクション）</div>
+  <h1>📢 ユーザへのシステム管理情報の通知</h1>
+  <p>ログイン前後のメッセージ設定（/etc/issue・/etc/motd・/etc/issue.net）、
+  今日のお知らせ（MOTD）、システム情報の動的表示、
+  そしてログイン中ユーザーへのリアルタイム通知方法を学びます。</p>
+  <div class="badge-row">
+    <span class="badge">/etc/issue</span>
+    <span class="badge">/etc/motd</span>
+    <span class="badge">/etc/issue.net</span>
+    <span class="badge">wall</span>
+    <span class="badge">write</span>
+    <span class="badge">mesg</span>
+    <span class="badge">notify-send</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第7章のセクション</h2>
+  <ol>
+    <li><a href="index.html">ソースからのソフトウェアインストール</a></li>
+    <li><a href="02_backup.html">バックアップ</a></li>
+    <li class="current"><a href="03_notify.html">ユーザへのシステム管理情報の通知</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：ログインフローとメッセージファイル -->
+<!-- ============================================================ -->
+<h2 id="login-flow">① ログインフローとメッセージファイル</h2>
+
+<div class="note">
+  <strong>重要ポイント①：ログイン前は /etc/issue（ローカル）または /etc/issue.net（SSH）が表示され、ログイン後は /etc/motd が表示される</strong><br>
+  各ファイルの表示タイミングと用途の違いを正確に理解しましょう。
+</div>
+
+<div class="demo-box">
+  <h3>ログイン時のメッセージ表示フロー</h3>
+  <div class="login-flow">
+
+    <div class="lf-step">
+      <div class="lf-box" style="background:#1a202c; color:#e2e8f0; border:2px solid #4a5568;">
+        👤 ユーザーが<br>ログイン試行
+      </div>
+    </div>
+
+    <div class="lf-step">
+      <div class="lf-box" style="background:#ebf8ff; border:2px solid #90cdf4; color:#2b4c7e;">
+        🖥️ ログイン前<br>メッセージ表示
+      </div>
+      <div class="lf-file">/etc/issue<br>（ローカル）<br>/etc/issue.net<br>（SSH）</div>
+    </div>
+
+    <div class="lf-step">
+      <div class="lf-box" style="background:#fefcbf; border:2px solid #f6e05e; color:#744210;">
+        🔑 認証<br>（パスワード入力）
+      </div>
+    </div>
+
+    <div class="lf-step">
+      <div class="lf-box" style="background:#f0fff4; border:2px solid #68d391; color:#1a4731;">
+        📋 ログイン後<br>メッセージ表示
+      </div>
+      <div class="lf-file">/etc/motd<br>（Message of the Day）</div>
+    </div>
+
+    <div class="lf-step">
+      <div class="lf-box" style="background:#e9d8fd; border:2px solid #b794f4; color:#553c9a;">
+        💻 シェル起動<br>（プロンプト表示）
+      </div>
+    </div>
+
+  </div>
+
+  <h3>メッセージファイルの比較</h3>
+  <table class="ref-table">
+    <thead><tr><th>ファイル</th><th>表示タイミング</th><th>対象</th><th>用途</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>/etc/issue</code></td>
+        <td>ログイン<strong>前</strong>（認証前）</td>
+        <td>ローカルコンソール</td>
+        <td>OS情報・警告メッセージ・法的注意事項</td>
+      </tr>
+      <tr>
+        <td><code>/etc/issue.net</code></td>
+        <td>ログイン<strong>前</strong>（認証前）</td>
+        <td>SSH・ネットワーク接続</td>
+        <td>SSH バナー（/etc/ssh/sshd_config の Banner 設定が必要）</td>
+      </tr>
+      <tr>
+        <td><code>/etc/motd</code></td>
+        <td>ログイン<strong>後</strong>（認証後）</td>
+        <td>すべてのユーザー</td>
+        <td>今日のお知らせ・メンテナンス情報・システム情報</td>
+      </tr>
+      <tr>
+        <td><code>/etc/motd.d/</code></td>
+        <td>ログイン<strong>後</strong></td>
+        <td>すべてのユーザー</td>
+        <td>動的 MOTD のスクリプトを格納するディレクトリ（Ubuntu）</td>
+      </tr>
+      <tr>
+        <td><code>/run/motd.dynamic</code></td>
+        <td>ログイン<strong>後</strong></td>
+        <td>すべてのユーザー</td>
+        <td>動的に生成された MOTD（Ubuntu）</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：/etc/issue と /etc/issue.net -->
+<!-- ============================================================ -->
+<h2 id="issue">② /etc/issue と /etc/issue.net</h2>
+
+<div class="demo-box">
+  <h3>/etc/issue の設定</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /etc/issue の内容確認</span>
+$ <span class="cmd">cat</span> /etc/issue
+<span class="out">Ubuntu 24.04.1 LTS \n \l</span>
+
+<span class="comment"># /etc/issue のエスケープシーケンス</span>
+<span class="comment"># \n : ホスト名</span>
+<span class="comment"># \l : ログイン端末名（tty1 など）</span>
+<span class="comment"># \r : カーネルリリース番号</span>
+<span class="comment"># \v : カーネルバージョン</span>
+<span class="comment"># \m : アーキテクチャ（x86_64 など）</span>
+<span class="comment"># \o : NIS ドメイン名</span>
+<span class="comment"># \d : 現在の日付</span>
+<span class="comment"># \t : 現在の時刻</span>
+<span class="comment"># \s : OS 名（Linux）</span>
+
+<span class="comment"># カスタマイズ例</span>
+$ <span class="cmd">sudo vi</span> /etc/issue
+<span class="hdr">*****************************************************</span>
+<span class="hdr">*  WARNING: Authorized access only!                *</span>
+<span class="hdr">*  Unauthorized access is strictly prohibited.     *</span>
+<span class="hdr">*****************************************************</span>
+<span class="hdr">Host: \n  Kernel: \r  Arch: \m</span>
+<span class="hdr">Terminal: \l</span>
+
+<span class="comment"># ローカルコンソールのログイン画面で表示される</span>
+</pre>
+  </div>
+
+  <h3>/etc/issue.net と SSH バナーの設定</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /etc/issue.net の内容（SSH 接続時のバナー）</span>
+$ <span class="cmd">cat</span> /etc/issue.net
+<span class="out">Ubuntu 24.04.1 LTS</span>
+
+<span class="comment"># SSH バナーを有効化するには sshd_config を編集</span>
+$ <span class="cmd">sudo vi</span> /etc/ssh/sshd_config
+<span class="hl">Banner /etc/issue.net</span>
+
+<span class="comment"># SSH サービスを再起動して設定を反映</span>
+$ <span class="cmd">sudo systemctl</span> restart sshd
+
+<span class="comment"># SSH 接続時に表示されるバナーの例</span>
+<span class="hdr">*****************************************************</span>
+<span class="hdr">*  This system is for authorized users only.       *</span>
+<span class="hdr">*  All activities may be monitored and recorded.   *</span>
+<span class="hdr">*****************************************************</span>
+
+<span class="comment"># ⚠️ /etc/issue.net ではエスケープシーケンスが使えない</span>
+<span class="comment"># （\n や \r などは展開されない）</span>
+</pre>
+  </div>
+
+  <h3>/etc/issue のターミナルシミュレーター</h3>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="terminal-dot" style="background:#ff5f57;"></div>
+      <div class="terminal-dot" style="background:#ffbd2e;"></div>
+      <div class="terminal-dot" style="background:#28c840;"></div>
+      <div class="terminal-title">tty1 — ログイン前の表示</div>
+    </div>
+    <div class="terminal-body">
+      <div class="t-warn">*****************************************************</div>
+      <div class="t-warn">*  WARNING: Authorized access only!                *</div>
+      <div class="t-warn">*  Unauthorized access is strictly prohibited.     *</div>
+      <div class="t-warn">*****************************************************</div>
+      <div class="t-info">Ubuntu 24.04.1 LTS  myserver  Kernel: 6.8.0-51-generic</div>
+      <div class="t-out">Terminal: tty1</div>
+      <div></div>
+      <div class="t-out">myserver login: <span style="animation: blink 1s step-end infinite;">_</span></div>
+    </div>
+  </div>
+  <style>
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  </style>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：/etc/motd（今日のお知らせ） -->
+<!-- ============================================================ -->
+<h2 id="motd">③ /etc/motd（Message of the Day）</h2>
+
+<div class="note">
+  <strong>重要ポイント②：/etc/motd はログイン後に表示されるメッセージ。メンテナンス予告・重要なお知らせ・システム情報を記載する</strong><br>
+  Ubuntu などでは <code>/etc/motd.d/</code> のスクリプトで動的に生成される場合があります。
+</div>
+
+<div class="demo-box">
+  <h3>/etc/motd の設定</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /etc/motd の内容確認</span>
+$ <span class="cmd">cat</span> /etc/motd
+
+<span class="comment"># /etc/motd を編集（メンテナンス予告の例）</span>
+$ <span class="cmd">sudo vi</span> /etc/motd
+<span class="hdr">============================================================</span>
+<span class="hdr">  Welcome to myserver.example.com</span>
+<span class="hdr">============================================================</span>
+<span class="hdr"></span>
+<span class="hdr">  [NOTICE] Scheduled maintenance:</span>
+<span class="hdr">  Date: 2026-06-20 02:00 - 04:00 JST</span>
+<span class="hdr">  Impact: System will be unavailable during this period.</span>
+<span class="hdr"></span>
+<span class="hdr">  Please save your work before the maintenance window.</span>
+<span class="hdr">  Contact: admin@example.com</span>
+<span class="hdr">============================================================</span>
+
+<span class="comment"># メンテナンス終了後は内容を削除または更新</span>
+$ <span class="cmd">sudo truncate</span> <span class="opt">-s</span> <span class="val">0</span> /etc/motd   <span class="comment"># ファイルを空にする</span>
+$ <span class="cmd">sudo</span> > /etc/motd               <span class="comment"># 同様に空にする</span>
+</pre>
+  </div>
+
+  <h3>動的 MOTD（Ubuntu 系）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># Ubuntu では /etc/update-motd.d/ のスクリプトで動的 MOTD を生成</span>
+$ <span class="cmd">ls</span> /etc/update-motd.d/
+<span class="out">00-header         10-help-text      50-landscape-sysinfo</span>
+<span class="out">50-motd-news      80-esm            91-release-upgrade</span>
+<span class="out">95-hwe-eol        97-overlayroot    98-fsck-at-reboot</span>
+<span class="out">98-reboot-required</span>
+
+<span class="comment"># 各スクリプトは実行可能なシェルスクリプト</span>
+$ <span class="cmd">cat</span> /etc/update-motd.d/00-header
+<span class="out">#!/bin/sh</span>
+<span class="out">printf "Welcome to %s (%s %s %s)\n" "$(lsb_release -s -d)" \</span>
+<span class="out">    "$(uname -o)" "$(uname -r)" "$(uname -m)"</span>
+
+<span class="comment"># カスタムスクリプトを追加（システム情報を表示する例）</span>
+$ <span class="cmd">sudo vi</span> /etc/update-motd.d/10-sysinfo
+<span class="hdr">#!/bin/bash</span>
+<span class="hdr">echo ""</span>
+<span class="hdr">echo "=== System Information ==="</span>
+<span class="hdr">echo "  Hostname : $(hostname)"</span>
+<span class="hdr">echo "  Uptime   : $(uptime -p)"</span>
+<span class="hdr">echo "  Load     : $(cat /proc/loadavg | awk '{print $1, $2, $3}')"</span>
+<span class="hdr">echo "  Memory   : $(free -h | awk '/^Mem/{print $3 "/" $2}')"</span>
+<span class="hdr">echo "  Disk     : $(df -h / | awk 'NR==2{print $3 "/" $2 " (" $5 ")"}')"</span>
+<span class="hdr">echo "  IP Addr  : $(hostname -I | awk '{print $1}')"</span>
+<span class="hdr">echo "=========================="</span>
+
+<span class="comment"># 実行権限を付与</span>
+$ <span class="cmd">sudo chmod</span> <span class="val">755</span> /etc/update-motd.d/10-sysinfo
+
+<span class="comment"># 動的 MOTD を手動で生成・確認</span>
+$ <span class="cmd">sudo run-parts</span> /etc/update-motd.d/
+</pre>
+  </div>
+
+  <h3>ログイン後のターミナル表示例</h3>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="terminal-dot" style="background:#ff5f57;"></div>
+      <div class="terminal-dot" style="background:#ffbd2e;"></div>
+      <div class="terminal-dot" style="background:#28c840;"></div>
+      <div class="terminal-title">user@myserver — ログイン後の表示</div>
+    </div>
+    <div class="terminal-body">
+      <div class="t-info">Welcome to Ubuntu 24.04.1 LTS (GNU/Linux 6.8.0-51-generic x86_64)</div>
+      <div></div>
+      <div class="t-motd">=== System Information ===</div>
+      <div class="t-motd">  Hostname : myserver.example.com</div>
+      <div class="t-motd">  Uptime   : up 5 days, 3 hours, 42 minutes</div>
+      <div class="t-motd">  Load     : 0.12 0.08 0.05</div>
+      <div class="t-motd">  Memory   : 3.2G/7.7G</div>
+      <div class="t-motd">  Disk     : 12G/93G (14%)</div>
+      <div class="t-motd">  IP Addr  : 192.168.1.10</div>
+      <div class="t-motd">==========================</div>
+      <div></div>
+      <div class="t-warn">  [NOTICE] Scheduled maintenance: 2026-06-20 02:00-04:00 JST</div>
+      <div></div>
+      <div class="t-out">Last login: Fri Jun 13 10:00:00 2026 from 192.168.1.5</div>
+      <div></div>
+      <div><span class="t-prompt">user@myserver:~$</span> <span class="t-cmd">_</span></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 4：ログイン中ユーザーへの通知 -->
+<!-- ============================================================ -->
+<h2 id="notify-users">④ ログイン中ユーザーへの通知</h2>
+
+<div class="note">
+  <strong>重要ポイント③：wall コマンドはすべてのログインユーザーに、write コマンドは特定ユーザーにメッセージを送信する。mesg コマンドでメッセージ受信を制御できる</strong>
+</div>
+
+<div class="demo-box">
+  <h3>通知コマンドの使い方（インタラクティブ）</h3>
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#1a4731; margin:0 0 12px;">
+      コマンドを選択して使い方と出力例を確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>コマンド</label>
+      <select id="notify-cmd-sel" onchange="showNotifyCmd()">
+        <option value="">-- 選択してください --</option>
+        <option value="wall">wall（全ユーザーへのブロードキャスト）</option>
+        <option value="write">write（特定ユーザーへのメッセージ）</option>
+        <option value="mesg">mesg（メッセージ受信の制御）</option>
+        <option value="who">who / w（ログイン中ユーザーの確認）</option>
+        <option value="shutdown-msg">shutdown メッセージ</option>
+      </select>
+    </div>
+    <div class="output-display" id="notify-cmd-output" style="display:none;"></div>
+  </div>
+
+  <script>
+    const notifyCmds = {
+      wall: {
+        color: '#f6ad55',
+        text:
+`# wall：すべてのログインユーザーにメッセージをブロードキャスト
+# （Broadcast ALL users）
+
+# 直接メッセージを入力（Ctrl+D で送信）
+$ wall
+System will be rebooted in 10 minutes for maintenance.
+Please save your work!
+[Ctrl+D]
+
+# ファイルからメッセージを送信
+$ wall /tmp/maintenance_notice.txt
+
+# 文字列を直接指定
+$ echo "Server restart in 5 minutes!" | wall
+
+# sudo で root として送信（mesg n のユーザーにも届く）
+$ sudo wall "URGENT: System going down NOW for emergency maintenance!"
+
+# 受信側の表示例（他のユーザーの画面に割り込み表示）
+Broadcast message from root@myserver (pts/0) (Fri Jun 13 15:00:00 2026):
+
+System will be rebooted in 10 minutes for maintenance.
+Please save your work!`
+      },
+      write: {
+        color: '#90cdf4',
+        text:
+`# write：特定のユーザーにメッセージを送信
+
+# 特定ユーザーにメッセージを送信（Ctrl+D または Ctrl+C で終了）
+$ write alice
+Hello Alice, please check your email.
+There is an important message from the admin.
+[Ctrl+D]
+
+# 特定の端末（tty）を指定して送信
+$ write alice pts/1
+
+# 受信側（alice）の画面に表示される内容
+Message from root@myserver on pts/0 at 15:00 ...
+Hello Alice, please check your email.
+There is an important message from the admin.
+EOF
+
+# ログイン中のユーザーと端末を確認してから送信
+$ who
+alice    pts/0   2026-06-13 14:30 (192.168.1.5)
+bob      pts/1   2026-06-13 14:45 (192.168.1.6)
+$ write alice pts/0`
+      },
+      mesg: {
+        color: '#68d391',
+        text:
+`# mesg：他のユーザーからのメッセージ受信を制御
+
+# 現在の設定を確認
+$ mesg
+is y   # y = メッセージ受信許可
+
+# メッセージ受信を拒否（write/wall を受け取らない）
+$ mesg n
+$ mesg
+is n   # n = メッセージ受信拒否
+
+# メッセージ受信を許可
+$ mesg y
+
+# mesg n の状態でも root からの wall は届く場合がある
+# （sudo wall は mesg n を無視することがある）
+
+# 注意：mesg n の状態でメッセージを送ろうとすると
+$ write alice
+write: alice has messages disabled`
+      },
+      who: {
+        color: '#b794f4',
+        text:
+`# who：現在ログイン中のユーザーを表示
+
+$ who
+alice    tty1     2026-06-13 09:00
+bob      pts/0    2026-06-13 14:30 (192.168.1.5)
+carol    pts/1    2026-06-13 14:45 (192.168.1.6)
+
+# w：より詳細なログイン情報を表示
+$ w
+ 15:00:00 up 5 days,  3:42,  3 users,  load average: 0.12, 0.08, 0.05
+USER     TTY      FROM             LOGIN@   IDLE JCPU PCPU WHAT
+alice    tty1     -                09:00    6:00  0.05  0.01 bash
+bob      pts/0    192.168.1.5      14:30    0.00  0.10  0.05 vim file.txt
+carol    pts/1    192.168.1.6      14:45    2:00  0.02  0.01 bash
+
+# last：過去のログイン履歴を表示
+$ last
+bob      pts/0    192.168.1.5      Fri Jun 13 14:30   still logged in
+alice    tty1                      Fri Jun 13 09:00   still logged in
+root     pts/0    192.168.1.1      Thu Jun 12 10:00 - 11:00  (01:00)`
+      },
+      'shutdown-msg': {
+        color: '#fc8181',
+        text:
+`# shutdown コマンドでのメッセージ送信
+
+# 10分後にシャットダウン（メッセージ付き）
+$ sudo shutdown -h +10 "System going down for maintenance in 10 minutes!"
+
+# 指定時刻にシャットダウン
+$ sudo shutdown -h 02:00 "Scheduled maintenance. System will be back at 04:00."
+
+# 再起動（メッセージ付き）
+$ sudo shutdown -r +5 "System rebooting in 5 minutes for kernel update."
+
+# シャットダウンのキャンセル
+$ sudo shutdown -c
+
+# shutdown メッセージは wall と同様にすべてのユーザーに表示される
+# 受信側の表示例：
+Broadcast message from root@myserver (Fri Jun 13 15:00:00 2026):
+
+System going down for maintenance in 10 minutes!
+The system is going down for poweroff at Fri Jun 13 15:10:00 2026!`
+      }
+    };
+
+    function showNotifyCmd() {
+      const key = document.getElementById('notify-cmd-sel').value;
+      const el  = document.getElementById('notify-cmd-output');
+      if (!key) { el.style.display='none'; return; }
+      const d = notifyCmds[key];
+      el.style.display = 'block';
+      el.style.color   = d.color;
+      el.textContent   = d.text;
+    }
+  </script>
+
+  <h3>通知コマンドの比較表</h3>
+  <table class="ref-table">
+    <thead><tr><th>コマンド</th><th>送信先</th><th>特徴</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>wall</code></td>
+        <td>すべてのログインユーザー</td>
+        <td>ブロードキャスト。mesg n でも root の wall は届く場合がある</td>
+      </tr>
+      <tr>
+        <td><code>write ユーザー名</code></td>
+        <td>特定のユーザー</td>
+        <td>1対1のメッセージ送信。mesg n のユーザーには送れない</td>
+      </tr>
+      <tr>
+        <td><code>mesg y/n</code></td>
+        <td>—（受信制御）</td>
+        <td>自分への write/wall メッセージの受信を許可（y）/拒否（n）</td>
+      </tr>
+      <tr>
+        <td><code>who</code></td>
+        <td>—（確認）</td>
+        <td>現在ログイン中のユーザーと端末を表示</td>
+      </tr>
+      <tr>
+        <td><code>w</code></td>
+        <td>—（確認）</td>
+        <td>ログイン中ユーザーの詳細情報（実行コマンド・アイドル時間）</td>
+      </tr>
+      <tr>
+        <td><code>shutdown -h +N "メッセージ"</code></td>
+        <td>すべてのログインユーザー</td>
+        <td>シャットダウン通知と同時にメッセージを送信</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>wall コマンドのターミナル表示例</h3>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="terminal-dot" style="background:#ff5f57;"></div>
+      <div class="terminal-dot" style="background:#ffbd2e;"></div>
+      <div class="terminal-dot" style="background:#28c840;"></div>
+      <div class="terminal-title">bob@myserver — wall メッセージ受信</div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="t-prompt">bob@myserver:~$</span> <span class="t-cmd">vim important.txt</span></div>
+      <div class="t-out">（vim で編集中...）</div>
+      <div></div>
+      <div class="t-warn">Broadcast message from root@myserver (pts/0) (Fri Jun 13 15:00:00 2026):</div>
+      <div></div>
+      <div class="t-warn">System will be rebooted in 10 minutes for maintenance.</div>
+      <div class="t-warn">Please save your work!</div>
+      <div></div>
+      <div class="t-out">（vim の画面が一時的に中断されてメッセージが表示される）</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- まとめ表 -->
+<!-- ============================================================ -->
+<h2>📌 まとめ一覧</h2>
+<div class="demo-box">
+  <table class="ref-table">
+    <thead><tr><th>カテゴリ</th><th>ファイル / コマンド</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td colspan="3" style="background:#c6f6d5; color:#1a4731; font-weight:bold; font-size:0.88em;">▼ ログイン前後のメッセージ</td></tr>
+      <tr><td>ログイン前（ローカル）</td><td><code>/etc/issue</code></td><td>ローカルコンソールのログイン前に表示。エスケープシーケンス使用可</td></tr>
+      <tr><td>ログイン前（SSH）</td><td><code>/etc/issue.net</code></td><td>SSH 接続時のバナー。sshd_config の Banner 設定が必要</td></tr>
+      <tr><td>ログイン後</td><td><code>/etc/motd</code></td><td>ログイン後に表示。メンテナンス予告・お知らせを記載</td></tr>
+      <tr><td>動的 MOTD（Ubuntu）</td><td><code>/etc/update-motd.d/</code></td><td>スクリプトで動的にシステム情報を生成</td></tr>
+      <tr><td>SSH バナー設定</td><td><code>/etc/ssh/sshd_config</code> の <code>Banner</code></td><td>SSH 接続時のバナーファイルを指定</td></tr>
+      <tr><td colspan="3" style="background:#c6f6d5; color:#1a4731; font-weight:bold; font-size:0.88em;">▼ ログイン中ユーザーへの通知</td></tr>
+      <tr><td>全ユーザーへの通知</td><td><code>wall "メッセージ"</code></td><td>すべてのログインユーザーにブロードキャスト</td></tr>
+      <tr><td>特定ユーザーへの通知</td><td><code>write ユーザー名</code></td><td>特定のユーザーにメッセージを送信</td></tr>
+      <tr><td>メッセージ受信制御</td><td><code>mesg y</code> / <code>mesg n</code></td><td>write/wall メッセージの受信を許可/拒否</td></tr>
+      <tr><td>ログインユーザー確認</td><td><code>who</code> / <code>w</code></td><td>現在ログイン中のユーザーと端末を表示</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 穴埋め問題</h3>
+    <p>以下の説明に合うファイル・コマンドを入力してください。</p>
+    <label>① ローカルコンソールのログイン前に表示されるメッセージファイル：</label>
+    <input type="text" id="q1a" placeholder="/etc/...">
+    <label>② ログイン後に表示される「今日のお知らせ」ファイル：</label>
+    <input type="text" id="q1b" placeholder="/etc/...">
+    <label>③ すべてのログインユーザーにメッセージをブロードキャストするコマンド：</label>
+    <input type="text" id="q1c" placeholder="コマンド名">
+    <label>④ 他のユーザーからの write メッセージを拒否するコマンド：</label>
+    <input type="text" id="q1d" placeholder="コマンド x">
+    <label>⑤ SSH 接続時のバナーを設定する sshd_config のディレクティブ名：</label>
+    <input type="text" id="q1e" placeholder="Xxxxx">
+    <br>
+    <button class="btn btn-green" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const a = document.getElementById('q1a').value.trim().toLowerCase().replace(/\s/g,'');
+        const b = document.getElementById('q1b').value.trim().toLowerCase().replace(/\s/g,'');
+        const c = document.getElementById('q1c').value.trim().toLowerCase().replace(/\s/g,'');
+        const d = document.getElementById('q1d').value.trim().toLowerCase().replace(/\s+/g,'');
+        const e = document.getElementById('q1e').value.trim().toLowerCase().replace(/\s/g,'');
+        const r = document.getElementById('q1-result');
+        const ca = a === '/etc/issue';
+        const cb = b === '/etc/motd';
+        const cc = c === 'wall';
+        const cd = d === 'mesgn';
+        const ce = e === 'banner';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ /etc/issue'}　` +
+            `② ${cb?'✅':'❌ /etc/motd'}　` +
+            `③ ${cc?'✅':'❌ wall'}　` +
+            `④ ${cd?'✅':'❌ mesg n'}　` +
+            `⑤ ${ce?'✅':'❌ Banner'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 選択問題</h3>
+    <p>
+      <code>/etc/issue</code> と <code>/etc/motd</code> の違いとして正しいものはどれですか？
+    </p>
+    <select id="q2">
+      <option value="">-- 選択してください --</option>
+      <option value="a">/etc/issue はログイン後、/etc/motd はログイン前に表示される</option>
+      <option value="b">/etc/issue はログイン前、/etc/motd はログイン後に表示される</option>
+      <option value="c">/etc/issue は SSH 専用、/etc/motd はローカルコンソール専用である</option>
+      <option value="d">どちらもログイン後に表示されるが、/etc/issue は root のみに表示される</option>
+    </select>
+    <br>
+    <button class="btn btn-green" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const v = document.getElementById('q2').value;
+        const r = document.getElementById('q2-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>表示タイミングの違い：</strong><br>' +
+            '・<code>/etc/issue</code>：ログイン<strong>前</strong>（認証前）に表示<br>' +
+            '&nbsp;&nbsp;→ ローカルコンソールのログインプロンプトの前に表示される<br>' +
+            '・<code>/etc/motd</code>：ログイン<strong>後</strong>（認証後）に表示<br>' +
+            '&nbsp;&nbsp;→ 「Message of the Day」。メンテナンス予告などに使用<br><br>' +
+            'SSH 接続時のログイン前バナーは <code>/etc/issue.net</code> を使用します。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '・<code>/etc/issue</code>：ログイン<strong>前</strong>（認証前）に表示<br>' +
+            '・<code>/etc/motd</code>：ログイン<strong>後</strong>（認証後）に表示';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① <code>wall</code> コマンドはすべてのログインユーザーにメッセージをブロードキャストする
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② <code>write</code> コマンドは特定のユーザーにメッセージを送信する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ <code>mesg n</code> を設定したユーザーには <code>wall</code> も <code>write</code> も届かない
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ <code>/etc/issue</code> では <code>\n</code>（ホスト名）などのエスケープシーケンスが使用できる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ SSH 接続時のバナーを表示するには <code>/etc/ssh/sshd_config</code> に <code>Banner /etc/issue.net</code> を設定する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ Ubuntu の <code>/etc/update-motd.d/</code> にあるスクリプトは動的に MOTD を生成する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ <code>/etc/issue.net</code> ではエスケープシーケンス（<code>\n</code> など）が展開される
+    </label>
+    <br>
+    <button class="btn btn-green" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：①②④⑤⑥（a,b,d,e,f）
+        // ③ mesg n でも root の wall は届く場合がある
+        // ⑦ /etc/issue.net ではエスケープシーケンスは展開されない
+        const correct = { a:true, b:true, c:false, d:true, e:true, f:true, g:false };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>①②④⑤⑥<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・③ <code>mesg n</code> を設定しても、<strong>root からの <code>wall</code> は届く場合があります</strong>（sudo wall など）<br>' +
+            '・⑦ <code>/etc/issue.net</code> では <code>\\n</code> などの<strong>エスケープシーケンスは展開されません</strong>。<br>' +
+            '&nbsp;&nbsp;エスケープシーケンスが使えるのは <code>/etc/issue</code>（ローカルコンソール）のみです。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. シナリオ問題</h3>
+    <p>
+      明日の深夜2時にシステムメンテナンスを予定しています。
+      現在ログイン中のすべてのユーザーに今すぐ通知し、
+      さらにこれからログインするユーザーにもメンテナンス予告を表示したいと思います。
+      <strong>最も適切な操作の組み合わせ</strong>はどれですか？
+    </p>
+    <select id="q4">
+      <option value="">-- 選択してください --</option>
+      <option value="a">wall コマンドで通知し、/etc/issue を編集する</option>
+      <option value="b">write コマンドで各ユーザーに通知し、/etc/motd を編集する</option>
+      <option value="c">wall コマンドで通知し、/etc/motd を編集する</option>
+      <option value="d">shutdown コマンドのみを実行する</option>
+    </select>
+    <br>
+    <button class="btn btn-green" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const v = document.getElementById('q4').value;
+        const r = document.getElementById('q4-result');
+        if (v === 'c') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>最適な操作：</strong><br>' +
+            '① <code>wall</code>：現在ログイン中のすべてのユーザーに即座に通知<br>' +
+            '<code>$ wall "Scheduled maintenance tomorrow 02:00-04:00 JST. Please save your work."</code><br><br>' +
+            '② <code>/etc/motd</code> を編集：これからログインするユーザーへの通知<br>' +
+            '<code>$ sudo vi /etc/motd</code>（メンテナンス予告を記載）<br><br>' +
+            '<strong>なぜ /etc/issue ではなく /etc/motd か：</strong><br>' +
+            '・<code>/etc/issue</code> はログイン前（認証前）に表示される<br>' +
+            '・<code>/etc/motd</code> はログイン後に表示される → ユーザーが確実に認識できる';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br><br>' +
+            '現在ログイン中のユーザーへの即時通知には <code>wall</code> が最適です。<br>' +
+            'これからログインするユーザーへの通知には <code>/etc/motd</code>（ログイン後に表示）が適切です。<br>' +
+            '<code>/etc/issue</code> はログイン前の表示で、認証前のため見落とされる可能性があります。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-block">
+    <h3>Q5. 選択問題</h3>
+    <p>
+      <code>/etc/issue</code> で使用できるエスケープシーケンス <code>\n</code> が表示する内容はどれですか？
+    </p>
+    <select id="q5">
+      <option value="">-- 選択してください --</option>
+      <option value="a">改行文字</option>
+      <option value="b">ホスト名</option>
+      <option value="c">カーネルリリース番号</option>
+      <option value="d">ログイン端末名</option>
+    </select>
+    <br>
+    <button class="btn btn-green" onclick="checkQ5()">答え合わせ</button>
+    <div class="result-msg" id="q5-result"></div>
+    <script>
+      function checkQ5() {
+        const v = document.getElementById('q5').value;
+        const r = document.getElementById('q5-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>/etc/issue のエスケープシーケンス一覧：</strong><br>' +
+            '・<code>\\n</code>：<strong>ホスト名</strong>（hostname）<br>' +
+            '・<code>\\l</code>：ログイン端末名（tty1 など）<br>' +
+            '・<code>\\r</code>：カーネルリリース番号<br>' +
+            '・<code>\\v</code>：カーネルバージョン<br>' +
+            '・<code>\\m</code>：アーキテクチャ（x86_64 など）<br>' +
+            '・<code>\\s</code>：OS 名（Linux）<br>' +
+            '・<code>\\d</code>：現在の日付<br>' +
+            '・<code>\\t</code>：現在の時刻<br><br>' +
+            '注意：<code>/etc/issue.net</code> ではこれらのエスケープシーケンスは展開されません。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '<code>/etc/issue</code> での <code>\\n</code> は<strong>ホスト名</strong>を表示します。<br>' +
+            '（通常の <code>\\n</code> = 改行とは異なります）<br>' +
+            'カーネルリリース番号は <code>\\r</code>、ログイン端末名は <code>\\l</code> です。';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 「ユーザへのシステム管理情報の通知」の学習が完了したら記録しましょう！</p>
+  <button class="btn btn-done" onclick="markComplete()">✅ このセクションを完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！
+  </div>
+</div>
+
+<!-- 全章完了バナー -->
+<div class="all-complete-banner" id="all-complete-banner" style="display:none;">
+  <h3>🎊 LPIC-201 全章学習完了おめでとうございます！</h3>
+  <p>
+    第1章〜第7章のすべてのセクションを学習しました。<br>
+    トップページで全体の進捗を確認して、試験に向けた最終確認を行いましょう！
+  </p>
+  <a href="../index.html">🏠 トップページへ戻る</a>
+</div>
+
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch7', '100');
+    document.getElementById('complete-msg').style.display = 'block';
+    document.getElementById('all-complete-banner').style.display = 'block';
+    document.getElementById('all-complete-banner').scrollIntoView({ behavior:'smooth' });
+  }
+  if (parseInt(localStorage.getItem('lpic201_ch7') || '0') >= 100) {
+    document.getElementById('complete-msg').style.display = 'block';
+    document.getElementById('all-complete-banner').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="02_backup.html">← バックアップ</a>
+  <a class="home" href="../index.html">🏠 目次へ戻る（全章完了）</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
