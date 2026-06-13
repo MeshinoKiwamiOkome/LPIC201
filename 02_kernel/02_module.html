@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>カーネルモジュールの管理 ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em;
+      color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #567ebb; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #2b4c7e, #567ebb);
+      border-radius: 12px;
+      padding: 32px 32px 24px;
+      margin-bottom: 32px;
+      color: #fff;
+      box-shadow: 0 4px 18px rgba(86,126,187,0.3);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .chapter-header h1 { margin: 0 0 10px; font-size: 1.6em; color: #fff; border: none; padding: 0; }
+    .chapter-header p  { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 0.76em;
+      font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 { color: #2b4c7e; margin-top: 48px; border-left: 5px solid #567ebb; padding-left: 12px; }
+    h3 { color: #276749; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c;
+      color: #e2e8f0;
+      padding: 18px 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.88em;
+      line-height: 1.7;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+    pre .err     { color: #fc8181; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #4a5568; color: #e2e8f0;
+      border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 0.75em;
+      cursor: pointer; font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s; z-index: 1;
+    }
+    .copy-btn:hover { background: #567ebb; }
+
+    /* ボックス */
+    .note {
+      background: #fff; border: 1px dashed #90cdf4;
+      border-radius: 6px; padding: 14px 18px;
+      font-size: 0.93em; color: #4a5568; margin: 14px 0;
+    }
+    .note strong { color: #2b4c7e; }
+    .warn {
+      background: #fffaf0; border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #744210; margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4; border: 1px solid #68d391;
+      border-left: 5px solid #48bb78; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #276749; margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff; border: 1px solid #bee3f8;
+      border-radius: 8px; padding: 20px 24px;
+      margin: 12px 0 28px; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff; border: 1px solid #bee3f8;
+      border-radius: 10px; padding: 18px 22px;
+      margin-bottom: 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 { margin: 0 0 12px; font-size: 0.92em; color: #2b4c7e; border: none; padding: 0; }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #567ebb; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #2b4c7e; font-weight: bold; }
+
+    /* コマンドカード */
+    .cmd-overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 12px; margin: 16px 0;
+    }
+    .cmd-overview-card {
+      background: #ebf8ff; border: 2px solid #90cdf4;
+      border-radius: 8px; padding: 14px 14px;
+      text-align: center; cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .cmd-overview-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(86,126,187,0.2);
+      border-color: #567ebb;
+    }
+    .cmd-overview-card .cmd-title {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 1.1em; font-weight: bold;
+      color: #2b4c7e; margin-bottom: 6px;
+    }
+    .cmd-overview-card .cmd-short {
+      font-size: 0.78em; color: #4a5568; line-height: 1.5;
+    }
+
+    /* フロー図 */
+    .flow-row {
+      display: flex; align-items: center;
+      gap: 8px; flex-wrap: wrap;
+      margin: 16px 0; justify-content: center;
+    }
+    .flow-box {
+      background: #ebf8ff; border: 2px solid #90cdf4;
+      border-radius: 8px; padding: 10px 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.88em; font-weight: bold;
+      color: #2b4c7e; text-align: center;
+      min-width: 120px;
+    }
+    .flow-box.active { background: #2b4c7e; color: #fff; border-color: #2b4c7e; }
+    .flow-box.file   { background: #f0fff4; border-color: #68d391; color: #276749; }
+    .flow-arrow { font-size: 1.4em; color: #718096; }
+
+    /* modinfo フィールド */
+    .modinfo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px; margin: 14px 0;
+    }
+    .modinfo-card {
+      background: #faf5ff; border: 1px solid #e9d8fd;
+      border-radius: 8px; padding: 12px 14px;
+    }
+    .modinfo-card .field-name {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.9em; font-weight: bold;
+      color: #553c9a; margin-bottom: 4px;
+    }
+    .modinfo-card .field-desc {
+      font-size: 0.82em; color: #4a5568; line-height: 1.6;
+    }
+
+    /* インタラクティブデモ */
+    .interactive-demo {
+      background: #f7fafc; border: 1px solid #bee3f8;
+      border-radius: 8px; padding: 16px 20px; margin: 14px 0;
+    }
+    .slider-row {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em; font-weight: bold;
+      min-width: 160px; color: #2b4c7e;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row select {
+      border: 2px solid #bee3f8; border-radius: 6px;
+      padding: 6px 10px; font-size: 0.88em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #2d3748; background: #fff;
+      cursor: pointer; flex: 1;
+    }
+    .slider-row select:focus { border-color: #567ebb; outline: none; }
+    .output-display {
+      background: #1a202c; color: #68d391;
+      border-radius: 6px; padding: 12px 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em; margin-top: 10px;
+      white-space: pre; overflow-x: auto; line-height: 1.7;
+    }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse; width: 100%;
+      background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0; font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #bee3f8; padding: 10px 14px; text-align: left;
+    }
+    table.ref-table thead tr { background: #2b4c7e; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #ebf8ff; }
+
+    /* 比較表 */
+    table.compare {
+      border-collapse: collapse; width: 100%;
+      background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin: 14px 0; font-size: 0.88em;
+    }
+    table.compare th, table.compare td {
+      border: 1px solid #bee3f8; padding: 10px 14px; text-align: left;
+    }
+    table.compare thead tr { background: #2b4c7e; color: #fff; }
+    table.compare tbody tr:nth-child(even) { background: #ebf8ff; }
+    table.compare .good-cell { color: #276749; font-weight: bold; }
+    table.compare .warn-cell { color: #c05621; font-weight: bold; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0; border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0; padding: 24px 28px; margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 18px 22px; margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 8px 12px; font-size: 0.95em;
+      width: 100%; max-width: 440px; margin: 6px 0;
+      outline: none; font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus { border-color: #f6ad55; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block; padding: 9px 20px;
+      border-radius: 6px; border: none; cursor: pointer;
+      font-size: 0.95em; font-weight: bold;
+      transition: opacity 0.2s; margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-blue  { background: #567ebb; color: #fff; }
+    .btn-green { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px; padding: 10px 14px;
+      border-radius: 6px; font-weight: bold; display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #bee3f8; color: #2b4c7e; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 48px;
+      padding-top: 20px; border-top: 2px solid #bee3f8;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block; padding: 10px 20px;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.9em; transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #567ebb; color: #fff; }
+    .page-nav .home { background: #fff; color: #567ebb; border: 2px solid #567ebb; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4; border: 2px solid #48bb78;
+      border-radius: 10px; padding: 20px 24px;
+      margin-top: 40px; text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 2px solid #bee3f8;
+      font-size: 0.82em; color: #a0aec0; text-align: center;
+    }
+    footer a { color: #567ebb; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .cmd-overview-grid { grid-template-columns: repeat(2, 1fr); }
+      .modinfo-grid { grid-template-columns: 1fr; }
+      .flow-row { gap: 4px; }
+      .flow-box { min-width: 90px; font-size: 0.78em; padding: 8px 10px; }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  <a href="index.html">第2章：Linuxカーネル</a> ›
+  カーネルモジュールの管理
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 02 › SECTION 02</div>
+  <h1>🔌 カーネルモジュールの管理</h1>
+  <p>カーネルモジュールの仕組みを理解し、lsmod・modinfo・insmod・rmmod・modprobe
+  を使ってモジュールを安全に操作する方法を学びます。</p>
+  <div class="badge-row">
+    <span class="badge">lsmod</span>
+    <span class="badge">modinfo</span>
+    <span class="badge">insmod</span>
+    <span class="badge">rmmod</span>
+    <span class="badge">modprobe</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第2章のセクション</h2>
+  <ol>
+    <li><a href="index.html">カーネルの構成要素</a></li>
+    <li class="current"><a href="02_module.html">カーネルモジュールの管理</a></li>
+    <li><a href="03_compile.html">カーネルのコンパイル</a></li>
+    <li><a href="04_param.html">カーネルパラメータの変更</a></li>
+    <li><a href="05_manage.html">カーネルの管理と問題解決</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：カーネルモジュールとは -->
+<!-- ============================================================ -->
+<h2 id="what">① カーネルモジュールとは</h2>
+
+<div class="note">
+  <strong>重要ポイント①：カーネルモジュールとは、カーネルを再起動せずに動的にロード・アンロードできる拡張機能</strong><br>
+  デバイスドライバ・ファイルシステム・ネットワークプロトコルなどが
+  <code>.ko</code>（Kernel Object）ファイルとして提供されます。
+</div>
+
+<div class="demo-box">
+  <h3>モジュールのロード・アンロードフロー</h3>
+  <div class="flow-row">
+    <div class="flow-box file">/lib/modules/<br>&lt;version&gt;/<br>kernel/</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box active">insmod<br>modprobe</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">カーネル空間<br>（メモリ上）</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box active">rmmod<br>modprobe -r</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box file">アンロード<br>（解放）</div>
+  </div>
+
+  <h3>必須コマンド一覧（クリックで詳細へジャンプ）</h3>
+  <div class="cmd-overview-grid">
+    <div class="cmd-overview-card" onclick="document.getElementById('lsmod').scrollIntoView({behavior:'smooth'})">
+      <div class="cmd-title">lsmod</div>
+      <div class="cmd-short">ロード済みモジュールを一覧表示</div>
+    </div>
+    <div class="cmd-overview-card" onclick="document.getElementById('modinfo').scrollIntoView({behavior:'smooth'})">
+      <div class="cmd-title">modinfo</div>
+      <div class="cmd-short">モジュールの詳細情報を表示</div>
+    </div>
+    <div class="cmd-overview-card" onclick="document.getElementById('insmod').scrollIntoView({behavior:'smooth'})">
+      <div class="cmd-title">insmod</div>
+      <div class="cmd-short">モジュールを直接ロード（依存解決なし）</div>
+    </div>
+    <div class="cmd-overview-card" onclick="document.getElementById('rmmod').scrollIntoView({behavior:'smooth'})">
+      <div class="cmd-title">rmmod</div>
+      <div class="cmd-short">モジュールをアンロード</div>
+    </div>
+    <div class="cmd-overview-card" onclick="document.getElementById('modprobe').scrollIntoView({behavior:'smooth'})">
+      <div class="cmd-title">modprobe</div>
+      <div class="cmd-short">依存関係を自動解決してロード・アンロード</div>
+    </div>
+  </div>
+
+  <div class="good">
+    ✅ <strong>モジュールの格納場所</strong><br>
+    カーネルモジュール（<code>.ko</code>ファイル）は
+    <code>/lib/modules/$(uname -r)/kernel/</code> 以下に格納されています。<br>
+    サブディレクトリ例：<code>drivers/</code>・<code>fs/</code>・<code>net/</code>・<code>sound/</code>・<code>crypto/</code>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：lsmod -->
+<!-- ============================================================ -->
+<h2 id="lsmod">② lsmod</h2>
+
+<div class="note">
+  <strong>重要ポイント②：lsmod は現在カーネルにロードされているモジュールの一覧を表示する</strong><br>
+  内部的には <code>/proc/modules</code> の内容を整形して表示しています。
+</div>
+
+<div class="demo-box">
+  <h3>基本的な使い方</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># ロード済みモジュールの一覧表示</span>
+$ <span class="cmd">lsmod</span>
+<span class="hdr">Module                  Size  Used by</span>
+<span class="hl">usbhid                 65536  0</span>
+<span class="out">hid                   139264  2 usbhid,hid_generic</span>
+<span class="out">snd_hda_intel          57344  3</span>
+<span class="out">snd_hda_codec         172032  4 snd_hda_intel,snd_hda_codec_generic</span>
+<span class="out">snd                   114688  16 snd_hda_intel,snd_hda_codec</span>
+<span class="out">e1000e                299008  0</span>
+<span class="out">...</span>
+
+<span class="comment"># 特定モジュールが読み込まれているか確認</span>
+$ <span class="cmd">lsmod</span> | <span class="cmd">grep</span> <span class="val">usbhid</span>
+<span class="hl">usbhid                 65536  0</span>
+
+<span class="comment"># /proc/modules でも同じ情報を確認できる</span>
+$ <span class="cmd">cat</span> /proc/modules | <span class="cmd">grep</span> <span class="val">usbhid</span>
+<span class="out">usbhid 65536 0 - Live 0x0000000000000000</span>
+</pre>
+  </div>
+
+  <h3>lsmod の出力フィールド解説</h3>
+  <div class="interactive-demo">
+    <div style="background:#1a202c; border-radius:8px; padding:14px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; line-height:2; overflow-x:auto;">
+      <div style="color:#b794f4; font-weight:bold;">Module                  Size  Used by</div>
+      <div>
+        <span style="color:#f6ad55; cursor:pointer; font-weight:bold;" onclick="showLsmodField('module')">usbhid                </span>
+        <span style="color:#68d391; cursor:pointer;" onclick="showLsmodField('size')"> 65536</span>
+        <span style="color:#90cdf4; cursor:pointer;" onclick="showLsmodField('used')">  0</span>
+      </div>
+      <div>
+        <span style="color:#f6ad55; cursor:pointer; font-weight:bold;" onclick="showLsmodField('module')">hid                   </span>
+        <span style="color:#68d391; cursor:pointer;" onclick="showLsmodField('size')">139264</span>
+        <span style="color:#90cdf4; cursor:pointer;" onclick="showLsmodField('used')">  2 </span>
+        <span style="color:#fbd38d; cursor:pointer;" onclick="showLsmodField('usedby')">usbhid,hid_generic</span>
+      </div>
+      <div>
+        <span style="color:#f6ad55; cursor:pointer; font-weight:bold;" onclick="showLsmodField('module')">snd_hda_intel         </span>
+        <span style="color:#68d391; cursor:pointer;" onclick="showLsmodField('size')"> 57344</span>
+        <span style="color:#90cdf4; cursor:pointer;" onclick="showLsmodField('used')">  3</span>
+      </div>
+    </div>
+    <div style="font-size:0.78em; color:#a0aec0; margin-top:6px; text-align:center;">
+      ↑ 各フィールドをクリックすると解説が表示されます
+    </div>
+    <div id="lsmod-field-detail" style="display:none; margin-top:10px; background:#fff; border:1px solid #bee3f8; border-left:4px solid #567ebb; border-radius:0 6px 6px 0; padding:12px 16px; font-size:0.88em; color:#2d3748;"></div>
+  </div>
+
+  <script>
+    const lsmodFields = {
+      module: {
+        label: 'Module（モジュール名）',
+        color: '#f6ad55',
+        desc: 'ロードされているカーネルモジュールの名前です。<br>' +
+              '<code>modinfo モジュール名</code> で詳細情報を確認できます。<br>' +
+              '<code>rmmod モジュール名</code> または <code>modprobe -r モジュール名</code> でアンロードできます。'
+      },
+      size: {
+        label: 'Size（サイズ）',
+        color: '#68d391',
+        desc: 'モジュールがカーネルメモリ上で占有しているサイズ（バイト単位）です。<br>' +
+              '例：<code>65536</code> = 64KB<br>' +
+              'モジュールのコードとデータの合計サイズを示します。'
+      },
+      used: {
+        label: 'Used by（使用数）',
+        color: '#90cdf4',
+        desc: 'このモジュールを使用している他のモジュールの数（参照カウント）です。<br><br>' +
+              '・<code>0</code>：他のモジュールから使用されていない → アンロード可能<br>' +
+              '・<code>1以上</code>：他のモジュールが依存している → アンロード不可<br><br>' +
+              '例：<code>hid</code> の Used by が <code>2</code> の場合、<code>usbhid</code> と <code>hid_generic</code> が依存しているため、<code>hid</code> 単体はアンロードできません。'
+      },
+      usedby: {
+        label: 'Used by（依存モジュール名）',
+        color: '#fbd38d',
+        desc: 'このモジュールに依存している具体的なモジュール名のリストです。<br><br>' +
+              '例：<code>hid</code> の場合 → <code>usbhid,hid_generic</code><br>' +
+              'これらのモジュールを先にアンロードしないと <code>hid</code> はアンロードできません。<br><br>' +
+              '<strong>依存関係の確認：</strong><br>' +
+              '<code>modprobe --show-depends モジュール名</code>'
+      }
+    };
+
+    function showLsmodField(key) {
+      const d = lsmodFields[key];
+      const el = document.getElementById('lsmod-field-detail');
+      el.style.display = 'block';
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-family:'Consolas','Monaco',monospace;">${d.label}</strong><br><br>${d.desc}`;
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：modinfo -->
+<!-- ============================================================ -->
+<h2 id="modinfo">③ modinfo</h2>
+
+<div class="note">
+  <strong>重要ポイント③：modinfo はモジュールの詳細情報（説明・バージョン・依存関係・パラメータ）を表示する</strong><br>
+  モジュールをロードする前に情報を確認するために使います。
+</div>
+
+<div class="demo-box">
+  <h3>基本的な使い方</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># モジュール名で情報を表示</span>
+$ <span class="cmd">modinfo</span> <span class="val">usbhid</span>
+<span class="hdr">filename:       </span><span class="out">/lib/modules/6.8.0-51-generic/kernel/drivers/hid/usbhid/usbhid.ko.zst</span>
+<span class="hdr">version:        </span><span class="out">2.6</span>
+<span class="hdr">description:    </span><span class="out">USB HID core driver</span>
+<span class="hdr">license:        </span><span class="out">GPL</span>
+<span class="hdr">author:         </span><span class="out">Andreas Gal, Vojtech Pavlik, Jiri Kosina</span>
+<span class="hdr">srcversion:     </span><span class="out">A1B2C3D4E5F6</span>
+<span class="hdr">alias:          </span><span class="out">usb:v*p*d*dc03sc*in*</span>
+<span class="hdr">depends:        </span><span class="out">hid,usbcore</span>
+<span class="hdr">retpoline:      </span><span class="out">Y</span>
+<span class="hdr">intree:         </span><span class="out">Y</span>
+<span class="hdr">name:           </span><span class="out">usbhid</span>
+<span class="hdr">vermagic:       </span><span class="out">6.8.0-51-generic SMP preempt mod_unload</span>
+<span class="hdr">parm:           </span><span class="out">mousepoll:Polling interval of mice (uint)</span>
+
+<span class="comment"># .koファイルのパスを直接指定</span>
+$ <span class="cmd">modinfo</span> /lib/modules/$(uname -r)/kernel/drivers/hid/usbhid/usbhid.ko.zst
+
+<span class="comment"># 特定フィールドのみ表示（-F オプション）</span>
+$ <span class="cmd">modinfo</span> <span class="opt">-F</span> <span class="val">description</span> usbhid
+<span class="out">USB HID core driver</span>
+
+$ <span class="cmd">modinfo</span> <span class="opt">-F</span> <span class="val">depends</span> usbhid
+<span class="out">hid,usbcore</span>
+
+$ <span class="cmd">modinfo</span> <span class="opt">-F</span> <span class="val">parm</span> usbhid
+<span class="out">mousepoll:Polling interval of mice (uint)</span>
+</pre>
+  </div>
+
+  <h3>modinfo の主要フィールド</h3>
+  <div class="modinfo-grid">
+    <div class="modinfo-card">
+      <div class="field-name">filename</div>
+      <div class="field-desc">モジュールファイル（.ko または .ko.zst）の絶対パス</div>
+    </div>
+    <div class="modinfo-card">
+      <div class="field-name">description</div>
+      <div class="field-desc">モジュールの機能説明。何のドライバかを確認するのに使う</div>
+    </div>
+    <div class="modinfo-card">
+      <div class="field-name">license</div>
+      <div class="field-desc">ライセンス（GPL・Proprietary など）。GPL以外はカーネルの一部機能が制限される場合がある</div>
+    </div>
+    <div class="modinfo-card">
+      <div class="field-name">author</div>
+      <div class="field-desc">モジュールの作者情報</div>
+    </div>
+    <div class="modinfo-card">
+      <div class="field-name">depends</div>
+      <div class="field-desc">このモジュールが依存する他のモジュール名。ロード前に依存モジュールが必要</div>
+    </div>
+    <div class="modinfo-card">
+      <div class="field-name">alias</div>
+      <div class="field-desc">モジュールの別名。デバイスIDとモジュールの対応付けに使われる</div>
+    </div>
+    <div class="modinfo-card">
+      <div class="field-name">vermagic</div>
+      <div class="field-desc">モジュールがコンパイルされたカーネルバージョン情報。実行中カーネルと一致しないとロード不可</div>
+    </div>
+    <div class="modinfo-card">
+      <div class="field-name">parm</div>
+      <div class="field-desc">モジュールに渡せるパラメータ名と型。modprobe 時にパラメータを指定できる</div>
+    </div>
+  </div>
+
+  <div class="warn">
+    <strong>⚠️ vermagic の重要性</strong><br>
+    <code>vermagic</code> フィールドのカーネルバージョンが実行中カーネルと一致しない場合、
+    モジュールはロードできません。<br>
+    カーネルをアップデートした後は、モジュールも対応するバージョンのものを使用する必要があります。
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 4：insmod -->
+<!-- ============================================================ -->
+<h2 id="insmod">④ insmod</h2>
+
+<div class="note">
+  <strong>重要ポイント④：insmod は .ko ファイルのフルパスを指定してモジュールを直接ロードする。依存関係の自動解決は行わない</strong><br>
+  依存するモジュールが未ロードの場合はエラーになります。
+  通常は依存関係を自動解決する <code>modprobe</code> を使うことが推奨されます。
+</div>
+
+<div class="demo-box">
+  <h3>基本的な使い方</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># .koファイルのフルパスを指定してロード（root権限が必要）</span>
+$ <span class="cmd">sudo insmod</span> /lib/modules/$(uname -r)/kernel/drivers/hid/usbhid/usbhid.ko
+
+<span class="comment"># パラメータを指定してロード</span>
+$ <span class="cmd">sudo insmod</span> /lib/modules/$(uname -r)/kernel/drivers/hid/usbhid/usbhid.ko <span class="val">mousepoll=8</span>
+
+<span class="comment"># 依存モジュールが未ロードの場合はエラーになる</span>
+$ <span class="cmd">sudo insmod</span> /lib/modules/$(uname -r)/kernel/drivers/hid/usbhid/usbhid.ko
+<span class="err">insmod: ERROR: could not insert module usbhid.ko: Unknown symbol in module</span>
+<span class="comment"># → 依存モジュール（hid, usbcore）を先にロードする必要がある</span>
+
+<span class="comment"># ロード確認</span>
+$ <span class="cmd">lsmod</span> | <span class="cmd">grep</span> <span class="val">usbhid</span>
+<span class="hl">usbhid                 65536  0</span>
+</pre>
+  </div>
+
+  <div class="warn">
+    <strong>⚠️ insmod の注意点</strong><br>
+    ・<code>.ko</code> ファイルの<strong>フルパス</strong>を指定する必要がある<br>
+    ・依存関係を自動解決しないため、依存モジュールを手動で先にロードする必要がある<br>
+    ・通常の運用では <code>modprobe</code> を使うことが強く推奨される<br>
+    ・実行には <strong>root権限</strong>（または <code>sudo</code>）が必要
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 5：rmmod -->
+<!-- ============================================================ -->
+<h2 id="rmmod">⑤ rmmod</h2>
+
+<div class="note">
+  <strong>重要ポイント⑤：rmmod はロード済みモジュールをアンロードする。他のモジュールが依存している場合はアンロードできない</strong><br>
+  <code>lsmod</code> の <code>Used by</code> が <code>0</code> のモジュールのみアンロード可能です。
+</div>
+
+<div class="demo-box">
+  <h3>基本的な使い方</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># モジュール名を指定してアンロード（root権限が必要）</span>
+$ <span class="cmd">sudo rmmod</span> <span class="val">usbhid</span>
+
+<span class="comment"># 使用中のモジュールはアンロードできない</span>
+$ <span class="cmd">sudo rmmod</span> <span class="val">hid</span>
+<span class="err">rmmod: ERROR: Module hid is in use by: usbhid hid_generic</span>
+<span class="comment"># → 依存しているモジュール（usbhid, hid_generic）を先にアンロードする</span>
+
+<span class="comment"># 強制アンロード（危険！使用中でも強制的にアンロード）</span>
+$ <span class="cmd">sudo rmmod</span> <span class="opt">-f</span> <span class="val">hid</span>
+<span class="comment"># ⚠️ システムが不安定になる可能性があるため通常は使用しない</span>
+
+<span class="comment"># アンロード後の確認</span>
+$ <span class="cmd">lsmod</span> | <span class="cmd">grep</span> <span class="val">usbhid</span>
+<span class="comment"># （何も表示されなければアンロード成功）</span>
+</pre>
+  </div>
+
+  <h3>rmmod の依存関係エラー対処フロー</h3>
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#2b4c7e; margin:0 0 10px;">
+      アンロードしたいモジュールを選択して、正しい手順を確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>アンロード対象</label>
+      <select id="rmmod-sel" onchange="showRmmodFlow()">
+        <option value="">-- モジュールを選択 --</option>
+        <option value="usbhid">usbhid（Used by: 0）</option>
+        <option value="hid">hid（Used by: 2 usbhid,hid_generic）</option>
+        <option value="snd">snd（Used by: 16 snd_hda_intel,snd_hda_codec...）</option>
+      </select>
+    </div>
+    <div class="output-display" id="rmmod-output" style="display:none;"></div>
+  </div>
+
+  <script>
+    function showRmmodFlow() {
+      const v = document.getElementById('rmmod-sel').value;
+      const el = document.getElementById('rmmod-output');
+      if (!v) { el.style.display='none'; return; }
+      el.style.display = 'block';
+      const flows = {
+        usbhid: {
+          color: '#68d391',
+          text:
+`✅ usbhid は Used by: 0 → 直接アンロード可能
+
+$ lsmod | grep usbhid
+usbhid   65536  0          ← Used by が 0
+
+$ sudo rmmod usbhid        ← そのままアンロードできる
+$ lsmod | grep usbhid      ← 何も表示されなければ成功`
+        },
+        hid: {
+          color: '#f6ad55',
+          text:
+`⚠️  hid は Used by: 2 → 依存モジュールを先にアンロード
+
+$ lsmod | grep hid
+hid   139264  2 usbhid,hid_generic   ← 2つのモジュールが依存中
+
+# 手順1：依存モジュールを先にアンロード
+$ sudo rmmod usbhid
+$ sudo rmmod hid_generic
+
+# 手順2：hid をアンロード
+$ sudo rmmod hid
+
+# ※ modprobe -r を使えば依存関係を自動解決してアンロードできる
+$ sudo modprobe -r hid`
+        },
+        snd: {
+          color: '#fc8181',
+          text:
+`🔴 snd は Used by: 16 → 多数のモジュールが依存中
+
+$ lsmod | grep snd
+snd   114688  16 snd_hda_intel,snd_hda_codec,...
+
+# 手動での対処は複雑なため modprobe -r を使う
+$ sudo modprobe -r snd
+
+# modprobe -r は依存関係を自動解決して
+# 安全な順序でアンロードしてくれる
+
+# ⚠️ サウンドを使用中のアプリがある場合はアンロードできない`
+        }
+      };
+      const f = flows[v];
+      el.style.color = f.color;
+      el.textContent = f.text;
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 6：modprobe -->
+<!-- ============================================================ -->
+<h2 id="modprobe">⑥ modprobe（最重要）</h2>
+
+<div class="note">
+  <strong>重要ポイント⑥：modprobe は依存関係を自動解決してモジュールをロード・アンロードする。実運用では modprobe を使う</strong><br>
+  <code>modules.dep</code> ファイルを参照して依存モジュールを自動的に処理します。
+</div>
+
+<div class="demo-box">
+  <h3>基本的な使い方</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># モジュール名を指定してロード（依存関係を自動解決）</span>
+$ <span class="cmd">sudo modprobe</span> <span class="val">usbhid</span>
+
+<span class="comment"># パラメータを指定してロード</span>
+$ <span class="cmd">sudo modprobe</span> <span class="val">usbhid</span> <span class="val">mousepoll=8</span>
+
+<span class="comment"># モジュールをアンロード（依存関係を自動解決）</span>
+$ <span class="cmd">sudo modprobe</span> <span class="opt">-r</span> <span class="val">usbhid</span>
+
+<span class="comment"># 依存関係を表示（実際にはロードしない）</span>
+$ <span class="cmd">modprobe</span> <span class="opt">--show-depends</span> <span class="val">usbhid</span>
+<span class="out">insmod /lib/modules/6.8.0-51-generic/kernel/drivers/hid/hid.ko.zst</span>
+<span class="out">insmod /lib/modules/6.8.0-51-generic/kernel/drivers/usb/core/usbcore.ko.zst</span>
+<span class="out">insmod /lib/modules/6.8.0-51-generic/kernel/drivers/hid/usbhid/usbhid.ko.zst</span>
+
+<span class="comment"># ドライライラン（実際にはロードせず、実行内容を表示）</span>
+$ <span class="cmd">modprobe</span> <span class="opt">-n</span> <span class="opt">-v</span> <span class="val">usbhid</span>
+<span class="out">insmod /lib/modules/.../hid.ko.zst</span>
+<span class="out">insmod /lib/modules/.../usbcore.ko.zst</span>
+<span class="out">insmod /lib/modules/.../usbhid.ko.zst</span>
+
+<span class="comment"># すべてのモジュール情報を表示</span>
+$ <span class="cmd">modprobe</span> <span class="opt">-c</span>
+</pre>
+  </div>
+
+  <h3>modprobe の設定ファイル</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># modprobe の設定ファイルの場所</span>
+<span class="comment"># /etc/modprobe.d/*.conf に設定を記述する</span>
+
+<span class="comment"># 例1：モジュールのオプション（パラメータ）を永続設定</span>
+$ <span class="cmd">cat</span> /etc/modprobe.d/usbhid.conf
+<span class="out">options usbhid mousepoll=8</span>
+
+<span class="comment"># 例2：モジュールのブラックリスト（ロードを禁止）</span>
+$ <span class="cmd">cat</span> /etc/modprobe.d/blacklist.conf
+<span class="out">blacklist pcspkr</span>         <span class="comment"># PCスピーカーモジュールを無効化</span>
+<span class="out">blacklist nouveau</span>        <span class="comment"># オープンソースNVIDIAドライバを無効化</span>
+
+<span class="comment"># 例3：モジュールの別名（alias）を設定</span>
+$ <span class="cmd">cat</span> /etc/modprobe.d/aliases.conf
+<span class="out">alias net-pf-10 off</span>      <span class="comment"># IPv6モジュールの自動ロードを無効化</span>
+
+<span class="comment"># 設定変更後は initramfs を再生成する</span>
+$ <span class="cmd">sudo update-initramfs</span> <span class="opt">-u</span>
+</pre>
+  </div>
+
+  <h3>modules.dep ファイル（依存関係データベース）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># modules.dep の場所と内容</span>
+$ <span class="cmd">cat</span> /lib/modules/$(uname -r)/modules.dep | <span class="cmd">grep</span> <span class="val">usbhid</span>
+<span class="out">kernel/drivers/hid/usbhid/usbhid.ko.zst: kernel/drivers/hid/hid.ko.zst kernel/drivers/usb/core/usbcore.ko.zst</span>
+<span class="comment"># usbhid は hid と usbcore に依存していることがわかる</span>
+
+<span class="comment"># modules.dep を再生成するコマンド</span>
+$ <span class="cmd">sudo depmod</span>           <span class="comment"># 現在のカーネル用に再生成</span>
+$ <span class="cmd">sudo depmod</span> <span class="opt">-a</span>        <span class="comment"># すべてのカーネル用に再生成</span>
+$ <span class="cmd">sudo depmod</span> <span class="opt">-v</span>        <span class="comment"># 詳細表示付きで再生成</span>
+</pre>
+  </div>
+
+  <h3>起動時の自動ロード設定</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># 起動時に自動ロードするモジュールを設定</span>
+<span class="comment"># /etc/modules-load.d/*.conf に記述する</span>
+
+$ <span class="cmd">cat</span> /etc/modules-load.d/mymodules.conf
+<span class="out">loop</span>        <span class="comment"># loopデバイスモジュールを起動時にロード</span>
+<span class="out">nbd</span>         <span class="comment"># ネットワークブロックデバイスモジュール</span>
+
+<span class="comment"># 古い方式（/etc/modules）も有効</span>
+$ <span class="cmd">cat</span> /etc/modules
+<span class="out">loop</span>
+<span class="out">nbd</span>
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 7：insmod vs modprobe 比較 -->
+<!-- ============================================================ -->
+<h2 id="compare">⑦ insmod vs modprobe 比較</h2>
+
+<div class="demo-box">
+  <table class="compare">
+    <thead>
+      <tr>
+        <th>比較項目</th>
+        <th>insmod</th>
+        <th>modprobe</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>指定方法</td>
+        <td><code>.ko</code> ファイルの<strong>フルパス</strong>を指定</td>
+        <td class="good-cell">モジュール<strong>名</strong>のみで指定可能</td>
+      </tr>
+      <tr>
+        <td>依存関係の解決</td>
+        <td class="warn-cell">❌ 自動解決しない</td>
+        <td class="good-cell">✅ 自動解決する</td>
+      </tr>
+      <tr>
+        <td>アンロード</td>
+        <td class="warn-cell">❌ アンロード機能なし（rmmodを使う）</td>
+        <td class="good-cell">✅ <code>modprobe -r</code> でアンロード可能</td>
+      </tr>
+      <tr>
+        <td>設定ファイル参照</td>
+        <td class="warn-cell">❌ 参照しない</td>
+        <td class="good-cell">✅ /etc/modprobe.d/*.conf を参照</td>
+      </tr>
+      <tr>
+        <td>ブラックリスト対応</td>
+        <td class="warn-cell">❌ 対応しない</td>
+        <td class="good-cell">✅ blacklist 設定を尊重する</td>
+      </tr>
+      <tr>
+        <td>主な用途</td>
+        <td>開発・デバッグ時の直接ロード</td>
+        <td class="good-cell">通常の運用・スクリプト</td>
+      </tr>
+      <tr>
+        <td>root権限</td>
+        <td>必要</td>
+        <td>必要</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="good">
+    ✅ <strong>実運用では modprobe を使う</strong><br>
+    <code>insmod</code> は依存関係を解決しないため、依存モジュールが未ロードの場合にエラーになります。
+    通常の運用では <code>modprobe</code> を使うことで、依存関係を自動解決して安全にロード・アンロードできます。
+    <code>insmod</code> は主にカーネル開発・デバッグ時に使用します。
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 8：コマンドまとめ -->
+<!-- ============================================================ -->
+<h2>📌 コマンドまとめ一覧</h2>
+
+<div class="demo-box">
+  <table class="ref-table">
+    <thead>
+      <tr><th>コマンド</th><th>主な用途</th><th>よく使うオプション</th><th>root権限</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>lsmod</code></td>
+        <td>ロード済みモジュールの一覧表示</td>
+        <td>（なし）<br><code>| grep モジュール名</code> と組み合わせる</td>
+        <td>不要</td>
+      </tr>
+      <tr>
+        <td><code>modinfo</code></td>
+        <td>モジュールの詳細情報表示</td>
+        <td><code>-F description</code><br><code>-F depends</code><br><code>-F parm</code></td>
+        <td>不要</td>
+      </tr>
+      <tr>
+        <td><code>insmod</code></td>
+        <td>モジュールの直接ロード（フルパス指定）</td>
+        <td>（パラメータを末尾に指定）</td>
+        <td>必要</td>
+      </tr>
+      <tr>
+        <td><code>rmmod</code></td>
+        <td>モジュールのアンロード</td>
+        <td><code>-f</code>（強制・危険）</td>
+        <td>必要</td>
+      </tr>
+      <tr>
+        <td><code>modprobe</code></td>
+        <td>依存解決付きロード・アンロード</td>
+        <td><code>-r</code>（アンロード）<br><code>-n -v</code>（ドライラン）<br><code>--show-depends</code></td>
+        <td>必要</td>
+      </tr>
+      <tr>
+        <td><code>depmod</code></td>
+        <td>modules.dep の再生成</td>
+        <td><code>-a</code>（全カーネル）<br><code>-v</code>（詳細表示）</td>
+        <td>必要</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>関連ファイル・ディレクトリ一覧</h3>
+  <table class="ref-table">
+    <thead>
+      <tr><th>パス</th><th>内容</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>/lib/modules/&lt;version&gt;/kernel/</code></td><td>カーネルモジュール（.koファイル）の格納場所</td></tr>
+      <tr><td><code>/lib/modules/&lt;version&gt;/modules.dep</code></td><td>モジュールの依存関係データベース（depmodが生成）</td></tr>
+      <tr><td><code>/etc/modprobe.d/*.conf</code></td><td>modprobeの設定（オプション・ブラックリスト・エイリアス）</td></tr>
+      <tr><td><code>/etc/modules-load.d/*.conf</code></td><td>起動時に自動ロードするモジュールのリスト</td></tr>
+      <tr><td><code>/etc/modules</code></td><td>起動時自動ロードの旧形式設定ファイル</td></tr>
+      <tr><td><code>/proc/modules</code></td><td>lsmodの元データ（カーネルが提供する仮想ファイル）</td></tr>
+      <tr><td><code>/sys/module/</code></td><td>ロード済みモジュールのパラメータ・情報（sysfs）</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 選択問題</h3>
+    <p>
+      <code>lsmod</code> の出力で <code>Used by</code> フィールドが <code>3</code> と表示されているモジュールについて、
+      正しい説明はどれですか？
+    </p>
+    <select id="q1">
+      <option value="">-- 選択してください --</option>
+      <option value="a">このモジュールは3回ロードされている</option>
+      <option value="b">このモジュールに依存している他のモジュールが3つある</option>
+      <option value="c">このモジュールは3つのプロセスから使用されている</option>
+      <option value="d">このモジュールのバージョンが3である</option>
+    </select>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const v = document.getElementById('q1').value;
+        const r = document.getElementById('q1-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<code>Used by</code> は<strong>参照カウント</strong>で、このモジュールに依存している他のモジュールの数を示します。<br>' +
+            '・<code>0</code>：依存モジュールなし → <code>rmmod</code> でアンロード可能<br>' +
+            '・<code>1以上</code>：依存モジュールあり → 先に依存モジュールをアンロードする必要がある<br><br>' +
+            '例：<code>hid 139264 2 usbhid,hid_generic</code><br>' +
+            '→ <code>usbhid</code> と <code>hid_generic</code> の2つが <code>hid</code> に依存している';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '<code>Used by</code> は<strong>このモジュールに依存している他のモジュールの数（参照カウント）</strong>です。<br>' +
+            'この値が0でないとアンロードできません。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 穴埋め問題</h3>
+    <p>以下の説明に合うコマンド・オプション・ファイルを入力してください。</p>
+    <label>① モジュールの依存関係を自動解決してロードするコマンド：</label>
+    <input type="text" id="q2a" placeholder="コマンド名">
+    <label>② modprobe でモジュールをアンロードするオプション：</label>
+    <input type="text" id="q2b" placeholder="-x">
+    <label>③ modprobe の設定ファイルが格納されるディレクトリ：</label>
+    <input type="text" id="q2c" placeholder="/etc/...">
+    <label>④ モジュールの依存関係データベースを再生成するコマンド：</label>
+    <input type="text" id="q2d" placeholder="コマンド名">
+    <label>⑤ modinfo でモジュールの説明（description）のみを表示するオプション：</label>
+    <input type="text" id="q2e" placeholder="-x フィールド名">
+    <br>
+    <button class="btn btn-blue" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const a = document.getElementById('q2a').value.trim().toLowerCase();
+        const b = document.getElementById('q2b').value.trim().toLowerCase().replace(/\s/g,'');
+        const c = document.getElementById('q2c').value.trim().toLowerCase().replace(/\/$/,'');
+        const d = document.getElementById('q2d').value.trim().toLowerCase();
+        const e = document.getElementById('q2e').value.trim().toLowerCase().replace(/\s+/g,'');
+        const r = document.getElementById('q2-result');
+        const ca = a === 'modprobe';
+        const cb = b === '-r';
+        const cc = c === '/etc/modprobe.d';
+        const cd = d === 'depmod';
+        const ce = e === '-fdescription' || e === '-f description';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ modprobe'}　` +
+            `② ${cb?'✅':'❌ -r'}　` +
+            `③ ${cc?'✅':'❌ /etc/modprobe.d'}　` +
+            `④ ${cd?'✅':'❌ depmod'}　` +
+            `⑤ ${ce?'✅':'❌ -F description'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① <code>insmod</code> はモジュールの依存関係を自動解決してロードする
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② <code>modprobe</code> はモジュール名のみで指定でき、フルパスは不要
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ <code>lsmod</code> は <code>/proc/modules</code> の内容を整形して表示する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ <code>modinfo</code> の <code>vermagic</code> フィールドが実行中カーネルと一致しない場合、モジュールはロードできない
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ <code>rmmod -f</code> は安全にモジュールをアンロードするための推奨オプションである
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ <code>/etc/modprobe.d/blacklist.conf</code> に記述することで特定モジュールのロードを禁止できる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ <code>modprobe --show-depends</code> は実際にモジュールをロードせず依存関係のみ表示する
+    </label>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：②③④⑥⑦（b,c,d,f,g）
+        // ① insmodは依存解決しない
+        // ⑤ rmmod -f は強制アンロードで危険
+        const correct = { a:false, b:true, c:true, d:true, e:false, f:true, g:true };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>②③④⑥⑦<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・① <code>insmod</code> は依存関係を<strong>自動解決しません</strong>。依存解決するのは <code>modprobe</code> です<br>' +
+            '・⑤ <code>rmmod -f</code> は<strong>強制アンロード</strong>であり、使用中のモジュールを強制的に除去するため、システムが不安定になる危険があります';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. シナリオ問題</h3>
+    <p>
+      新しいデバイスドライバ <code>mydrv</code> をロードしようとしたところ、
+      以下のエラーが発生しました。<br><br>
+      <code style="background:#fed7d7; color:#9b2335; padding:4px 8px; border-radius:4px;">
+        insmod: ERROR: could not insert module mydrv.ko: Unknown symbol in module
+      </code><br><br>
+      このエラーの原因として最も適切なものと、正しい対処法を選んでください。
+    </p>
+    <label>原因：</label>
+    <select id="q4a">
+      <option value="">-- 選択してください --</option>
+      <option value="a">モジュールファイルが破損している</option>
+      <option value="b">依存するモジュールがロードされていない</option>
+      <option value="c">root権限がない</option>
+      <option value="d">カーネルのバージョンが古い</option>
+    </select>
+    <label>正しい対処法：</label>
+    <select id="q4b">
+      <option value="">-- 選択してください --</option>
+      <option value="a">モジュールファイルを再ダウンロードする</option>
+      <option value="b">sudo を付けて再実行する</option>
+      <option value="c">modprobe mydrv を使って依存関係を自動解決する</option>
+      <option value="d">カーネルをアップデートする</option>
+    </select>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const va = document.getElementById('q4a').value;
+        const vb = document.getElementById('q4b').value;
+        const r  = document.getElementById('q4-result');
+        if (va === '' || vb === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 両方の選択肢を選んでください。';
+          return;
+        }
+        if (va === 'b' && vb === 'c') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>原因：</strong>依存するモジュールがロードされていない<br>' +
+            '<code>Unknown symbol in module</code> は、モジュールが参照しているシンボル（関数・変数）が<br>' +
+            'カーネルまたは他のモジュールに見つからない場合に発生します。<br><br>' +
+            '<strong>対処法：</strong><code>modprobe mydrv</code> を使う<br>' +
+            '<code>modprobe</code> は <code>modules.dep</code> を参照して依存モジュールを自動的にロードしてから<br>' +
+            '<code>mydrv</code> をロードします。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br><br>' +
+            '<strong>正しい原因：</strong>依存するモジュールがロードされていない<br>' +
+            '<strong>正しい対処法：</strong><code>modprobe mydrv</code> を使って依存関係を自動解決する<br><br>' +
+            '<code>insmod</code> は依存関係を解決しないため、依存モジュールが未ロードだと<br>' +
+            '<code>Unknown symbol in module</code> エラーが発生します。';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 「カーネルモジュールの管理」の学習が完了したら記録しましょう！</p>
+  <button class="btn btn-green" onclick="markComplete()">✅ このセクションを完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch2', '40');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  if (parseInt(localStorage.getItem('lpic201_ch2') || '0') >= 40) {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="index.html">← カーネルの構成要素</a>
+  <a class="home" href="../index.html">🏠 目次へ</a>
+  <a class="next" href="03_compile.html">次へ：カーネルのコンパイル →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
