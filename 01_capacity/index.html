@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>第1章：キャパシティプランニング ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em;
+      color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #9f7aea; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #553c9a, #9f7aea);
+      border-radius: 12px;
+      padding: 32px 32px 24px;
+      margin-bottom: 32px;
+      color: #fff;
+      box-shadow: 0 4px 18px rgba(159,122,234,0.25);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .chapter-header h1 {
+      margin: 0 0 10px;
+      font-size: 1.7em;
+      color: #fff;
+      border: none;
+      padding: 0;
+    }
+    .chapter-header p {
+      margin: 0;
+      font-size: 0.92em;
+      opacity: 0.88;
+    }
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 0.76em;
+      font-weight: bold;
+    }
+
+    /* 見出し */
+    h1 { color: #1a202c; border-bottom: 4px solid #9f7aea; padding-bottom: 10px; }
+    h2 { color: #553c9a; margin-top: 48px; border-left: 5px solid #9f7aea; padding-left: 12px; }
+    h3 { color: #276749; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c;
+      color: #e2e8f0;
+      padding: 18px 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.88em;
+      line-height: 1.7;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment  { color: #68d391; }
+    pre .cmd      { color: #90cdf4; }
+    pre .opt      { color: #fc8181; }
+    pre .val      { color: #fbd38d; }
+    pre .out      { color: #e2e8f0; }
+    pre .hl       { color: #f6ad55; font-weight: bold; }
+
+    /* ボックス */
+    .note {
+      background: #fff;
+      border: 1px dashed #b794f4;
+      border-radius: 6px;
+      padding: 14px 18px;
+      font-size: 0.93em;
+      color: #4a5568;
+      margin: 14px 0;
+    }
+    .note strong { color: #553c9a; }
+    .warn {
+      background: #fffaf0;
+      border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55;
+      border-radius: 6px;
+      padding: 14px 18px;
+      font-size: 0.93em;
+      color: #744210;
+      margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4;
+      border: 1px solid #68d391;
+      border-left: 5px solid #48bb78;
+      border-radius: 6px;
+      padding: 14px 18px;
+      font-size: 0.93em;
+      color: #276749;
+      margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff;
+      border: 1px solid #e9d8fd;
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin: 12px 0 28px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff;
+      border: 1px solid #e9d8fd;
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin-bottom: 32px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 {
+      margin: 0 0 12px;
+      font-size: 0.92em;
+      color: #553c9a;
+      border: none;
+      padding: 0;
+    }
+    .section-nav ol {
+      margin: 0;
+      padding-left: 20px;
+      font-size: 0.9em;
+    }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #9f7aea; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #553c9a; font-weight: bold; }
+    .section-nav ol li.current::marker { color: #553c9a; }
+
+    /* コマンドカード */
+    .cmd-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+      margin: 16px 0;
+    }
+    .cmd-card {
+      background: #faf5ff;
+      border: 1px solid #e9d8fd;
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .cmd-card .cmd-name {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.95em;
+      font-weight: bold;
+      color: #553c9a;
+      margin-bottom: 4px;
+    }
+    .cmd-card .cmd-desc {
+      font-size: 0.82em;
+      color: #4a5568;
+      line-height: 1.6;
+    }
+
+    /* インタラクティブデモ共通 */
+    .interactive-demo {
+      background: #faf5ff;
+      border: 1px solid #e9d8fd;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 14px 0;
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em;
+      font-weight: bold;
+      min-width: 160px;
+      color: #553c9a;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row input[type="range"] {
+      flex: 1;
+      min-width: 100px;
+      accent-color: #9f7aea;
+    }
+    .val-display {
+      min-width: 64px;
+      text-align: right;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85em;
+      color: #2d3748;
+    }
+    .output-display {
+      background: #1a202c;
+      color: #68d391;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em;
+      margin-top: 10px;
+      white-space: pre-wrap;
+      line-height: 1.7;
+    }
+
+    /* 負荷グラフ */
+    .load-graph {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 120px;
+      background: #1a202c;
+      border-radius: 8px;
+      padding: 12px 16px 8px;
+      margin: 12px 0;
+      overflow: hidden;
+    }
+    .load-bar-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      height: 100%;
+    }
+    .load-bar-fill {
+      width: 100%;
+      border-radius: 3px 3px 0 0;
+      transition: height 0.5s ease;
+      min-height: 2px;
+    }
+    .load-bar-label {
+      font-size: 0.6em;
+      color: #a0aec0;
+      margin-top: 4px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse;
+      width: 100%;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #e9d8fd;
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 0.9em;
+    }
+    table.ref-table thead tr { background: #553c9a; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #faf5ff; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0;
+      border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0;
+      padding: 24px 28px;
+      margin: 48px 0 32px;
+    }
+    .quiz-section > h2 {
+      margin-top: 0;
+      color: #c05621;
+      border-left-color: #f6ad55;
+    }
+    .quiz-block {
+      background: #fff;
+      border: 1px solid #fbd38d;
+      border-radius: 8px;
+      padding: 18px 22px;
+      margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.95em;
+      width: 100%;
+      max-width: 440px;
+      margin: 6px 0;
+      outline: none;
+      font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus,
+    .quiz-block textarea:focus { border-color: #f6ad55; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-weight: normal;
+      cursor: pointer;
+      margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block;
+      padding: 9px 20px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.95em;
+      font-weight: bold;
+      transition: opacity 0.2s;
+      margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-purple { background: #9f7aea; color: #fff; }
+    .btn-green  { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-weight: bold;
+      display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #e9d8fd; color: #553c9a; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 48px;
+      padding-top: 20px;
+      border-top: 2px solid #e9d8fd;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 0.9em;
+      transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #9f7aea; color: #fff; }
+    .page-nav .home { background: #fff; color: #9f7aea; border: 2px solid #9f7aea; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4;
+      border: 2px solid #48bb78;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-top: 40px;
+      text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px;
+      padding-top: 16px;
+      border-top: 2px solid #e9d8fd;
+      font-size: 0.82em;
+      color: #a0aec0;
+      text-align: center;
+    }
+    footer a { color: #9f7aea; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.3em; }
+      .demo-box { padding: 14px 14px; }
+      .cmd-grid { grid-template-columns: 1fr; }
+      .quiz-section { padding: 16px 14px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select,
+      .quiz-block textarea { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) {
+      body { font-size: 0.92em; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> › 第1章：キャパシティプランニング
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 01</div>
+  <h1>📊 キャパシティプランニング</h1>
+  <p>システムリソースの使用状況を測定・分析し、将来の需要を予測して適切な対策を講じる技術を学びます。</p>
+  <div class="badge-row">
+    <span class="badge">Topic 200</span>
+    <span class="badge">3セクション</span>
+    <span class="badge">重要度：高</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 このページのセクション</h2>
+  <ol>
+    <li class="current"><a href="#what-is">キャパシティプランニングとは</a></li>
+    <li><a href="../01_capacity/02_measurement.html">リソース使用率の測定とトラブルシューティング</a></li>
+    <li><a href="../01_capacity/03_analysis.html">リソース需要の分析と予測</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION 1：キャパシティプランニングとは -->
+<!-- ============================================================ -->
+<h2 id="what-is">① キャパシティプランニングとは</h2>
+
+<div class="note">
+  <strong>重要ポイント①：キャパシティプランニングとは、現在のリソース使用状況を把握し、将来の需要に備えてシステムを適切に管理・拡張する計画的プロセスである</strong><br>
+  単にリソースを監視するだけでなく、<strong>傾向の分析・予測・対策立案</strong>までを含む継続的な活動です。
+</div>
+
+<div class="demo-box">
+  <h3>キャパシティプランニングの目的</h3>
+  <table class="ref-table">
+    <thead>
+      <tr><th>目的</th><th>内容</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>パフォーマンス確保</strong></td>
+        <td>ユーザーやアプリケーションが必要とするリソースを常に確保する</td>
+      </tr>
+      <tr>
+        <td><strong>障害の予防</strong></td>
+        <td>リソース枯渇による障害を事前に検知・回避する</td>
+      </tr>
+      <tr>
+        <td><strong>コスト最適化</strong></td>
+        <td>過剰なリソース確保を避け、適切な投資計画を立てる</td>
+      </tr>
+      <tr>
+        <td><strong>将来予測</strong></td>
+        <td>ビジネス成長に合わせたシステム拡張計画を策定する</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>対象となる主なリソース</h3>
+  <div class="cmd-grid">
+    <div class="cmd-card">
+      <div class="cmd-name">🖥️ CPU</div>
+      <div class="cmd-desc">プロセッサの使用率・ロードアベレージ・コア数の適切性</div>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">🧠 メモリ（RAM）</div>
+      <div class="cmd-desc">物理メモリ使用量・スワップ使用量・メモリリーク検出</div>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">💾 ディスク（I/O）</div>
+      <div class="cmd-desc">ディスク使用量・読み書き速度・inode使用率</div>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">🌐 ネットワーク</div>
+      <div class="cmd-desc">帯域使用率・パケットロス・レイテンシ</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- キャパシティプランニングのサイクル -->
+<h2>② キャパシティプランニングのサイクル</h2>
+
+<div class="demo-box">
+  <h3>PDCAサイクルとの対応</h3>
+
+  <!-- アニメーションサイクル図 -->
+  <div class="interactive-demo" style="text-align:center; padding: 24px;">
+    <div style="display:flex; justify-content:center; align-items:center; gap:0; flex-wrap:wrap;">
+
+      <div class="cycle-step" id="cs1" style="
+        background: linear-gradient(135deg,#9f7aea,#553c9a);
+        color:#fff; border-radius:50%; width:110px; height:110px;
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        font-size:0.78em; font-weight:bold; cursor:pointer;
+        box-shadow: 0 4px 12px rgba(159,122,234,0.4);
+        transition: transform 0.2s;
+      " onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'"
+         onclick="showCycleDetail(1)">
+        <span style="font-size:1.5em;">📏</span>
+        <span>測定</span>
+        <span style="font-size:0.7em; opacity:0.85;">Measure</span>
+      </div>
+
+      <div style="font-size:1.8em; color:#9f7aea; padding:0 4px;">→</div>
+
+      <div class="cycle-step" id="cs2" style="
+        background: linear-gradient(135deg,#f6ad55,#c05621);
+        color:#fff; border-radius:50%; width:110px; height:110px;
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        font-size:0.78em; font-weight:bold; cursor:pointer;
+        box-shadow: 0 4px 12px rgba(246,173,85,0.4);
+        transition: transform 0.2s;
+      " onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'"
+         onclick="showCycleDetail(2)">
+        <span style="font-size:1.5em;">🔍</span>
+        <span>分析</span>
+        <span style="font-size:0.7em; opacity:0.85;">Analyze</span>
+      </div>
+
+      <div style="font-size:1.8em; color:#9f7aea; padding:0 4px;">→</div>
+
+      <div class="cycle-step" id="cs3" style="
+        background: linear-gradient(135deg,#68d391,#276749);
+        color:#fff; border-radius:50%; width:110px; height:110px;
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        font-size:0.78em; font-weight:bold; cursor:pointer;
+        box-shadow: 0 4px 12px rgba(104,211,145,0.4);
+        transition: transform 0.2s;
+      " onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'"
+         onclick="showCycleDetail(3)">
+        <span style="font-size:1.5em;">🔮</span>
+        <span>予測</span>
+        <span style="font-size:0.7em; opacity:0.85;">Predict</span>
+      </div>
+
+      <div style="font-size:1.8em; color:#9f7aea; padding:0 4px;">→</div>
+
+      <div class="cycle-step" id="cs4" style="
+        background: linear-gradient(135deg,#fc8181,#9b2335);
+        color:#fff; border-radius:50%; width:110px; height:110px;
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        font-size:0.78em; font-weight:bold; cursor:pointer;
+        box-shadow: 0 4px 12px rgba(252,129,129,0.4);
+        transition: transform 0.2s;
+      " onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'"
+         onclick="showCycleDetail(4)">
+        <span style="font-size:1.5em;">🛠️</span>
+        <span>対策</span>
+        <span style="font-size:0.7em; opacity:0.85;">Plan</span>
+      </div>
+
+    </div>
+    <div style="font-size:0.8em; color:#a0aec0; margin-top:10px;">
+      ↑ 各ステップをクリックすると詳細が表示されます
+    </div>
+
+    <!-- 詳細表示エリア -->
+    <div id="cycle-detail" style="
+      margin-top:16px; background:#fff; border:1px solid #e9d8fd;
+      border-radius:8px; padding:14px 18px; text-align:left;
+      font-size:0.88em; color:#2d3748; display:none;
+    "></div>
+  </div>
+
+  <script>
+    const cycleDetails = {
+      1: {
+        title: '📏 測定（Measure）',
+        color: '#553c9a',
+        content: `現在のシステムリソース使用状況を定量的に把握します。<br><br>
+          <strong>主なツール：</strong><br>
+          ・<code>top</code> / <code>htop</code>：CPU・メモリのリアルタイム監視<br>
+          ・<code>vmstat</code>：仮想メモリ・CPU・I/Oの統計<br>
+          ・<code>iostat</code>：ディスクI/O統計<br>
+          ・<code>sar</code>：システム全体の統計情報の収集・記録<br>
+          ・<code>df</code> / <code>du</code>：ディスク使用量`
+      },
+      2: {
+        title: '🔍 分析（Analyze）',
+        color: '#c05621',
+        content: `収集したデータからボトルネックや傾向を読み取ります。<br><br>
+          <strong>分析の観点：</strong><br>
+          ・ピーク時と平常時の差異はどのくらいか<br>
+          ・特定の時間帯・曜日にリソース使用率が高くなっていないか<br>
+          ・スワップが頻繁に発生していないか（メモリ不足のサイン）<br>
+          ・ロードアベレージがCPUコア数を継続的に超えていないか`
+      },
+      3: {
+        title: '🔮 予測（Predict）',
+        color: '#276749',
+        content: `過去のデータをもとに将来のリソース需要を予測します。<br><br>
+          <strong>予測の手法：</strong><br>
+          ・線形回帰による使用量トレンドの外挿<br>
+          ・季節性・周期性の考慮（月末・年度末など）<br>
+          ・ビジネス計画（ユーザー増加・新機能追加）との照合<br>
+          ・<code>sar</code> の長期データを活用した傾向分析`
+      },
+      4: {
+        title: '🛠️ 対策（Plan）',
+        color: '#9b2335',
+        content: `予測に基づいて具体的な対策・拡張計画を立案・実施します。<br><br>
+          <strong>対策の例：</strong><br>
+          ・スケールアップ：CPUコア数・メモリ容量の増強<br>
+          ・スケールアウト：サーバー台数の増加・負荷分散<br>
+          ・チューニング：カーネルパラメータ・アプリケーション設定の最適化<br>
+          ・アーカイブ：不要なデータの削除・移行によるディスク確保`
+      }
+    };
+
+    function showCycleDetail(n) {
+      const d = cycleDetails[n];
+      const el = document.getElementById('cycle-detail');
+      el.style.display = 'block';
+      el.style.borderLeftColor = d.color;
+      el.style.borderLeftWidth = '4px';
+      el.style.borderLeftStyle = 'solid';
+      el.innerHTML = `<strong style="color:${d.color}; font-size:1em;">${d.title}</strong><br><br>${d.content}`;
+    }
+  </script>
+
+</div>
+
+
+<!-- ロードアベレージ -->
+<h2>③ ロードアベレージ（Load Average）</h2>
+
+<div class="note">
+  <strong>重要ポイント②：ロードアベレージはシステムの負荷を示す指標で、実行待ちプロセス数の平均値</strong><br>
+  <code>uptime</code> や <code>top</code> コマンドで確認でき、
+  <strong>1分・5分・15分</strong>の3つの平均値が表示されます。
+</div>
+
+<div class="demo-box">
+
+  <h3>ロードアベレージの確認</h3>
+<pre>
+<span class="comment"># uptime コマンドで確認</span>
+$ <span class="cmd">uptime</span>
+ 10:30:45 up 3 days,  2:15,  2 users,  <span class="hl">load average: 0.52, 0.48, 0.41</span>
+<span class="comment">#                                        ↑1分  ↑5分  ↑15分</span>
+
+<span class="comment"># top コマンドの1行目にも表示される</span>
+$ <span class="cmd">top</span>
+top - 10:30:45 up 3 days,  2:15,  2 users,  <span class="hl">load average: 0.52, 0.48, 0.41</span>
+
+<span class="comment"># /proc/loadavg でも確認可能</span>
+$ <span class="cmd">cat</span> /proc/loadavg
+<span class="out">0.52 0.48 0.41 1/312 18423</span>
+<span class="comment">#  ↑1分 ↑5分 ↑15分  ↑実行中/総プロセス数  ↑最後に生成されたPID</span>
+</pre>
+
+  <h3>ロードアベレージ インタラクティブデモ</h3>
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; color:#553c9a; font-weight:bold; margin:0 0 10px;">
+      CPUコア数とロードアベレージを変えて、システムの状態を確認してみましょう
+    </p>
+    <div class="slider-row">
+      <label>CPUコア数</label>
+      <input type="range" id="cpu-cores" min="1" max="16" value="4" oninput="updateLoad()">
+      <span class="val-display" id="cores-val">4コア</span>
+    </div>
+    <div class="slider-row">
+      <label>ロードアベレージ（1分）</label>
+      <input type="range" id="load-val-input" min="0" max="320" value="52" oninput="updateLoad()">
+      <span class="val-display" id="load-display">0.52</span>
+    </div>
+
+    <!-- グラフ -->
+    <div class="load-graph" id="load-graph"></div>
+
+    <!-- 判定 -->
+    <div id="load-judge" class="output-display"></div>
+  </div>
+
+  <script>
+    function updateLoad() {
+      const cores = parseInt(document.getElementById('cpu-cores').value);
+      const loadRaw = parseInt(document.getElementById('load-val-input').value);
+      const load = (loadRaw / 100).toFixed(2);
+      document.getElementById('cores-val').textContent = cores + 'コア';
+      document.getElementById('load-display').textContent = load;
+
+      // グラフ描画
+      const graph = document.getElementById('load-graph');
+      graph.innerHTML = '';
+      const maxH = 90;
+      const labels = ['1分前', '5分前', '15分前', '30分前', '1時間前', '2時間前'];
+      const vals = [
+        loadRaw,
+        Math.max(0, loadRaw + Math.round((Math.random()-0.5)*20)),
+        Math.max(0, loadRaw + Math.round((Math.random()-0.5)*30)),
+        Math.max(0, loadRaw + Math.round((Math.random()-0.5)*40)),
+        Math.max(0, loadRaw + Math.round((Math.random()-0.5)*50)),
+        Math.max(0, loadRaw + Math.round((Math.random()-0.5)*60)),
+      ];
+      const maxVal = Math.max(...vals, cores * 100);
+      vals.forEach((v, i) => {
+        const ratio = v / maxVal;
+        const h = Math.max(2, Math.round(ratio * maxH));
+        const pct = v / 100;
+        let color;
+        if (pct <= cores * 0.7)       color = '#68d391';
+        else if (pct <= cores)        color = '#f6ad55';
+        else                          color = '#fc8181';
+        const item = document.createElement('div');
+        item.className = 'load-bar-item';
+        item.innerHTML = `
+          <div class="load-bar-fill" style="height:${h}px; background:${color};"></div>
+          <div class="load-bar-label">${labels[i]}<br>${pct.toFixed(2)}</div>
+        `;
+        graph.appendChild(item);
+      });
+
+      // 判定
+      const judge = document.getElementById('load-judge');
+      const ratio = loadRaw / 100 / cores;
+      let msg, color;
+      if (ratio <= 0.7) {
+        msg = `✅ 正常（余裕あり）\nロードアベレージ ${load} ÷ ${cores}コア = ${ratio.toFixed(2)}\nCPUに十分な余裕があります。`;
+        color = '#68d391';
+      } else if (ratio <= 1.0) {
+        msg = `⚠️ 注意（高負荷）\nロードアベレージ ${load} ÷ ${cores}コア = ${ratio.toFixed(2)}\nCPUがほぼフル稼働しています。監視を強化してください。`;
+        color = '#f6ad55';
+      } else {
+        msg = `🔴 危険（過負荷）\nロードアベレージ ${load} ÷ ${cores}コア = ${ratio.toFixed(2)}\nプロセスが実行待ちになっています！スケールアップ・チューニングを検討してください。`;
+        color = '#fc8181';
+      }
+      judge.style.color = color;
+      judge.textContent = msg;
+    }
+    updateLoad();
+  </script>
+
+  <div class="warn">
+    <strong>⚠️ ロードアベレージの解釈</strong><br>
+    ロードアベレージの値は<strong>CPUコア数を基準に判断</strong>します。<br>
+    例：4コアのシステムでロードアベレージが <code>4.0</code> → 各コアがちょうど100%使用中<br>
+    例：4コアのシステムでロードアベレージが <code>8.0</code> → プロセスが実行待ちになっている（過負荷）<br>
+    <strong>1分値が急上昇しているが15分値は低い</strong>→ 一時的な負荷スパイク<br>
+    <strong>3つの値がすべて高い</strong>→ 継続的な過負荷状態
+  </div>
+
+  <h3>ロードアベレージに関連するコマンド一覧</h3>
+  <table class="ref-table">
+    <thead>
+      <tr><th>コマンド</th><th>確認できる情報</th><th>主なオプション</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>uptime</code></td>
+        <td>稼働時間・ロードアベレージ</td>
+        <td><code>-p</code>（稼働時間のみ表示）</td>
+      </tr>
+      <tr>
+        <td><code>top</code></td>
+        <td>リアルタイムのCPU・メモリ・プロセス情報</td>
+        <td><code>-b</code>（バッチモード）<code>-n</code>（繰り返し回数）</td>
+      </tr>
+      <tr>
+        <td><code>w</code></td>
+        <td>ログインユーザー・ロードアベレージ</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td><code>cat /proc/loadavg</code></td>
+        <td>ロードアベレージ・プロセス数・最新PID</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td><code>sar -q</code></td>
+        <td>過去のロードアベレージ履歴</td>
+        <td><code>-f</code>（ファイル指定）<code>-s</code>/<code>-e</code>（時間範囲）</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- 演習問題 -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 正誤問題</h3>
+    <p>
+      ロードアベレージが <code>2.0</code> のとき、2コアのシステムでは
+      プロセスが実行待ちになっている状態である。
+    </p>
+    <label>○ または × を入力：</label>
+    <input type="text" id="q1" placeholder="○ または ×" style="max-width:120px;">
+    <br>
+    <button class="btn btn-purple" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const v = document.getElementById('q1').value.trim();
+        const r = document.getElementById('q1-result');
+        if (v === '×' || v === 'x' || v === 'X') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br>' +
+            'ロードアベレージ <code>2.0</code> ÷ 2コア = <code>1.0</code><br>' +
+            'これは各コアがちょうど100%使用中の状態です。<br>' +
+            'プロセスが実行<strong>待ち</strong>になるのは、ロードアベレージがコア数を<strong>超えた</strong>場合です。';
+        } else if (v === '○' || v === 'o' || v === 'O') {
+          r.className = 'result-msg wrong';
+          r.textContent =
+            '❌ 不正解。ロードアベレージ 2.0 ÷ 2コア = 1.0 で、' +
+            'ちょうどフル稼働状態です。実行待ちが発生するのはコア数を超えた場合です。';
+        } else {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ ○ または × で入力してください。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 選択問題</h3>
+    <p>
+      <code>uptime</code> コマンドの出力に含まれる
+      <strong>ロードアベレージの時間間隔</strong>として正しいものはどれですか？
+    </p>
+    <select id="q2">
+      <option value="">-- 選択してください --</option>
+      <option value="a">30秒・1分・5分</option>
+      <option value="b">1分・5分・15分</option>
+      <option value="c">5分・10分・30分</option>
+      <option value="d">1分・10分・60分</option>
+    </select>
+    <br>
+    <button class="btn btn-purple" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const v = document.getElementById('q2').value;
+        const r = document.getElementById('q2-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br>' +
+            '<code>uptime</code> の出力例：<br>' +
+            '<code>load average: 0.52, 0.48, 0.41</code><br>' +
+            '左から <strong>1分・5分・15分</strong> の平均値です。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.textContent = '❌ 不正解。ロードアベレージは 1分・5分・15分 の3つの平均値です。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 穴埋め問題</h3>
+    <p>以下の説明に合うコマンドまたはファイルを入力してください。</p>
+    <label>① ロードアベレージを含むシステム稼働時間を表示するコマンド：</label>
+    <input type="text" id="q3a" placeholder="コマンド名">
+    <label>② ロードアベレージをファイルとして確認できるパス：</label>
+    <input type="text" id="q3b" placeholder="/proc/...">
+    <label>③ 過去のロードアベレージ履歴を確認できるコマンド（オプション含む）：</label>
+    <input type="text" id="q3c" placeholder="コマンド -オプション">
+    <br>
+    <button class="btn btn-purple" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const a = document.getElementById('q3a').value.trim().toLowerCase();
+        const b = document.getElementById('q3b').value.trim().toLowerCase().replace(/\s/g,'');
+        const c = document.getElementById('q3c').value.trim().toLowerCase().replace(/\s/g,'');
+        const r = document.getElementById('q3-result');
+        const ca = a === 'uptime' || a === 'w';
+        const cb = b === '/proc/loadavg';
+        const cc = c === 'sar-q' || c === 'sar' ;
+        const count = [ca, cb, cc].filter(Boolean).length;
+        if (count === 3) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/3 問正解。<br>` +
+            `① ${ca?'✅':'❌ uptime（または w）'}　` +
+            `② ${cb?'✅':'❌ /proc/loadavg'}　` +
+            `③ ${cc?'✅':'❌ sar -q'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q4a">
+      ① キャパシティプランニングは「測定→分析→予測→対策」のサイクルで行う
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q4b">
+      ② ロードアベレージが1.0のとき、CPUコア数に関わらず過負荷状態である
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q4c">
+      ③ ロードアベレージの3つの値は左から1分・5分・15分の平均値である
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q4d">
+      ④ スワップの頻繁な使用はメモリ不足のサインである
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q4e">
+      ⑤ キャパシティプランニングの目的はコスト削減のみである
+    </label>
+    <br>
+    <button class="btn btn-purple" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const r = document.getElementById('q4-result');
+        const checks = {
+          a: document.getElementById('q4a').checked,
+          b: document.getElementById('q4b').checked,
+          c: document.getElementById('q4c').checked,
+          d: document.getElementById('q4d').checked,
+          e: document.getElementById('q4e').checked,
+        };
+        // 正解：①③④（a, c, d）
+        const correct = { a:true, b:false, c:true, d:true, e:false };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 全問正解！<br>' +
+            '・① サイクル：測定→分析→予測→対策 ✅<br>' +
+            '・③ 1分・5分・15分の平均値 ✅<br>' +
+            '・④ スワップ頻発 = メモリ不足のサイン ✅';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>①③④<br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・② ロードアベレージ1.0の意味はコア数によって異なります（1コアなら100%使用中、4コアなら25%使用中）<br>' +
+            '・⑤ キャパシティプランニングの目的はパフォーマンス確保・障害予防・コスト最適化・将来予測など多岐にわたります';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 「キャパシティプランニングとは」の学習が完了したら記録しましょう！</p>
+  <button class="btn btn-green" onclick="markComplete()">✅ この章を完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch1', '100');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  // すでに完了済みなら表示
+  if (localStorage.getItem('lpic201_ch1') === '100') {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="home" href="../index.html">🏠 目次へ戻る</a>
+  <a class="next" href="02_measurement.html">次へ：リソース使用率の測定 →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
