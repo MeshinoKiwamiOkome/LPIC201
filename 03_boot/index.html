@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>システム起動プロセス ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em; color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #2f855a; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #1a4731, #2f855a);
+      border-radius: 12px; padding: 32px 32px 24px;
+      margin-bottom: 32px; color: #fff;
+      box-shadow: 0 4px 18px rgba(47,133,90,0.3);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em; font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85; letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .chapter-header h1 { margin: 0 0 10px; font-size: 1.6em; color: #fff; border: none; padding: 0; }
+    .chapter-header p  { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px; padding: 3px 12px;
+      font-size: 0.76em; font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 { color: #1a4731; margin-top: 48px; border-left: 5px solid #2f855a; padding-left: 12px; }
+    h3 { color: #276749; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7; padding: 2px 6px;
+      border-radius: 4px; font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c; color: #e2e8f0;
+      padding: 18px 20px; border-radius: 8px;
+      overflow-x: auto; font-size: 0.88em;
+      line-height: 1.7; font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+    pre .err     { color: #fc8181; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #4a5568; color: #e2e8f0;
+      border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 0.75em;
+      cursor: pointer; font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s; z-index: 1;
+    }
+    .copy-btn:hover { background: #2f855a; }
+
+    /* ボックス */
+    .note {
+      background: #fff; border: 1px dashed #9ae6b4;
+      border-radius: 6px; padding: 14px 18px;
+      font-size: 0.93em; color: #4a5568; margin: 14px 0;
+    }
+    .note strong { color: #1a4731; }
+    .warn {
+      background: #fffaf0; border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #744210; margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4; border: 1px solid #68d391;
+      border-left: 5px solid #48bb78; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #276749; margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff; border: 1px solid #9ae6b4;
+      border-radius: 8px; padding: 20px 24px;
+      margin: 12px 0 28px; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff; border: 1px solid #9ae6b4;
+      border-radius: 10px; padding: 18px 22px;
+      margin-bottom: 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 { margin: 0 0 12px; font-size: 0.92em; color: #1a4731; border: none; padding: 0; }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #2f855a; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #1a4731; font-weight: bold; }
+
+    /* 起動フロー */
+    .boot-flow {
+      display: flex; flex-direction: column; gap: 0; margin: 16px 0;
+    }
+    .boot-step {
+      display: flex; gap: 0; align-items: stretch;
+    }
+    .boot-step-num {
+      flex-shrink: 0; width: 44px;
+      display: flex; flex-direction: column;
+      align-items: center;
+    }
+    .boot-step-circle {
+      width: 36px; height: 36px;
+      border-radius: 50%; display: flex;
+      align-items: center; justify-content: center;
+      font-weight: bold; font-size: 0.9em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      flex-shrink: 0; z-index: 1; margin-top: 6px;
+    }
+    .boot-step-line {
+      width: 2px; flex: 1; margin: 0 auto;
+      min-height: 16px;
+    }
+    .boot-step:last-child .boot-step-line { display: none; }
+    .boot-step-body {
+      flex: 1; border-radius: 8px;
+      padding: 12px 16px; margin-bottom: 8px;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+      border: 2px solid transparent;
+    }
+    .boot-step-body:hover {
+      transform: translateX(4px);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+    .boot-step-body h4 { margin: 0 0 4px; font-size: 0.95em; }
+    .boot-step-body p  { margin: 0; font-size: 0.82em; opacity: 0.88; }
+
+    /* ランレベル表 */
+    .rl-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px; margin: 14px 0;
+    }
+    .rl-card {
+      border-radius: 8px; padding: 12px 14px;
+      text-align: center; cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .rl-card:hover { transform: scale(1.03); }
+    .rl-card .rl-num {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 1.8em; font-weight: bold; line-height: 1;
+    }
+    .rl-card .rl-name { font-size: 0.82em; margin-top: 4px; }
+
+    /* systemd ユニットカード */
+    .unit-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px; margin: 14px 0;
+    }
+    .unit-card {
+      background: #f0fff4; border: 1px solid #9ae6b4;
+      border-radius: 8px; padding: 14px 16px;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .unit-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(47,133,90,0.18);
+      border-color: #2f855a;
+    }
+    .unit-card .unit-ext {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 1em; font-weight: bold;
+      color: #1a4731; margin-bottom: 4px;
+    }
+    .unit-card .unit-desc {
+      font-size: 0.82em; color: #4a5568; line-height: 1.6;
+    }
+
+    /* インタラクティブデモ */
+    .interactive-demo {
+      background: #f7fafc; border: 1px solid #9ae6b4;
+      border-radius: 8px; padding: 16px 20px; margin: 14px 0;
+    }
+    .slider-row {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em; font-weight: bold;
+      min-width: 180px; color: #1a4731;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row select {
+      border: 2px solid #9ae6b4; border-radius: 6px;
+      padding: 6px 10px; font-size: 0.88em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #2d3748; background: #fff;
+      cursor: pointer; flex: 1;
+    }
+    .slider-row select:focus { border-color: #2f855a; outline: none; }
+    .output-display {
+      background: #1a202c; color: #68d391;
+      border-radius: 6px; padding: 12px 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em; margin-top: 10px;
+      white-space: pre; overflow-x: auto; line-height: 1.7;
+    }
+
+    /* タブ */
+    .tab-wrap { margin: 14px 0; }
+    .tab-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: -1px; }
+    .tab-btn {
+      padding: 8px 18px; border: 1px solid #9ae6b4;
+      border-bottom: none; border-radius: 6px 6px 0 0;
+      background: #edf2f7; color: #1a4731;
+      font-size: 0.85em; font-weight: bold;
+      font-family: 'Consolas', 'Monaco', monospace;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .tab-btn.active { background: #fff; border-bottom: 1px solid #fff; }
+    .tab-btn:hover:not(.active) { background: #c6f6d5; }
+    .tab-content {
+      display: none; background: #fff;
+      border: 1px solid #9ae6b4;
+      border-radius: 0 6px 6px 6px; padding: 18px 20px;
+    }
+    .tab-content.active { display: block; }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse; width: 100%;
+      background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0; font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #9ae6b4; padding: 10px 14px; text-align: left;
+    }
+    table.ref-table thead tr { background: #1a4731; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #f0fff4; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0; border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0; padding: 24px 28px; margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 18px 22px; margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 8px 12px; font-size: 0.95em;
+      width: 100%; max-width: 440px; margin: 6px 0;
+      outline: none; font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus { border-color: #f6ad55; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block; padding: 9px 20px;
+      border-radius: 6px; border: none; cursor: pointer;
+      font-size: 0.95em; font-weight: bold;
+      transition: opacity 0.2s; margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-green { background: #2f855a; color: #fff; }
+    .btn-done  { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px; padding: 10px 14px;
+      border-radius: 6px; font-weight: bold; display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #c6f6d5; color: #1a4731; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 48px;
+      padding-top: 20px; border-top: 2px solid #9ae6b4;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block; padding: 10px 20px;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.9em; transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #2f855a; color: #fff; }
+    .page-nav .home { background: #fff; color: #2f855a; border: 2px solid #2f855a; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4; border: 2px solid #48bb78;
+      border-radius: 10px; padding: 20px 24px;
+      margin-top: 40px; text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 2px solid #9ae6b4;
+      font-size: 0.82em; color: #a0aec0; text-align: center;
+    }
+    footer a { color: #2f855a; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .rl-grid { grid-template-columns: repeat(3, 1fr); }
+      .unit-grid { grid-template-columns: 1fr; }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  第3章：システムの起動 › システム起動プロセス
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 03 › SECTION 01</div>
+  <h1>🚀 システム起動プロセス</h1>
+  <p>BIOS/UEFIからカーネル起動まで、SysVinit・systemd の仕組み、
+  ランレベル・ターゲット・サービス管理・ログの確認方法を体系的に学びます。</p>
+  <div class="badge-row">
+    <span class="badge">BIOS/UEFI</span>
+    <span class="badge">MBR/GPT</span>
+    <span class="badge">GRUB</span>
+    <span class="badge">SysVinit</span>
+    <span class="badge">systemd</span>
+    <span class="badge">systemctl</span>
+    <span class="badge">journalctl</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第3章のセクション</h2>
+  <ol>
+    <li class="current"><a href="index.html">システム起動プロセス</a></li>
+    <li><a href="02_bootloader.html">ブートローダ</a></li>
+    <li><a href="03_altboot.html">その他のブートローダ</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：ブートからカーネル起動まで -->
+<!-- ============================================================ -->
+<h2 id="boot-flow">① ブートからカーネル起動まで</h2>
+
+<div class="note">
+  <strong>重要ポイント①：システムの起動は「BIOS/UEFI → ブートローダ → カーネル → init/systemd」の順で行われる</strong><br>
+  各フェーズの役割と、BIOS/UEFI・MBR/GPT の違いを正確に理解することが重要です。
+</div>
+
+<div class="demo-box">
+  <h3>起動フロー全体図（クリックで各フェーズの詳細を表示）</h3>
+
+  <div class="boot-flow">
+    <!-- Step 1: BIOS/UEFI -->
+    <div class="boot-step">
+      <div class="boot-step-num">
+        <div class="boot-step-circle" style="background:#2d3748; color:#e2e8f0;">1</div>
+        <div class="boot-step-line" style="background:#9ae6b4;"></div>
+      </div>
+      <div class="boot-step-body" style="background:#2d3748; color:#e2e8f0; border-color:#4a5568;"
+           onclick="showBootStep('bios')">
+        <h4>🔌 BIOS / UEFI</h4>
+        <p>電源投入 → ハードウェア初期化（POST）→ ブートデバイスの選択</p>
+      </div>
+    </div>
+    <!-- Step 2: MBR/GPT -->
+    <div class="boot-step">
+      <div class="boot-step-num">
+        <div class="boot-step-circle" style="background:#1a365d; color:#bee3f8;">2</div>
+        <div class="boot-step-line" style="background:#9ae6b4;"></div>
+      </div>
+      <div class="boot-step-body" style="background:#1a365d; color:#bee3f8; border-color:#2b4c7e;"
+           onclick="showBootStep('mbr')">
+        <h4>💾 MBR / GPT</h4>
+        <p>ブートセクタの読み込み → ブートローダの第1ステージを実行</p>
+      </div>
+    </div>
+    <!-- Step 3: ブートローダ -->
+    <div class="boot-step">
+      <div class="boot-step-num">
+        <div class="boot-step-circle" style="background:#553c9a; color:#fff;">3</div>
+        <div class="boot-step-line" style="background:#9ae6b4;"></div>
+      </div>
+      <div class="boot-step-body" style="background:#553c9a; color:#fff; border-color:#9f7aea;"
+           onclick="showBootStep('grub')">
+        <h4>🥾 ブートローダ（GRUB2）</h4>
+        <p>起動メニュー表示 → カーネルイメージ（vmlinuz）と initramfs を読み込む</p>
+      </div>
+    </div>
+    <!-- Step 4: カーネル -->
+    <div class="boot-step">
+      <div class="boot-step-num">
+        <div class="boot-step-circle" style="background:#2b4c7e; color:#fff;">4</div>
+        <div class="boot-step-line" style="background:#9ae6b4;"></div>
+      </div>
+      <div class="boot-step-body" style="background:#2b4c7e; color:#fff; border-color:#567ebb;"
+           onclick="showBootStep('kernel')">
+        <h4>⚙️ カーネルの初期化</h4>
+        <p>自己展開 → ハードウェア検出 → initramfs 展開 → ルートFS マウント</p>
+      </div>
+    </div>
+    <!-- Step 5: init/systemd -->
+    <div class="boot-step">
+      <div class="boot-step-num">
+        <div class="boot-step-circle" style="background:#1a4731; color:#fff;">5</div>
+        <div class="boot-step-line" style="background:#9ae6b4;"></div>
+      </div>
+      <div class="boot-step-body" style="background:#1a4731; color:#fff; border-color:#2f855a;"
+           onclick="showBootStep('init')">
+        <h4>🌱 init / systemd（PID 1）</h4>
+        <p>最初のプロセス起動 → サービス・デーモンの起動 → ログインプロンプト表示</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 詳細表示エリア -->
+  <div id="boot-step-detail" style="display:none; margin-top:14px; background:#fff; border:1px solid #9ae6b4; border-left:5px solid #2f855a; border-radius:0 8px 8px 0; padding:16px 20px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const bootSteps = {
+      bios: {
+        title: '🔌 BIOS / UEFI',
+        color: '#4a5568',
+        body: `<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; flex-wrap:wrap;">
+          <div>
+            <strong style="color:#2d3748;">BIOS（Basic Input/Output System）</strong><br>
+            ・ROM に書き込まれたファームウェア<br>
+            ・電源投入後に POST（Power-On Self Test）を実行<br>
+            ・ハードウェアを初期化してブートデバイスを選択<br>
+            ・MBR（先頭512バイト）からブートローダを読み込む<br>
+            ・32ビットモードで動作・2TB以上のディスク非対応<br>
+            ・設定は CMOS に保存（バッテリーバックアップ）
+          </div>
+          <div>
+            <strong style="color:#2d3748;">UEFI（Unified Extensible Firmware Interface）</strong><br>
+            ・BIOS の後継。現代のPCの標準ファームウェア<br>
+            ・GPT パーティションに対応（2TB以上のディスク可）<br>
+            ・EFI システムパーティション（ESP）から直接起動可能<br>
+            ・64ビットモードで動作・セキュアブート機能<br>
+            ・グラフィカルな設定画面・マウス操作対応<br>
+            ・設定は NVRAM に保存（不揮発性メモリ）
+          </div>
+        </div>`
+      },
+      mbr: {
+        title: '💾 MBR / GPT',
+        color: '#2b4c7e',
+        body: `<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div>
+            <strong style="color:#2d3748;">MBR（Master Boot Record）</strong><br>
+            ・ディスクの先頭512バイト<br>
+            ・構成：ブートコード(446B) + パーティションテーブル(64B) + シグネチャ(2B)<br>
+            ・最大4つのプライマリパーティション<br>
+            ・最大ディスクサイズ：2TB<br>
+            ・BIOS システムで使用<br>
+            ・冗長性なし（1箇所が壊れると起動不可）
+          </div>
+          <div>
+            <strong style="color:#2d3748;">GPT（GUID Partition Table）</strong><br>
+            ・UEFIの標準パーティション形式<br>
+            ・最大128個のパーティション<br>
+            ・最大ディスクサイズ：9.4ZB（ゼタバイト）<br>
+            ・パーティション情報をディスク先頭と末尾に二重保存<br>
+            ・各パーティションに一意のGUID（UUID）を持つ<br>
+            ・UEFI システムで使用（MBR互換モードあり）
+          </div>
+        </div>`
+      },
+      grub: {
+        title: '🥾 ブートローダ（GRUB2）',
+        color: '#553c9a',
+        body: `GRUB2（GRand Unified Bootloader version 2）は現代のLinuxで標準的に使われるブートローダです。<br><br>
+          <strong>GRUB2 の起動段階：</strong><br>
+          ・<strong>Stage 1</strong>：MBR（446バイト）に格納。Stage 1.5 または Stage 2 をロード<br>
+          ・<strong>Stage 1.5</strong>：MBR直後のギャップ領域に格納。ファイルシステムドライバを含む<br>
+          ・<strong>Stage 2</strong>：<code>/boot/grub/</code> に格納。メニュー表示・カーネルのロード<br><br>
+          <strong>主な設定ファイル：</strong><br>
+          ・<code>/boot/grub/grub.cfg</code>：起動メニュー定義（自動生成）<br>
+          ・<code>/etc/default/grub</code>：GRUB の基本設定（手動編集）<br>
+          ・<code>/etc/grub.d/</code>：grub.cfg 生成スクリプト群<br><br>
+          <strong>設定の反映：</strong><br>
+          <code>sudo update-grub</code>（Debian/Ubuntu）<br>
+          <code>sudo grub2-mkconfig -o /boot/grub2/grub.cfg</code>（RHEL系）`
+      },
+      kernel: {
+        title: '⚙️ カーネルの初期化',
+        color: '#2b4c7e',
+        body: `ブートローダによってメモリに読み込まれたカーネルが初期化を行います。<br><br>
+          <strong>カーネル初期化の流れ：</strong><br>
+          ① <code>vmlinuz</code> が自己展開（bzImage → 非圧縮カーネル）<br>
+          ② CPU・メモリの初期化<br>
+          ③ ハードウェアの検出とドライバの初期化<br>
+          ④ <code>initramfs</code> を tmpfs に展開<br>
+          ⑤ <code>initramfs</code> 内の <code>/init</code> スクリプトを実行<br>
+          ⑥ 本来のルートファイルシステムをマウント<br>
+          ⑦ <code>switch_root</code> で本来の <code>/</code> に切り替え<br>
+          ⑧ <code>/sbin/init</code>（PID 1）を起動<br><br>
+          <strong>カーネルメッセージの確認：</strong><br>
+          <code>dmesg</code> または <code>journalctl -k</code>`
+      },
+      init: {
+        title: '🌱 init / systemd（PID 1）',
+        color: '#1a4731',
+        body: `カーネルが最初に起動するプロセス（PID 1）です。すべてのプロセスの祖先となります。<br><br>
+          <strong>SysVinit（従来方式）：</strong><br>
+          ・<code>/sbin/init</code> が起動<br>
+          ・<code>/etc/inittab</code> を読み込んでランレベルを決定<br>
+          ・<code>/etc/rc.d/</code> または <code>/etc/init.d/</code> のスクリプトを順次実行<br>
+          ・シリアル（順次）起動のため起動時間が長い<br><br>
+          <strong>systemd（現代の標準）：</strong><br>
+          ・<code>/lib/systemd/systemd</code> が起動<br>
+          ・ユニットファイルで依存関係を管理<br>
+          ・並列起動により高速な起動を実現<br>
+          ・<code>default.target</code>（通常は <code>multi-user.target</code> または <code>graphical.target</code>）に向けてサービスを起動`
+      }
+    };
+
+    function showBootStep(key) {
+      const d = bootSteps[key];
+      const el = document.getElementById('boot-step-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display = 'none'; el.dataset.current = ''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-size:0.95em;">${d.title}</strong><br><br>${d.body}`;
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：SysVinit の概要 -->
+<!-- ============================================================ -->
+<h2 id="sysvinit">② SysVinit の概要</h2>
+
+<div class="note">
+  <strong>重要ポイント②：SysVinit は UNIX System V 由来の伝統的な init システムで、ランレベルに基づいてサービスを管理する</strong><br>
+  現代のディストリビューションでは systemd に置き換えられていますが、
+  LPIC-201 の試験範囲として理解が必要です。
+</div>
+
+<div class="demo-box">
+  <h3>ランレベル一覧（クリックで詳細）</h3>
+  <div class="rl-grid">
+    <div class="rl-card" style="background:#fed7d7; border:2px solid #fc8181;" onclick="showRL(0)">
+      <div class="rl-num" style="color:#9b2335;">0</div>
+      <div class="rl-name" style="color:#9b2335;">シャットダウン</div>
+    </div>
+    <div class="rl-card" style="background:#fbd38d; border:2px solid #f6ad55;" onclick="showRL(1)">
+      <div class="rl-num" style="color:#744210;">1</div>
+      <div class="rl-name" style="color:#744210;">シングルユーザー</div>
+    </div>
+    <div class="rl-card" style="background:#bee3f8; border:2px solid #90cdf4;" onclick="showRL(2)">
+      <div class="rl-num" style="color:#2b4c7e;">2</div>
+      <div class="rl-name" style="color:#2b4c7e;">マルチユーザー<br>（NFS なし）</div>
+    </div>
+    <div class="rl-card" style="background:#c6f6d5; border:2px solid #68d391;" onclick="showRL(3)">
+      <div class="rl-num" style="color:#1a4731;">3</div>
+      <div class="rl-name" style="color:#1a4731;">マルチユーザー<br>（フルネットワーク）</div>
+    </div>
+    <div class="rl-card" style="background:#e9d8fd; border:2px solid #b794f4;" onclick="showRL(4)">
+      <div class="rl-num" style="color:#553c9a;">4</div>
+      <div class="rl-name" style="color:#553c9a;">未使用<br>（ユーザー定義）</div>
+    </div>
+    <div class="rl-card" style="background:#c6f6d5; border:2px solid #48bb78;" onclick="showRL(5)">
+      <div class="rl-num" style="color:#1a4731;">5</div>
+      <div class="rl-name" style="color:#1a4731;">マルチユーザー<br>（GUI）</div>
+    </div>
+    <div class="rl-card" style="background:#fed7d7; border:2px solid #fc8181;" onclick="showRL(6)">
+      <div class="rl-num" style="color:#9b2335;">6</div>
+      <div class="rl-name" style="color:#9b2335;">再起動</div>
+    </div>
+    <div class="rl-card" style="background:#fbd38d; border:2px solid #f6ad55;" onclick="showRL('s')">
+      <div class="rl-num" style="color:#744210;">S</div>
+      <div class="rl-name" style="color:#744210;">シングルユーザー<br>（1 の別名）</div>
+    </div>
+  </div>
+
+  <div id="rl-detail" style="display:none; margin-top:12px; background:#f0fff4; border:1px solid #9ae6b4; border-left:5px solid #2f855a; border-radius:0 8px 8px 0; padding:14px 18px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const rlData = {
+      0: { title:'ランレベル 0：シャットダウン', body:'すべてのサービスを停止してシステムをシャットダウンします。<br><code>init 0</code> または <code>shutdown -h now</code> で移行できます。<br>このランレベルに設定するとシステムが起動できなくなるため、<code>/etc/inittab</code> の <code>initdefault</code> に設定してはいけません。' },
+      1: { title:'ランレベル 1：シングルユーザーモード', body:'管理者（root）のみがログインできるモードです。ネットワーク・マルチユーザー機能は無効です。<br>ファイルシステムの修復・パスワードリセットなどのメンテナンス作業に使用します。<br><code>init 1</code> または起動時に <code>single</code> パラメータを渡すことで移行できます。' },
+      2: { title:'ランレベル 2：マルチユーザー（NFS なし）', body:'複数ユーザーがログインできますが、NFS（ネットワークファイルシステム）は起動しません。<br>Debian/Ubuntu では、ランレベル 2〜5 はすべて同じ設定になっています（区別なし）。' },
+      3: { title:'ランレベル 3：マルチユーザー（フルネットワーク）', body:'最も一般的なサーバー向けランレベルです。ネットワーク・NFS を含むすべてのサービスが起動します。GUIは起動しません。<br>RHEL/CentOS 系でサーバーとして使用する場合の標準ランレベルです。' },
+      4: { title:'ランレベル 4：未使用（ユーザー定義）', body:'標準では定義されていないランレベルです。管理者が独自の用途に使用できます。<br>ほとんどのディストリビューションでは使用されていません。' },
+      5: { title:'ランレベル 5：マルチユーザー（GUI）', body:'ランレベル 3 の機能に加えて、グラフィカルなログイン画面（X Display Manager）が起動します。<br>デスクトップ環境を使用する場合の標準ランレベルです。<br>RHEL/CentOS 系でデスクトップとして使用する場合の標準ランレベルです。' },
+      6: { title:'ランレベル 6：再起動', body:'すべてのサービスを停止してシステムを再起動します。<br><code>init 6</code> または <code>reboot</code> で移行できます。<br>ランレベル 0 と同様、<code>initdefault</code> に設定してはいけません。' },
+      s: { title:'ランレベル S（s）：シングルユーザー', body:'ランレベル 1 の別名です。<code>single</code> とも呼ばれます。<br>カーネルの起動パラメータに <code>single</code> または <code>s</code> を渡すことでこのモードで起動できます。' }
+    };
+
+    function showRL(n) {
+      const d = rlData[n];
+      const el = document.getElementById('rl-detail');
+      if (el.dataset.current == n && el.style.display !== 'none') {
+        el.style.display='none'; el.dataset.current=''; return;
+      }
+      el.dataset.current = n;
+      el.style.display = 'block';
+      el.innerHTML = `<strong style="color:#1a4731;">${d.title}</strong><br><br>${d.body}`;
+      el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+  </script>
+
+  <h3>/etc/inittab の構造</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /etc/inittab の基本構造（SysVinit）</span>
+<span class="comment"># 書式：id:ランレベル:アクション:プロセス</span>
+
+<span class="comment"># デフォルトのランレベルを設定</span>
+<span class="hl">id:3:initdefault:</span>
+
+<span class="comment"># システム初期化スクリプト</span>
+<span class="out">si::sysinit:/etc/rc.d/rc.sysinit</span>
+
+<span class="comment"># 各ランレベルの起動スクリプト</span>
+<span class="out">l0:0:wait:/etc/rc.d/rc 0</span>
+<span class="out">l1:1:wait:/etc/rc.d/rc 1</span>
+<span class="out">l2:2:wait:/etc/rc.d/rc 2</span>
+<span class="out">l3:3:wait:/etc/rc.d/rc 3</span>
+<span class="out">l5:5:wait:/etc/rc.d/rc 5</span>
+<span class="out">l6:6:wait:/etc/rc.d/rc 6</span>
+
+<span class="comment"># 仮想コンソールの設定（Ctrl+Alt+F1〜F6）</span>
+<span class="out">1:2345:respawn:/sbin/mingetty tty1</span>
+<span class="out">2:2345:respawn:/sbin/mingetty tty2</span>
+
+<span class="comment"># 現在のランレベルを確認</span>
+$ <span class="cmd">runlevel</span>
+<span class="out">N 3</span>   <span class="comment"># N=前のランレベル（なし）, 3=現在のランレベル</span>
+
+<span class="comment"># ランレベルを変更</span>
+$ <span class="cmd">sudo init</span> <span class="val">3</span>
+$ <span class="cmd">sudo telinit</span> <span class="val">3</span>   <span class="comment"># init へのシンボリックリンク</span>
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：起動スクリプトとサービスの自動起動 -->
+<!-- ============================================================ -->
+<h2 id="rcscript">③ 起動スクリプトとサービスの自動起動</h2>
+
+<div class="note">
+  <strong>重要ポイント③：SysVinit のサービス管理は /etc/init.d/ のスクリプトと /etc/rc?.d/ のシンボリックリンクで行う</strong><br>
+  シンボリックリンクのファイル名の先頭文字（S/K）と番号で起動・停止の順序を制御します。
+</div>
+
+<div class="demo-box">
+  <h3>ディレクトリ構造と命名規則</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /etc/init.d/ ：サービス起動スクリプトの本体</span>
+$ <span class="cmd">ls</span> /etc/init.d/
+<span class="out">apache2  cron  mysql  networking  ssh  ...</span>
+
+<span class="comment"># /etc/rc3.d/ ：ランレベル3で実行するリンク</span>
+$ <span class="cmd">ls</span> /etc/rc3.d/
+<span class="hl">S01networking  S02rsyslog  S10ssh  S20apache2  S50mysql</span>
+<span class="out">K01mysql       K10apache2</span>
+<span class="comment"># S = Start（起動）  K = Kill（停止）</span>
+<span class="comment"># 番号が小さいほど先に実行される</span>
+
+<span class="comment"># シンボリックリンクの確認</span>
+$ <span class="cmd">ls</span> <span class="opt">-la</span> /etc/rc3.d/S20apache2
+<span class="out">lrwxrwxrwx 1 root root 17 Jan 1 10:00 /etc/rc3.d/S20apache2 -> ../init.d/apache2</span>
+
+<span class="comment"># サービスの手動操作</span>
+$ <span class="cmd">sudo /etc/init.d/apache2</span> <span class="val">start</span>
+$ <span class="cmd">sudo /etc/init.d/apache2</span> <span class="val">stop</span>
+$ <span class="cmd">sudo /etc/init.d/apache2</span> <span class="val">restart</span>
+$ <span class="cmd">sudo /etc/init.d/apache2</span> <span class="val">status</span>
+
+<span class="comment"># service コマンドでも操作できる</span>
+$ <span class="cmd">sudo service</span> apache2 <span class="val">start</span>
+</pre>
+  </div>
+
+  <h3>サービスの自動起動設定（タブで切り替え）</h3>
+  <div class="tab-wrap">
+    <div class="tab-btns">
+      <button class="tab-btn active" onclick="switchTab(this,'tab-manual')">手動リンク作成</button>
+      <button class="tab-btn" onclick="switchTab(this,'tab-chkconfig')">chkconfig</button>
+      <button class="tab-btn" onclick="switchTab(this,'tab-updaterc')">update-rc.d</button>
+    </div>
+
+    <!-- 手動リンク作成 -->
+    <div class="tab-content active" id="tab-manual">
+      <h3 style="margin-top:0; color:#1a4731;">手動でシンボリックリンクを作成</h3>
+      <div class="pre-wrap">
+        <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># ランレベル3でapache2を起動するリンクを作成</span>
+$ <span class="cmd">sudo ln</span> <span class="opt">-s</span> /etc/init.d/apache2 /etc/rc3.d/S20apache2
+
+<span class="comment"># ランレベル3でapache2を停止するリンクを作成</span>
+$ <span class="cmd">sudo ln</span> <span class="opt">-s</span> /etc/init.d/apache2 /etc/rc3.d/K80apache2
+
+<span class="comment"># 命名規則</span>
+<span class="comment"># S = Start（ランレベル移行時に起動）</span>
+<span class="comment"># K = Kill（ランレベル移行時に停止）</span>
+<span class="comment"># 数字 = 実行順序（小さいほど先）</span>
+<span class="comment"># 例：S20apache2 → 起動順序20でapache2を起動</span>
+
+<span class="comment"># リンクを削除して自動起動を無効化</span>
+$ <span class="cmd">sudo rm</span> /etc/rc3.d/S20apache2
+</pre>
+      </div>
+    </div>
+
+    <!-- chkconfig -->
+    <div class="tab-content" id="tab-chkconfig">
+      <h3 style="margin-top:0; color:#1a4731;">chkconfig（RHEL/CentOS 系）</h3>
+      <div class="pre-wrap">
+        <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># すべてのサービスの自動起動状態を確認</span>
+$ <span class="cmd">chkconfig</span> <span class="opt">--list</span>
+<span class="out">apache2         0:off   1:off   2:on    3:on    4:on    5:on    6:off</span>
+<span class="out">sshd            0:off   1:off   2:on    3:on    4:on    5:on    6:off</span>
+<span class="out">mysql           0:off   1:off   2:off   3:off   4:off   5:off   6:off</span>
+
+<span class="comment"># 特定サービスの状態確認</span>
+$ <span class="cmd">chkconfig</span> <span class="opt">--list</span> apache2
+
+<span class="comment"># 自動起動を有効化（ランレベル 2,3,4,5）</span>
+$ <span class="cmd">sudo chkconfig</span> apache2 <span class="val">on</span>
+
+<span class="comment"># 自動起動を無効化</span>
+$ <span class="cmd">sudo chkconfig</span> apache2 <span class="val">off</span>
+
+<span class="comment"># 特定のランレベルのみ有効化</span>
+$ <span class="cmd">sudo chkconfig</span> <span class="opt">--level</span> <span class="val">35</span> apache2 <span class="val">on</span>
+
+<span class="comment"># サービスを chkconfig に追加</span>
+$ <span class="cmd">sudo chkconfig</span> <span class="opt">--add</span> myservice
+</pre>
+      </div>
+    </div>
+
+    <!-- update-rc.d -->
+    <div class="tab-content" id="tab-updaterc">
+      <h3 style="margin-top:0; color:#1a4731;">update-rc.d（Debian/Ubuntu 系）</h3>
+      <div class="pre-wrap">
+        <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># 自動起動を有効化（デフォルト設定）</span>
+$ <span class="cmd">sudo update-rc.d</span> apache2 <span class="val">defaults</span>
+<span class="comment"># → ランレベル 2,3,4,5 で起動（S20）、0,1,6 で停止（K80）</span>
+
+<span class="comment"># 自動起動を有効化（順序を指定）</span>
+$ <span class="cmd">sudo update-rc.d</span> apache2 <span class="val">defaults</span> <span class="val">20</span> <span class="val">80</span>
+<span class="comment">#                                      ↑起動順序 ↑停止順序</span>
+
+<span class="comment"># 自動起動を無効化（リンクを削除）</span>
+$ <span class="cmd">sudo update-rc.d</span> apache2 <span class="val">remove</span>
+
+<span class="comment"># 自動起動を無効化（リンクは残してdisable）</span>
+$ <span class="cmd">sudo update-rc.d</span> apache2 <span class="val">disable</span>
+
+<span class="comment"># 自動起動を有効化（disableを解除）</span>
+$ <span class="cmd">sudo update-rc.d</span> apache2 <span class="val">enable</span>
+
+<span class="comment"># 特定ランレベルのみ設定</span>
+$ <span class="cmd">sudo update-rc.d</span> apache2 <span class="val">start</span> <span class="val">20</span> <span class="val">3</span> <span class="val">5</span> . <span class="val">stop</span> <span class="val">80</span> <span class="val">0</span> <span class="val">1</span> <span class="val">6</span> .
+</pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(btn, id) {
+      btn.closest('.tab-wrap').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.closest('.tab-wrap').querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(id).classList.add('active');
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 4：systemd の概要と起動手順 -->
+<!-- ============================================================ -->
+<h2 id="systemd">④ systemd の概要と起動手順</h2>
+
+<div class="note">
+  <strong>重要ポイント④：systemd は現代の Linux の標準 init システムで、ユニットファイルによる並列起動と依存関係管理が特徴</strong><br>
+  SysVinit のランレベルに相当する概念として「ターゲット（.target）」を使用します。
+</div>
+
+<div class="demo-box">
+  <h3>SysVinit vs systemd 比較</h3>
+  <table class="ref-table">
+    <thead><tr><th>概念</th><th>SysVinit</th><th>systemd</th></tr></thead>
+    <tbody>
+      <tr><td>設定単位</td><td>シェルスクリプト（/etc/init.d/）</td><td>ユニットファイル（.service など）</td></tr>
+      <tr><td>起動方式</td><td>シリアル（順次）起動</td><td>並列起動（依存関係に基づく）</td></tr>
+      <tr><td>ランレベル相当</td><td>ランレベル 0〜6</td><td>ターゲット（.target）</td></tr>
+      <tr><td>デフォルト設定</td><td>/etc/inittab（initdefault）</td><td>default.target（シンボリックリンク）</td></tr>
+      <tr><td>サービス管理</td><td>service / chkconfig / update-rc.d</td><td>systemctl</td></tr>
+      <tr><td>ログ管理</td><td>/var/log/syslog など</td><td>journald（journalctl で確認）</td></tr>
+      <tr><td>PID 1</td><td>/sbin/init</td><td>/lib/systemd/systemd</td></tr>
+    </tbody>
+  </table>
+
+  <h3>ランレベルと systemd ターゲットの対応</h3>
+  <table class="ref-table">
+    <thead><tr><th>ランレベル</th><th>systemd ターゲット</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td><code>0</code></td><td><code>poweroff.target</code></td><td>シャットダウン</td></tr>
+      <tr><td><code>1</code> / <code>S</code></td><td><code>rescue.target</code></td><td>シングルユーザー（レスキューモード）</td></tr>
+      <tr><td><code>2</code> / <code>3</code> / <code>4</code></td><td><code>multi-user.target</code></td><td>マルチユーザー（CLI）</td></tr>
+      <tr><td><code>5</code></td><td><code>graphical.target</code></td><td>マルチユーザー（GUI）</td></tr>
+      <tr><td><code>6</code></td><td><code>reboot.target</code></td><td>再起動</td></tr>
+      <tr><td>—</td><td><code>emergency.target</code></td><td>緊急モード（最小限の環境）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>systemd の起動手順</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># systemd の起動フロー</span>
+<span class="comment"># 1. カーネルが /lib/systemd/systemd を PID 1 として起動</span>
+<span class="comment"># 2. default.target を確認</span>
+$ <span class="cmd">systemctl</span> get-default
+<span class="out">graphical.target</span>
+
+<span class="comment"># default.target の実体（シンボリックリンク）</span>
+$ <span class="cmd">ls</span> <span class="opt">-la</span> /etc/systemd/system/default.target
+<span class="out">lrwxrwxrwx 1 root root 36 /etc/systemd/system/default.target -> /lib/systemd/system/graphical.target</span>
+
+<span class="comment"># 3. ターゲットの依存関係を解決して並列起動</span>
+<span class="comment"># graphical.target → multi-user.target → basic.target → sysinit.target → ...</span>
+
+<span class="comment"># デフォルトターゲットの変更</span>
+$ <span class="cmd">sudo systemctl</span> set-default multi-user.target
+
+<span class="comment"># 現在のターゲットを変更（即時）</span>
+$ <span class="cmd">sudo systemctl</span> isolate multi-user.target
+
+<span class="comment"># systemd のバージョン確認</span>
+$ <span class="cmd">systemctl</span> <span class="opt">--version</span>
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 5：systemctl コマンド -->
+<!-- ============================================================ -->
+<h2 id="systemctl">⑤ systemctl コマンドによるサービスの管理</h2>
+
+<div class="demo-box">
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#1a4731; margin:0 0 12px;">
+      操作カテゴリを選択してコマンドを確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>操作カテゴリ</label>
+      <select id="systemctl-cat" onchange="showSystemctlCat()">
+        <option value="">-- カテゴリを選択 --</option>
+        <option value="service">🔧 サービスの起動・停止・確認</option>
+        <option value="enable">🔁 自動起動の設定</option>
+        <option value="list">📋 一覧・状態確認</option>
+        <option value="target">🎯 ターゲット操作</option>
+        <option value="system">⚙️ システム操作</option>
+      </select>
+    </div>
+    <div class="output-display" id="systemctl-output" style="display:none;"></div>
+  </div>
+
+  <script>
+    const systemctlCats = {
+      service: {
+        color: '#68d391',
+        text:
+`# サービスの起動・停止・再起動・確認
+
+$ sudo systemctl start   apache2   # 起動
+$ sudo systemctl stop    apache2   # 停止
+$ sudo systemctl restart apache2   # 再起動（停止→起動）
+$ sudo systemctl reload  apache2   # 設定再読み込み（停止なし）
+$ sudo systemctl status  apache2   # 状態確認
+
+# status の出力例
+● apache2.service - The Apache HTTP Server
+     Loaded: loaded (/lib/systemd/system/apache2.service; enabled)
+     Active: active (running) since Mon 2026-01-01 10:00:00 JST
+    Process: 1234 ExecStart=/usr/sbin/apachectl start
+   Main PID: 1235 (apache2)
+      Tasks: 6 (limit: 9830)
+     Memory: 12.5M
+        CPU: 234ms
+     CGroup: /system.slice/apache2.service
+             ├─1235 /usr/sbin/apache2 -k start
+             └─1236 /usr/sbin/apache2 -k start`
+      },
+      enable: {
+        color: '#90cdf4',
+        text:
+`# 自動起動の有効化・無効化
+
+$ sudo systemctl enable  apache2   # 自動起動を有効化
+$ sudo systemctl disable apache2   # 自動起動を無効化
+$ sudo systemctl is-enabled apache2  # 自動起動の状態確認
+enabled
+
+# 有効化と同時に起動
+$ sudo systemctl enable --now apache2
+
+# 無効化と同時に停止
+$ sudo systemctl disable --now apache2
+
+# マスク（完全に無効化・手動起動も不可）
+$ sudo systemctl mask   apache2
+$ sudo systemctl unmask apache2
+
+# enable の仕組み
+# /etc/systemd/system/multi-user.target.wants/ に
+# シンボリックリンクを作成する
+$ ls /etc/systemd/system/multi-user.target.wants/
+apache2.service  cron.service  ssh.service  ...`
+      },
+      list: {
+        color: '#b794f4',
+        text:
+`# ユニット・サービスの一覧確認
+
+# 起動中のユニットを一覧表示
+$ systemctl list-units
+
+# すべてのサービスを一覧表示
+$ systemctl list-units --type=service
+
+# 失敗したユニットを表示
+$ systemctl list-units --failed
+$ systemctl --failed
+
+# インストール済みのユニットファイルを表示
+$ systemctl list-unit-files
+
+# 自動起動が有効なサービスのみ表示
+$ systemctl list-unit-files --state=enabled
+
+# 依存関係ツリーを表示
+$ systemctl list-dependencies apache2`
+      },
+      target: {
+        color: '#f6ad55',
+        text:
+`# ターゲットの操作
+
+# 現在のデフォルトターゲットを確認
+$ systemctl get-default
+graphical.target
+
+# デフォルトターゲットを変更（再起動後に反映）
+$ sudo systemctl set-default multi-user.target
+
+# 現在のターゲットを変更（即時・SysVinit の init N 相当）
+$ sudo systemctl isolate multi-user.target
+$ sudo systemctl isolate rescue.target      # レスキューモード
+$ sudo systemctl isolate emergency.target   # 緊急モード
+
+# SysVinit 互換コマンド（systemd でも使用可能）
+$ sudo init 3       # multi-user.target に移行
+$ sudo telinit 3    # 同上
+$ runlevel          # 現在のランレベル確認`
+      },
+      system: {
+        color: '#fc8181',
+        text:
+`# システム操作（シャットダウン・再起動）
+
+# システムをシャットダウン
+$ sudo systemctl poweroff
+$ sudo shutdown -h now
+
+# システムを再起動
+$ sudo systemctl reboot
+$ sudo shutdown -r now
+$ sudo reboot
+
+# サスペンド（スリープ）
+$ sudo systemctl suspend
+
+# ハイバネート（休止状態）
+$ sudo systemctl hibernate
+
+# systemd デーモンの設定再読み込み
+# （ユニットファイルを変更した後に実行）
+$ sudo systemctl daemon-reload`
+      }
+    };
+
+    function showSystemctlCat() {
+      const key = document.getElementById('systemctl-cat').value;
+      const el  = document.getElementById('systemctl-output');
+      if (!key) { el.style.display='none'; return; }
+      const d = systemctlCats[key];
+      el.style.display = 'block';
+      el.style.color   = d.color;
+      el.textContent   = d.text;
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 6：Unit 設定ファイル -->
+<!-- ============================================================ -->
+<h2 id="unit">⑥ Unit 設定ファイル</h2>
+
+<div class="note">
+  <strong>重要ポイント⑤：systemd のユニットファイルは [Unit]・[Service/Install など]・[Install] の3セクション構成</strong><br>
+  <code>/lib/systemd/system/</code>（システム提供）と
+  <code>/etc/systemd/system/</code>（ユーザー定義・優先度高）に配置します。
+</div>
+
+<div class="demo-box">
+  <h3>ユニットファイルの種類（クリックで詳細）</h3>
+  <div class="unit-grid">
+    <div class="unit-card" onclick="showUnitType('service')">
+      <div class="unit-ext">.service</div>
+      <div class="unit-desc">デーモン・サービスプロセスを管理。最も一般的なユニット</div>
+    </div>
+    <div class="unit-card" onclick="showUnitType('target')">
+      <div class="unit-ext">.target</div>
+      <div class="unit-desc">複数ユニットをグループ化。SysVinit のランレベルに相当</div>
+    </div>
+    <div class="unit-card" onclick="showUnitType('socket')">
+      <div class="unit-ext">.socket</div>
+      <div class="unit-desc">ソケットベースのアクティベーション。接続時にサービスを起動</div>
+    </div>
+    <div class="unit-card" onclick="showUnitType('timer')">
+      <div class="unit-ext">.timer</div>
+      <div class="unit-desc">タイマーベースのアクティベーション。cron の代替</div>
+    </div>
+    <div class="unit-card" onclick="showUnitType('mount')">
+      <div class="unit-ext">.mount</div>
+      <div class="unit-desc">ファイルシステムのマウントポイントを管理</div>
+    </div>
+    <div class="unit-card" onclick="showUnitType('device')">
+      <div class="unit-ext">.device</div>
+      <div class="unit-desc">udev が認識したデバイスを表すユニット</div>
+    </div>
+  </div>
+
+  <div id="unit-type-detail" style="display:none; margin-top:12px; background:#f0fff4; border:1px solid #9ae6b4; border-left:5px solid #2f855a; border-radius:0 8px 8px 0; padding:14px 18px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const unitTypes = {
+      service: {
+        title: '.service ユニット',
+        body: `最も一般的なユニットタイプです。デーモンやサービスプロセスを管理します。<br><br>
+          <strong>サービスタイプ（Type=）：</strong><br>
+          ・<code>simple</code>：ExecStart で指定したプロセスがメインプロセス（デフォルト）<br>
+          ・<code>forking</code>：従来のデーモン形式（親プロセスが fork して終了）<br>
+          ・<code>oneshot</code>：一度だけ実行して終了するプロセス<br>
+          ・<code>notify</code>：起動完了を systemd に通知するプロセス<br>
+          ・<code>dbus</code>：D-Bus 経由で起動完了を通知`
+      },
+      target: {
+        title: '.target ユニット',
+        body: `複数のユニットをグループ化する同期ポイントです。SysVinit のランレベルに相当します。<br><br>
+          <strong>主なターゲット：</strong><br>
+          ・<code>sysinit.target</code>：システム初期化<br>
+          ・<code>basic.target</code>：基本的なシステム機能<br>
+          ・<code>multi-user.target</code>：マルチユーザー（CLI）<br>
+          ・<code>graphical.target</code>：グラフィカル環境<br>
+          ・<code>rescue.target</code>：レスキューモード<br>
+          ・<code>emergency.target</code>：緊急モード`
+      },
+      socket: {
+        title: '.socket ユニット',
+        body: `ソケットベースのアクティベーションを実現します。ソケットへの接続があったときに対応するサービスを起動します。<br><br>
+          <strong>利点：</strong><br>
+          ・サービスが使われるまで起動を遅延できる（起動時間の短縮）<br>
+          ・サービスが停止していても接続要求をキューに保持できる<br><br>
+          例：<code>sshd.socket</code> + <code>sshd.service</code>`
+      },
+      timer: {
+        title: '.timer ユニット',
+        body: `時刻・経過時間に基づいてユニットをアクティベートします。cron の代替として使用できます。<br><br>
+          <strong>タイマーの種類：</strong><br>
+          ・<code>OnCalendar=</code>：カレンダー形式で指定（cron 形式に相当）<br>
+          ・<code>OnBootSec=</code>：起動後の経過時間で指定<br>
+          ・<code>OnUnitActiveSec=</code>：最後のアクティベートからの経過時間<br><br>
+          例：<code>OnCalendar=daily</code>（毎日0時に実行）`
+      },
+      mount: {
+        title: '.mount ユニット',
+        body: `ファイルシステムのマウントポイントを管理します。<code>/etc/fstab</code> のエントリは自動的に .mount ユニットに変換されます。<br><br>
+          <strong>命名規則：</strong><br>
+          マウントポイントのパスを <code>/</code> を <code>-</code> に置換してファイル名にします。<br>
+          例：<code>/home/teru</code> → <code>home-teru.mount</code>`
+      },
+      device: {
+        title: '.device ユニット',
+        body: `udev が認識したデバイスを表すユニットです。デバイスの接続・切断に応じて他のユニットをアクティベートするために使用します。<br><br>
+          <strong>命名規則：</strong><br>
+          デバイスのパスを <code>/</code> を <code>-</code> に置換してファイル名にします。<br>
+          例：<code>/dev/sda</code> → <code>dev-sda.device</code>`
+      }
+    };
+
+    function showUnitType(key) {
+      const d = unitTypes[key];
+      const el = document.getElementById('unit-type-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display='none'; el.dataset.current=''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.innerHTML = `<strong style="color:#1a4731; font-family:'Consolas','Monaco',monospace;">${d.title}</strong><br><br>${d.body}`;
+      el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+  </script>
+
+  <h3>.service ユニットファイルの構造</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /lib/systemd/system/apache2.service の例</span>
+
+<span class="hdr">[Unit]</span>
+<span class="out">Description=The Apache HTTP Server</span>
+<span class="out">After=network.target remote-fs.target nss-lookup.target</span>
+<span class="out">Documentation=https://httpd.apache.org/docs/2.4/</span>
+
+<span class="hdr">[Service]</span>
+<span class="out">Type=forking</span>
+<span class="out">Environment=APACHE_STARTED_BY_SYSTEMD=true</span>
+<span class="out">ExecStart=/usr/sbin/apachectl start</span>
+<span class="out">ExecStop=/usr/sbin/apachectl graceful-stop</span>
+<span class="out">ExecReload=/usr/sbin/apachectl graceful</span>
+<span class="out">PrivateTmp=true</span>
+<span class="out">Restart=on-abort</span>
+
+<span class="hdr">[Install]</span>
+<span class="out">WantedBy=multi-user.target</span>
+</pre>
+  </div>
+
+  <h3>ユニットファイルの主要ディレクティブ</h3>
+  <table class="ref-table">
+    <thead><tr><th>セクション</th><th>ディレクティブ</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="4"><code>[Unit]</code></td><td><code>Description=</code></td><td>ユニットの説明文</td></tr>
+      <tr><td><code>After=</code></td><td>このユニットの後に起動するユニット（順序のみ）</td></tr>
+      <tr><td><code>Requires=</code></td><td>必須の依存ユニット（失敗すると自分も停止）</td></tr>
+      <tr><td><code>Wants=</code></td><td>任意の依存ユニット（失敗しても自分は継続）</td></tr>
+      <tr><td rowspan="5"><code>[Service]</code></td><td><code>Type=</code></td><td>サービスタイプ（simple/forking/oneshot/notify）</td></tr>
+      <tr><td><code>ExecStart=</code></td><td>起動コマンド</td></tr>
+      <tr><td><code>ExecStop=</code></td><td>停止コマンド</td></tr>
+      <tr><td><code>ExecReload=</code></td><td>設定再読み込みコマンド</td></tr>
+      <tr><td><code>Restart=</code></td><td>再起動条件（on-failure/always/on-abort）</td></tr>
+      <tr><td rowspan="2"><code>[Install]</code></td><td><code>WantedBy=</code></td><td>enable 時にリンクを作成するターゲット</td></tr>
+      <tr><td><code>RequiredBy=</code></td><td>enable 時に必須として登録するターゲット</td></tr>
+    </tbody>
+  </table>
+
+  <h3>ユニットファイルの配置場所</h3>
+  <table class="ref-table">
+    <thead><tr><th>パス</th><th>説明</th><th>優先度</th></tr></thead>
+    <tbody>
+      <tr><td><code>/etc/systemd/system/</code></td><td>管理者が作成・変更するユニットファイル</td><td>最高（システム提供を上書き）</td></tr>
+      <tr><td><code>/run/systemd/system/</code></td><td>実行時に動的に生成されるユニットファイル</td><td>中</td></tr>
+      <tr><td><code>/lib/systemd/system/</code></td><td>パッケージが提供するユニットファイル</td><td>低</td></tr>
+      <tr><td><code>/usr/lib/systemd/system/</code></td><td>同上（ディストリビューションによる）</td><td>低</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 7：systemd のログ（journalctl） -->
+<!-- ============================================================ -->
+<h2 id="journal">⑦ systemd のログ（journalctl）</h2>
+
+<div class="note">
+  <strong>重要ポイント⑥：systemd のログは journald が管理し、journalctl コマンドで確認する</strong><br>
+  バイナリ形式で保存され、構造化されたフィルタリングが可能です。
+  <code>/var/log/journal/</code>（永続）または <code>/run/log/journal/</code>（一時）に保存されます。
+</div>
+
+<div class="demo-box">
+  <h3>journalctl の主要コマンド</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># 全ログを表示（最古から最新）</span>
+$ <span class="cmd">journalctl</span>
+
+<span class="comment"># 最新のログを末尾から表示</span>
+$ <span class="cmd">journalctl</span> <span class="opt">-e</span>
+
+<span class="comment"># リアルタイムでログを表示（tail -f 相当）</span>
+$ <span class="cmd">journalctl</span> <span class="opt">-f</span>
+
+<span class="comment"># 最新 N 行を表示</span>
+$ <span class="cmd">journalctl</span> <span class="opt">-n</span> <span class="val">50</span>
+
+<span class="comment"># 特定サービスのログを表示</span>
+$ <span class="cmd">journalctl</span> <span class="opt">-u</span> apache2
+$ <span class="cmd">journalctl</span> <span class="opt">-u</span> apache2 <span class="opt">-f</span>    <span class="comment"># リアルタイム</span>
+
+<span class="comment"># カーネルメッセージのみ表示（dmesg 相当）</span>
+$ <span class="cmd">journalctl</span> <span class="opt">-k</span>
+
+<span class="comment"># 今回の起動分のログのみ表示</span>
+$ <span class="cmd">journalctl</span> <span class="opt">-b</span>
+$ <span class="cmd">journalctl</span> <span class="opt">-b</span> <span class="val">-1</span>    <span class="comment"># 1つ前の起動分</span>
+$ <span class="cmd">journalctl</span> <span class="opt">-b</span> <span class="val">-2</span>    <span class="comment"># 2つ前の起動分</span>
+
+<span class="comment"># 時間範囲を指定</span>
+$ <span class="cmd">journalctl</span> <span class="opt">--since</span> <span class="val">"2026-06-01 10:00:00"</span>
+$ <span class="cmd">journalctl</span> <span class="opt">--since</span> <span class="val">"1 hour ago"</span>
+$ <span class="cmd">journalctl</span> <span class="opt">--since</span> <span class="val">"09:00"</span> <span class="opt">--until</span> <span class="val">"12:00"</span>
+
+<span class="comment"># 優先度（ログレベル）でフィルタ</span>
+$ <span class="cmd">journalctl</span> <span class="opt">-p</span> <span class="val">err</span>        <span class="comment"># error 以上</span>
+$ <span class="cmd">journalctl</span> <span class="opt">-p</span> <span class="val">warning</span>    <span class="comment"># warning 以上</span>
+$ <span class="cmd">journalctl</span> <span class="opt">-p</span> <span class="val">0</span>          <span class="comment"># emergency のみ</span>
+
+<span class="comment"># JSON 形式で出力</span>
+$ <span class="cmd">journalctl</span> <span class="opt">-o</span> <span class="val">json</span>
+$ <span class="cmd">journalctl</span> <span class="opt">-o</span> <span class="val">json-pretty</span>
+
+<span class="comment"># ログの使用容量を確認</span>
+$ <span class="cmd">journalctl</span> <span class="opt">--disk-usage</span>
+
+<span class="comment"># 古いログを削除</span>
+$ <span class="cmd">sudo journalctl</span> <span class="opt">--vacuum-size</span>=<span class="val">500M</span>   <span class="comment"># 500MB 以下に削減</span>
+$ <span class="cmd">sudo journalctl</span> <span class="opt">--vacuum-time</span>=<span class="val">2weeks</span> <span class="comment"># 2週間以上古いログを削除</span>
+</pre>
+  </div>
+
+  <h3>ログの優先度（syslog レベル）</h3>
+  <table class="ref-table">
+    <thead><tr><th>番号</th><th>名前</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td><code>0</code></td><td><code>emerg</code></td><td>緊急：システムが使用不能</td></tr>
+      <tr><td><code>1</code></td><td><code>alert</code></td><td>警報：即時対応が必要</td></tr>
+      <tr><td><code>2</code></td><td><code>crit</code></td><td>重大：重大な状態</td></tr>
+      <tr><td><code>3</code></td><td><code>err</code></td><td>エラー：エラー状態</td></tr>
+      <tr><td><code>4</code></td><td><code>warning</code></td><td>警告：警告状態</td></tr>
+      <tr><td><code>5</code></td><td><code>notice</code></td><td>通知：正常だが重要な状態</td></tr>
+      <tr><td><code>6</code></td><td><code>info</code></td><td>情報：情報メッセージ</td></tr>
+      <tr><td><code>7</code></td><td><code>debug</code></td><td>デバッグ：デバッグ情報</td></tr>
+    </tbody>
+  </table>
+
+  <h3>journald の設定</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /etc/systemd/journald.conf の主要設定</span>
+<span class="hdr">[Journal]</span>
+<span class="out">Storage=persistent</span>        <span class="comment"># auto/volatile/persistent/none</span>
+<span class="comment">#   auto       : /var/log/journal/ があれば永続、なければ一時</span>
+<span class="comment">#   volatile   : /run/log/journal/ に一時保存（再起動で消える）</span>
+<span class="comment">#   persistent : /var/log/journal/ に永続保存</span>
+<span class="comment">#   none       : ログを保存しない</span>
+<span class="out">SystemMaxUse=500M</span>          <span class="comment"># 最大使用容量</span>
+<span class="out">SystemKeepFree=1G</span>          <span class="comment"># ディスクの最小空き容量</span>
+<span class="out">MaxRetentionSec=1month</span>     <span class="comment"># ログの最大保存期間</span>
+<span class="out">Compress=yes</span>               <span class="comment"># ログを圧縮して保存</span>
+
+<span class="comment"># 設定変更後は journald を再起動</span>
+$ <span class="cmd">sudo systemctl</span> restart systemd-journald
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- まとめ表 -->
+<!-- ============================================================ -->
+<h2>📌 まとめ一覧</h2>
+<div class="demo-box">
+  <table class="ref-table">
+    <thead><tr><th>カテゴリ</th><th>コマンド / ファイル</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td colspan="3" style="background:#dcfce7; color:#1a4731; font-weight:bold; font-size:0.88em;">▼ SysVinit</td></tr>
+      <tr><td>ランレベル確認</td><td><code>runlevel</code></td><td>現在のランレベルを表示</td></tr>
+      <tr><td>ランレベル変更</td><td><code>init N</code> / <code>telinit N</code></td><td>ランレベルを N に変更</td></tr>
+      <tr><td>サービス操作</td><td><code>service 名前 start|stop|restart|status</code></td><td>SysVinit サービスの操作</td></tr>
+      <tr><td>自動起動（RHEL）</td><td><code>chkconfig 名前 on|off</code></td><td>RHEL/CentOS 系の自動起動設定</td></tr>
+      <tr><td>自動起動（Debian）</td><td><code>update-rc.d 名前 defaults|remove|enable|disable</code></td><td>Debian/Ubuntu 系の自動起動設定</td></tr>
+      <tr><td colspan="3" style="background:#dcfce7; color:#1a4731; font-weight:bold; font-size:0.88em;">▼ systemd</td></tr>
+      <tr><td>サービス起動</td><td><code>systemctl start|stop|restart|reload|status 名前</code></td><td>サービスの操作</td></tr>
+      <tr><td>自動起動設定</td><td><code>systemctl enable|disable 名前</code></td><td>自動起動の有効化・無効化</td></tr>
+      <tr><td>一覧確認</td><td><code>systemctl list-units --type=service</code></td><td>サービス一覧</td></tr>
+      <tr><td>デフォルトターゲット</td><td><code>systemctl get-default</code> / <code>set-default</code></td><td>デフォルトターゲットの確認・変更</td></tr>
+      <tr><td>ターゲット移行</td><td><code>systemctl isolate ターゲット名</code></td><td>ターゲットを即時変更</td></tr>
+      <tr><td>設定再読み込み</td><td><code>systemctl daemon-reload</code></td><td>ユニットファイル変更後に実行</td></tr>
+      <tr><td colspan="3" style="background:#dcfce7; color:#1a4731; font-weight:bold; font-size:0.88em;">▼ journalctl</td></tr>
+      <tr><td>全ログ</td><td><code>journalctl</code></td><td>全ログを表示</td></tr>
+      <tr><td>サービスログ</td><td><code>journalctl -u サービス名</code></td><td>特定サービスのログ</td></tr>
+      <tr><td>リアルタイム</td><td><code>journalctl -f</code></td><td>ログをリアルタイム表示</td></tr>
+      <tr><td>今回の起動分</td><td><code>journalctl -b</code></td><td>今回の起動からのログ</td></tr>
+      <tr><td>エラーのみ</td><td><code>journalctl -p err</code></td><td>エラー以上のログのみ</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 穴埋め問題</h3>
+    <p>以下の説明に合うコマンド・ファイル・値を入力してください。</p>
+    <label>① SysVinit で現在のランレベルを確認するコマンド：</label>
+    <input type="text" id="q1a" placeholder="コマンド名">
+    <label>② systemd でデフォルトターゲットを確認するコマンド（フルコマンド）：</label>
+    <input type="text" id="q1b" placeholder="systemctl ...">
+    <label>③ SysVinit のランレベル 3 に相当する systemd ターゲット：</label>
+    <input type="text" id="q1c" placeholder="xxx.target">
+    <label>④ systemd でユニットファイルを変更した後に実行するコマンド：</label>
+    <input type="text" id="q1d" placeholder="systemctl ...">
+    <label>⑤ journalctl で特定サービス（apache2）のログを表示するオプション：</label>
+    <input type="text" id="q1e" placeholder="-x apache2">
+    <br>
+    <button class="btn btn-green" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const a = document.getElementById('q1a').value.trim().toLowerCase().replace(/\s+/g,'');
+        const b = document.getElementById('q1b').value.trim().toLowerCase().replace(/\s+/g,'');
+        const c = document.getElementById('q1c').value.trim().toLowerCase().replace(/\s/g,'');
+        const d = document.getElementById('q1d').value.trim().toLowerCase().replace(/\s+/g,'');
+        const e = document.getElementById('q1e').value.trim().toLowerCase().replace(/\s+/g,'');
+        const r = document.getElementById('q1-result');
+        const ca = a === 'runlevel';
+        const cb = b === 'systemctlget-default';
+        const cc = c === 'multi-user.target';
+        const cd = d === 'systemctldaemon-reload';
+        const ce = e === '-uapache2' || e === '-u apache2';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ runlevel'}　` +
+            `② ${cb?'✅':'❌ systemctl get-default'}　` +
+            `③ ${cc?'✅':'❌ multi-user.target'}　` +
+            `④ ${cd?'✅':'❌ systemctl daemon-reload'}　` +
+            `⑤ ${ce?'✅':'❌ -u apache2'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 選択問題</h3>
+    <p>
+      BIOS と UEFI の違いについて、<strong>正しい説明</strong>はどれですか？
+    </p>
+    <select id="q2">
+      <option value="">-- 選択してください --</option>
+      <option value="a">BIOS は 2TB 以上のディスクに対応しており、UEFI は 2TB 未満のみ対応している</option>
+      <option value="b">UEFI は GPT パーティションに対応し、セキュアブート機能を持つ BIOS の後継ファームウェアである</option>
+      <option value="c">BIOS と UEFI は同じ機能を持ち、名称が異なるだけである</option>
+      <option value="d">UEFI は Linux 専用のファームウェアで、Windows では使用できない</option>
+    </select>
+    <br>
+    <button class="btn btn-green" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const v = document.getElementById('q2').value;
+        const r = document.getElementById('q2-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>BIOS vs UEFI の主な違い：</strong><br>' +
+            '・BIOS：MBR使用・2TB制限・32ビット・CMOS設定<br>' +
+            '・UEFI：GPT対応・2TB以上可・64ビット・セキュアブート・NVRAM設定<br>' +
+            '・UEFI は BIOS の後継として現代のPCの標準ファームウェアです';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            'UEFI は BIOS の後継ファームウェアで、GPT対応・セキュアブート・64ビット動作などの特徴があります。<br>' +
+            'BIOS は MBR を使用し、2TB 以上のディスクには対応していません。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① SysVinit のランレベル 5 は GUI（グラフィカルログイン）を含むマルチユーザーモードである
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② systemd の <code>multi-user.target</code> は SysVinit のランレベル 0 に相当する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ <code>systemctl enable</code> は /etc/systemd/system/ 以下にシンボリックリンクを作成する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ <code>journalctl -b</code> は今回の起動からのログのみを表示する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ <code>update-rc.d</code> は RHEL/CentOS 系で使用するサービス管理コマンドである
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ SysVinit の /etc/rc3.d/ 内のファイル名が S から始まる場合、そのサービスはランレベル 3 で起動される
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ <code>systemctl isolate</code> コマンドで現在のターゲットを即時変更できる
+    </label>
+    <br>
+    <button class="btn btn-green" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：①③④⑥⑦（a,c,d,f,g）
+        // ② multi-user.target はランレベル 2/3/4 相当（0はpoweroff.target）
+        // ⑤ update-rc.d は Debian/Ubuntu 系（RHEL は chkconfig）
+        const correct = { a:true, b:false, c:true, d:true, e:false, f:true, g:true };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>①③④⑥⑦<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・② <code>multi-user.target</code> は SysVinit の<strong>ランレベル 2/3/4</strong> に相当します。ランレベル 0 は <code>poweroff.target</code> です<br>' +
+            '・⑤ <code>update-rc.d</code> は<strong>Debian/Ubuntu 系</strong>のコマンドです。RHEL/CentOS 系では <code>chkconfig</code> を使います';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. シナリオ問題</h3>
+    <p>
+      systemd を使用するサーバーで、<code>nginx</code> サービスを
+      <strong>起動し、かつ再起動後も自動的に起動するように設定</strong>したいと考えています。
+      最も効率的なコマンドはどれですか？
+    </p>
+    <select id="q4">
+      <option value="">-- 選択してください --</option>
+      <option value="a">systemctl start nginx の後に systemctl enable nginx を実行する</option>
+      <option value="b">systemctl enable --now nginx を実行する</option>
+      <option value="c">systemctl restart nginx を実行する</option>
+      <option value="d">/etc/systemd/system/ にユニットファイルを手動作成する</option>
+    </select>
+    <br>
+    <button class="btn btn-green" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const v = document.getElementById('q4').value;
+        const r = document.getElementById('q4-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<code>systemctl enable --now nginx</code> は<br>' +
+            '・<strong>enable</strong>：自動起動の有効化（シンボリックリンクの作成）<br>' +
+            '・<strong>--now</strong>：即時起動<br>' +
+            'の両方を1コマンドで実行します。<br><br>' +
+            '選択肢 A も正しい結果になりますが、2コマンド必要です。<br>' +
+            '<code>--now</code> オプションを使うことで1コマンドで完結できます。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br><br>' +
+            '起動と自動起動設定を1コマンドで行うには：<br>' +
+            '<code>sudo systemctl enable --now nginx</code><br><br>' +
+            '<code>--now</code> オプションは enable と同時に即時起動、disable と同時に即時停止を行います。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-block">
+    <h3>Q5. 選択問題</h3>
+    <p>
+      <code>journalctl -p err -b</code> コマンドの説明として正しいものはどれですか？
+    </p>
+    <select id="q5">
+      <option value="">-- 選択してください --</option>
+      <option value="a">すべての起動履歴のエラーログを表示する</option>
+      <option value="b">今回の起動からのエラー以上のログを表示する</option>
+      <option value="c">エラーログをバイナリ形式で出力する</option>
+      <option value="d">エラーログをリアルタイムで表示する</option>
+    </select>
+    <br>
+    <button class="btn btn-green" onclick="checkQ5()">答え合わせ</button>
+    <div class="result-msg" id="q5-result"></div>
+    <script>
+      function checkQ5() {
+        const v = document.getElementById('q5').value;
+        const r = document.getElementById('q5-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<code>journalctl -p err -b</code> の各オプション：<br>' +
+            '・<code>-p err</code>：優先度が <strong>error（3）以上</strong>のログのみ表示<br>' +
+            '&nbsp;&nbsp;（emerg・alert・crit・err が対象）<br>' +
+            '・<code>-b</code>：<strong>今回の起動</strong>からのログのみ表示<br><br>' +
+            '<strong>よく使う組み合わせ：</strong><br>' +
+            '<code>journalctl -p err -b</code>：今回の起動のエラー確認<br>' +
+            '<code>journalctl -u nginx -f</code>：nginx のリアルタイムログ<br>' +
+            '<code>journalctl -k -b</code>：今回の起動のカーネルメッセージ';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '・<code>-p err</code>：エラー以上の優先度のログをフィルタ<br>' +
+            '・<code>-b</code>：今回の起動（boot）からのログのみ表示<br>' +
+            '組み合わせると「今回の起動からのエラー以上のログ」を表示します。';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 「システム起動プロセス」の学習が完了したら記録しましょう！</p>
+  <button class="btn btn-done" onclick="markComplete()">✅ このセクションを完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch3', '33');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  if (parseInt(localStorage.getItem('lpic201_ch3') || '0') >= 33) {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="../02_kernel/05_manage.html">← 第2章：カーネルの管理と問題解決</a>
+  <a class="home" href="../index.html">🏠 目次へ</a>
+  <a class="next" href="02_bootloader.html">次へ：ブートローダ →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
