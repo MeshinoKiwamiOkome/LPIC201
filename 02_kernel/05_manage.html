@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>カーネルの管理と問題解決 ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em; color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #567ebb; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #2b4c7e, #567ebb);
+      border-radius: 12px; padding: 32px 32px 24px;
+      margin-bottom: 32px; color: #fff;
+      box-shadow: 0 4px 18px rgba(86,126,187,0.3);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em; font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85; letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .chapter-header h1 { margin: 0 0 10px; font-size: 1.6em; color: #fff; border: none; padding: 0; }
+    .chapter-header p  { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px; padding: 3px 12px;
+      font-size: 0.76em; font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 { color: #2b4c7e; margin-top: 48px; border-left: 5px solid #567ebb; padding-left: 12px; }
+    h3 { color: #276749; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7; padding: 2px 6px;
+      border-radius: 4px; font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c; color: #e2e8f0;
+      padding: 18px 20px; border-radius: 8px;
+      overflow-x: auto; font-size: 0.88em;
+      line-height: 1.7; font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+    pre .err     { color: #fc8181; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #4a5568; color: #e2e8f0;
+      border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 0.75em;
+      cursor: pointer; font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s; z-index: 1;
+    }
+    .copy-btn:hover { background: #567ebb; }
+
+    /* ボックス */
+    .note {
+      background: #fff; border: 1px dashed #90cdf4;
+      border-radius: 6px; padding: 14px 18px;
+      font-size: 0.93em; color: #4a5568; margin: 14px 0;
+    }
+    .note strong { color: #2b4c7e; }
+    .warn {
+      background: #fffaf0; border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #744210; margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4; border: 1px solid #68d391;
+      border-left: 5px solid #48bb78; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #276749; margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff; border: 1px solid #bee3f8;
+      border-radius: 8px; padding: 20px 24px;
+      margin: 12px 0 28px; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff; border: 1px solid #bee3f8;
+      border-radius: 10px; padding: 18px 22px;
+      margin-bottom: 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 { margin: 0 0 12px; font-size: 0.92em; color: #2b4c7e; border: none; padding: 0; }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #567ebb; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #2b4c7e; font-weight: bold; }
+
+    /* /proc ツリー */
+    .proc-tree {
+      background: #1a202c; border-radius: 8px;
+      padding: 16px 20px; font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85em; line-height: 2.1; margin: 14px 0;
+    }
+    .proc-tree .dir  { color: #90cdf4; cursor: pointer; transition: color 0.15s; }
+    .proc-tree .dir:hover { color: #bee3f8; text-decoration: underline; }
+    .proc-tree .file { color: #e2e8f0; }
+    .proc-tree .file.clickable { cursor: pointer; transition: color 0.15s; }
+    .proc-tree .file.clickable:hover { color: #f6ad55; text-decoration: underline; }
+    .proc-tree .desc { color: #68d391; font-size: 0.85em; }
+
+    /* デバイスファイルカード */
+    .dev-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px; margin: 14px 0;
+    }
+    .dev-card {
+      border-radius: 8px; padding: 16px;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .dev-card.block { background: #ebf8ff; border: 2px solid #90cdf4; }
+    .dev-card.char  { background: #faf5ff; border: 2px solid #b794f4; }
+    .dev-card.pseudo{ background: #f0fff4; border: 2px solid #68d391; }
+    .dev-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+    .dev-card .dev-type {
+      font-size: 0.72em; font-weight: bold;
+      border-radius: 10px; padding: 2px 10px;
+      display: inline-block; margin-bottom: 8px;
+    }
+    .dev-card.block .dev-type { background: #2b4c7e; color: #fff; }
+    .dev-card.char  .dev-type { background: #553c9a; color: #fff; }
+    .dev-card.pseudo .dev-type{ background: #276749; color: #fff; }
+    .dev-card .dev-name {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 1em; font-weight: bold; margin-bottom: 4px;
+    }
+    .dev-card.block .dev-name { color: #2b4c7e; }
+    .dev-card.char  .dev-name { color: #553c9a; }
+    .dev-card.pseudo .dev-name{ color: #276749; }
+    .dev-card .dev-desc {
+      font-size: 0.82em; color: #4a5568; line-height: 1.6;
+    }
+
+    /* udev フロー */
+    .udev-flow {
+      display: flex; align-items: center;
+      gap: 6px; flex-wrap: wrap;
+      margin: 16px 0; justify-content: center;
+    }
+    .udev-box {
+      border-radius: 8px; padding: 12px 16px;
+      font-size: 0.85em; font-weight: bold;
+      text-align: center; min-width: 120px;
+    }
+    .udev-box.hw     { background: #1a202c; color: #a0aec0; border: 2px solid #4a5568; }
+    .udev-box.kernel { background: #2b4c7e; color: #fff;    border: 2px solid #567ebb; }
+    .udev-box.udev   { background: #553c9a; color: #fff;    border: 2px solid #9f7aea; }
+    .udev-box.dev    { background: #276749; color: #fff;    border: 2px solid #48bb78; }
+    .udev-box.rule   { background: #744210; color: #fff;    border: 2px solid #f6ad55; }
+    .udev-arrow { font-size: 1.4em; color: #718096; }
+
+    /* インタラクティブデモ */
+    .interactive-demo {
+      background: #f7fafc; border: 1px solid #bee3f8;
+      border-radius: 8px; padding: 16px 20px; margin: 14px 0;
+    }
+    .slider-row {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em; font-weight: bold;
+      min-width: 180px; color: #2b4c7e;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row select {
+      border: 2px solid #bee3f8; border-radius: 6px;
+      padding: 6px 10px; font-size: 0.88em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #2d3748; background: #fff;
+      cursor: pointer; flex: 1;
+    }
+    .slider-row select:focus { border-color: #567ebb; outline: none; }
+    .output-display {
+      background: #1a202c; color: #68d391;
+      border-radius: 6px; padding: 12px 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em; margin-top: 10px;
+      white-space: pre; overflow-x: auto; line-height: 1.7;
+    }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse; width: 100%;
+      background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0; font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #bee3f8; padding: 10px 14px; text-align: left;
+    }
+    table.ref-table thead tr { background: #2b4c7e; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #ebf8ff; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0; border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0; padding: 24px 28px; margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 18px 22px; margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 8px 12px; font-size: 0.95em;
+      width: 100%; max-width: 440px; margin: 6px 0;
+      outline: none; font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus { border-color: #f6ad55; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block; padding: 9px 20px;
+      border-radius: 6px; border: none; cursor: pointer;
+      font-size: 0.95em; font-weight: bold;
+      transition: opacity 0.2s; margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-blue  { background: #567ebb; color: #fff; }
+    .btn-green { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px; padding: 10px 14px;
+      border-radius: 6px; font-weight: bold; display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #bee3f8; color: #2b4c7e; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 48px;
+      padding-top: 20px; border-top: 2px solid #bee3f8;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block; padding: 10px 20px;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.9em; transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #567ebb; color: #fff; }
+    .page-nav .home { background: #fff; color: #567ebb; border: 2px solid #567ebb; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4; border: 2px solid #48bb78;
+      border-radius: 10px; padding: 20px 24px;
+      margin-top: 40px; text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 2px solid #bee3f8;
+      font-size: 0.82em; color: #a0aec0; text-align: center;
+    }
+    footer a { color: #567ebb; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .dev-grid { grid-template-columns: 1fr; }
+      .udev-flow { gap: 4px; }
+      .udev-box { min-width: 90px; font-size: 0.78em; padding: 8px 10px; }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  <a href="index.html">第2章：Linuxカーネル</a> ›
+  カーネルの管理と問題解決
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 02 › SECTION 05</div>
+  <h1>🛠️ カーネルの管理と問題解決</h1>
+  <p>/proc 仮想ファイルシステムによるカーネル情報の確認、
+  デバイスファイルの種類と操作、
+  udev によるデバイス管理の仕組みを体系的に学びます。</p>
+  <div class="badge-row">
+    <span class="badge">/proc</span>
+    <span class="badge">デバイスファイル</span>
+    <span class="badge">udev</span>
+    <span class="badge">udevadm</span>
+    <span class="badge">mknod</span>
+    <span class="badge">dmesg</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第2章のセクション</h2>
+  <ol>
+    <li><a href="index.html">カーネルの構成要素</a></li>
+    <li><a href="02_module.html">カーネルモジュールの管理</a></li>
+    <li><a href="03_compile.html">カーネルのコンパイル</a></li>
+    <li><a href="04_param.html">カーネルパラメータの変更</a></li>
+    <li class="current"><a href="05_manage.html">カーネルの管理と問題解決</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：/proc の確認 -->
+<!-- ============================================================ -->
+<h2 id="proc">/proc 仮想ファイルシステムの確認</h2>
+
+<div class="note">
+  <strong>重要ポイント①：/proc はカーネルが提供する仮想ファイルシステムで、実行中のカーネルやプロセスの情報をファイルとして参照できる</strong><br>
+  ディスク上には存在せず、カーネルがアクセス時に動的に内容を生成します。
+  読み取り専用のファイルがほとんどですが、一部は書き込みによる設定変更も可能です。
+</div>
+
+<div class="demo-box">
+  <h3>/proc の主要ファイル・ディレクトリ（クリックで詳細）</h3>
+  <div class="proc-tree">
+    <div style="color:#b794f4; font-weight:bold;">/proc/</div>
+    <div>├── <span class="file clickable" onclick="showProcFile('version')">version</span>
+         <span class="desc">  ← カーネルバージョン・ビルド情報</span></div>
+    <div>├── <span class="file clickable" onclick="showProcFile('cmdline')">cmdline</span>
+         <span class="desc">  ← カーネル起動パラメータ</span></div>
+    <div>├── <span class="file clickable" onclick="showProcFile('cpuinfo')">cpuinfo</span>
+         <span class="desc">  ← CPU情報（モデル・コア数・フラグ）</span></div>
+    <div>├── <span class="file clickable" onclick="showProcFile('meminfo')">meminfo</span>
+         <span class="desc">  ← メモリ使用状況の詳細</span></div>
+    <div>├── <span class="file clickable" onclick="showProcFile('loadavg')">loadavg</span>
+         <span class="desc">  ← ロードアベレージ・プロセス数</span></div>
+    <div>├── <span class="file clickable" onclick="showProcFile('uptime')">uptime</span>
+         <span class="desc">  ← 稼働時間・アイドル時間（秒）</span></div>
+    <div>├── <span class="file clickable" onclick="showProcFile('modules')">modules</span>
+         <span class="desc">  ← ロード済みカーネルモジュール（lsmod の元データ）</span></div>
+    <div>├── <span class="file clickable" onclick="showProcFile('mounts')">mounts</span>
+         <span class="desc">  ← マウント中のファイルシステム一覧</span></div>
+    <div>├── <span class="file clickable" onclick="showProcFile('partitions')">partitions</span>
+         <span class="desc">  ← 認識されているディスクパーティション</span></div>
+    <div>├── <span class="file clickable" onclick="showProcFile('devices')">devices</span>
+         <span class="desc">  ← 登録済みデバイスとメジャー番号</span></div>
+    <div>├── <span class="file clickable" onclick="showProcFile('interrupts')">interrupts</span>
+         <span class="desc">  ← IRQ（割り込み）の使用状況</span></div>
+    <div>├── <span class="file clickable" onclick="showProcFile('net')">net/</span>
+         <span class="desc">  ← ネットワーク統計情報</span></div>
+    <div>├── <span class="dir" onclick="showProcFile('sys')">sys/</span>
+         <span class="desc">  ← カーネルパラメータ（sysctl の実体）</span></div>
+    <div>└── <span class="dir" onclick="showProcFile('pid')">PID番号/</span>
+         <span class="desc">  ← プロセスごとの情報ディレクトリ</span></div>
+    <div>&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="file">cmdline</span>
+         <span class="desc">  ← プロセスの起動コマンド</span></div>
+    <div>&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="file">status</span>
+         <span class="desc">  ← プロセスの状態・メモリ使用量</span></div>
+    <div>&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="file">fd/</span>
+         <span class="desc">  ← オープン中のファイルディスクリプタ</span></div>
+    <div>&nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">maps</span>
+         <span class="desc">  ← メモリマップ</span></div>
+  </div>
+
+  <!-- /proc ファイル詳細表示エリア -->
+  <div id="proc-file-detail" style="display:none; margin-top:12px; background:#ebf8ff; border:1px solid #90cdf4; border-left:5px solid #567ebb; border-radius:0 8px 8px 0; padding:14px 18px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const procFiles = {
+      version: {
+        title: '/proc/version',
+        cmd: 'cat /proc/version',
+        out: 'Linux version 6.8.0-51-generic (buildd@lcy02-amd64-032) (gcc version 13.2.0 (Ubuntu 13.2.0-23ubuntu4)) #52-Ubuntu SMP PREEMPT_DYNAMIC Thu Dec  5 13:09:44 UTC 2024',
+        desc: 'カーネルのバージョン・ビルドに使用したgccのバージョン・ビルド日時を表示します。<code>uname -a</code> と同等の情報が含まれます。'
+      },
+      cmdline: {
+        title: '/proc/cmdline',
+        cmd: 'cat /proc/cmdline',
+        out: 'BOOT_IMAGE=/boot/vmlinuz-6.8.0-51-generic root=UUID=xxxx-xxxx ro quiet splash',
+        desc: 'ブートローダ（GRUB）からカーネルに渡された起動パラメータを表示します。<code>root=</code>・<code>ro</code>・<code>quiet</code> などのパラメータが確認できます。'
+      },
+      cpuinfo: {
+        title: '/proc/cpuinfo',
+        cmd: 'cat /proc/cpuinfo',
+        out: 'processor\t: 0\nvendor_id\t: GenuineIntel\ncpu family\t: 6\nmodel name\t: Intel(R) Core(TM) i7-1185G7 @ 3.00GHz\ncpu MHz\t\t: 2995.200\ncache size\t: 12288 KB\nphysical id\t: 0\nsiblings\t: 8\ncpu cores\t: 4\nflags\t\t: fpu vme de pse tsc msr pae mce ...',
+        desc: 'CPUの詳細情報を表示します。プロセッサ番号・ベンダー・モデル名・クロック周波数・キャッシュサイズ・コア数・対応命令セット（flags）などが確認できます。<br><code>grep -c processor /proc/cpuinfo</code> でCPU（スレッド）数を取得できます。'
+      },
+      meminfo: {
+        title: '/proc/meminfo',
+        cmd: 'cat /proc/meminfo',
+        out: 'MemTotal:        8035328 kB\nMemFree:         1204736 kB\nMemAvailable:    3276800 kB\nBuffers:          524288 kB\nCached:          1867776 kB\nSwapCached:            0 kB\nSwapTotal:       2097152 kB\nSwapFree:        2029056 kB\nDirty:              1024 kB',
+        desc: 'メモリの詳細な使用状況を表示します。<br>・<code>MemTotal</code>：物理メモリ合計<br>・<code>MemFree</code>：空きメモリ<br>・<code>MemAvailable</code>：実際に利用可能なメモリ（推奨指標）<br>・<code>Buffers/Cached</code>：バッファ・キャッシュ<br>・<code>SwapTotal/SwapFree</code>：スワップ領域'
+      },
+      loadavg: {
+        title: '/proc/loadavg',
+        cmd: 'cat /proc/loadavg',
+        out: '0.52 0.48 0.41 1/312 18423',
+        desc: 'ロードアベレージと実行中プロセス情報を表示します。<br>・1番目〜3番目：1分・5分・15分のロードアベレージ<br>・4番目（1/312）：実行中プロセス数 / 総プロセス数<br>・5番目（18423）：最後に生成されたプロセスのPID'
+      },
+      uptime: {
+        title: '/proc/uptime',
+        cmd: 'cat /proc/uptime',
+        out: '259200.42 1036800.16',
+        desc: 'システムの稼働時間とアイドル時間を秒単位で表示します。<br>・1番目（259200.42）：起動からの経過秒数（= 3日）<br>・2番目（1036800.16）：全CPUのアイドル時間の合計秒数（マルチコアでは合計が稼働時間を超える場合がある）'
+      },
+      modules: {
+        title: '/proc/modules',
+        cmd: 'cat /proc/modules | head -5',
+        out: 'usbhid 65536 0 - Live 0x0000000000000000\nhid 139264 2 usbhid,hid_generic, Live 0x0000000000000000\nsnd_hda_intel 57344 3 - Live 0x0000000000000000',
+        desc: '<code>lsmod</code> コマンドの元データです。各フィールドは「モジュール名・サイズ・使用数・依存モジュール・状態・メモリアドレス」を示します。<code>lsmod</code> はこのファイルを整形して表示しています。'
+      },
+      mounts: {
+        title: '/proc/mounts',
+        cmd: 'cat /proc/mounts',
+        out: 'sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0\nproc /proc proc rw,nosuid,nodev,noexec,relatime 0 0\n/dev/sda1 / ext4 rw,relatime 0 0\ntmpfs /tmp tmpfs rw,nosuid,nodev 0 0',
+        desc: '現在マウントされているすべてのファイルシステムを表示します。<code>/etc/mtab</code> のシンボリックリンクです。フィールドは「デバイス・マウントポイント・FSタイプ・マウントオプション・dump・fsck順序」です。'
+      },
+      partitions: {
+        title: '/proc/partitions',
+        cmd: 'cat /proc/partitions',
+        out: 'major minor  #blocks  name\n   8     0  976762584 sda\n   8     1    1048576 sda1\n   8     2  975712256 sda2\n 252     0  975712256 dm-0',
+        desc: 'カーネルが認識しているディスクとパーティションの一覧です。<br>・<code>major</code>：メジャー番号（デバイスの種類）<br>・<code>minor</code>：マイナー番号（同種デバイス内の識別番号）<br>・<code>#blocks</code>：ブロック数（1ブロック=1KB）<br>・<code>name</code>：デバイス名'
+      },
+      devices: {
+        title: '/proc/devices',
+        cmd: 'cat /proc/devices',
+        out: 'Character devices:\n  1 mem\n  4 tty\n  5 /dev/tty\n  8 sd\n 10 misc\n\nBlock devices:\n  8 sd\n  9 md\n252 device-mapper\n253 virtblk',
+        desc: '登録済みのキャラクタデバイスとブロックデバイスのメジャー番号と名前を表示します。<code>/dev/</code> 以下のデバイスファイルのメジャー番号と対応しています。'
+      },
+      interrupts: {
+        title: '/proc/interrupts',
+        cmd: 'cat /proc/interrupts | head -10',
+        out: '           CPU0       CPU1       CPU2       CPU3\n  0:         18          0          0          0  IO-APIC   2-edge  timer\n  1:          0          0          0       1234  IO-APIC   1-edge  i8042\n 16:          0          0          0          0  IO-APIC  16-edge  ehci_hcd\n NMI:         0          0          0          0  Non-maskable interrupts',
+        desc: 'IRQ（割り込み要求）の使用状況を表示します。各CPUコアごとの割り込み回数・割り込みコントローラ・デバイス名が確認できます。特定デバイスのIRQ番号の確認やIRQ競合の調査に使用します。'
+      },
+      net: {
+        title: '/proc/net/',
+        cmd: 'ls /proc/net/',
+        out: 'arp  dev  fib_trie  if_inet6  ipv6_route  route  sockstat  tcp  tcp6  udp  udp6  unix',
+        desc: 'ネットワーク関連の統計情報が格納されるディレクトリです。<br>・<code>/proc/net/dev</code>：インターフェースごとの送受信統計<br>・<code>/proc/net/arp</code>：ARPテーブル<br>・<code>/proc/net/route</code>：ルーティングテーブル<br>・<code>/proc/net/tcp</code>：TCP接続一覧'
+      },
+      sys: {
+        title: '/proc/sys/',
+        cmd: 'ls /proc/sys/',
+        out: 'abi  debug  dev  fs  kernel  net  user  vm',
+        desc: 'カーネルパラメータの実体が格納されるディレクトリです。<code>sysctl</code> コマンドはこのディレクトリのファイルを読み書きしています。<br>例：<code>sysctl vm.swappiness</code> = <code>cat /proc/sys/vm/swappiness</code>'
+      },
+      pid: {
+        title: '/proc/PID番号/',
+        cmd: 'ls /proc/1/',
+        out: 'attr  cgroup  cmdline  comm  cwd  environ  exe  fd  fdinfo  io  limits  maps  mem  mounts  net  ns  oom_score  root  smaps  stat  statm  status  task  wchan',
+        desc: '実行中の各プロセスに対応するディレクトリです。PID番号のディレクトリが動的に作成されます。<br>・<code>cmdline</code>：プロセスの起動コマンド<br>・<code>status</code>：プロセス状態・メモリ使用量<br>・<code>fd/</code>：オープン中のファイルディスクリプタ（シンボリックリンク）<br>・<code>exe</code>：実行ファイルへのシンボリックリンク'
+      }
+    };
+
+    function showProcFile(key) {
+      const d = procFiles[key];
+      const el = document.getElementById('proc-file-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display = 'none'; el.dataset.current = ''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.innerHTML = `
+        <strong style="color:#2b4c7e; font-family:'Consolas','Monaco',monospace; font-size:0.95em;">${d.title}</strong>
+        <br><br>
+        <div style="font-size:0.88em; color:#4a5568; margin-bottom:10px;">${d.desc}</div>
+        <div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; line-height:1.7;">
+          <div style="color:#68d391;">$ ${d.cmd}</div>
+          <div style="color:#e2e8f0; white-space:pre-wrap;">${d.out}</div>
+        </div>`;
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  </script>
+
+  <h3>主要な /proc ファイルの活用例</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># カーネルバージョン確認</span>
+$ <span class="cmd">cat</span> /proc/version
+
+<span class="comment"># CPUコア数（スレッド数）を取得</span>
+$ <span class="cmd">grep</span> <span class="opt">-c</span> <span class="val">processor</span> /proc/cpuinfo
+<span class="out">8</span>
+
+<span class="comment"># 利用可能なメモリ量を確認（MemAvailable が実際に使えるメモリ）</span>
+$ <span class="cmd">grep</span> <span class="val">MemAvailable</span> /proc/meminfo
+<span class="out">MemAvailable:    3276800 kB</span>
+
+<span class="comment"># 特定プロセスの起動コマンドを確認</span>
+$ <span class="cmd">cat</span> /proc/1/cmdline | <span class="cmd">tr</span> <span class="val">'\0'</span> <span class="val">' '</span>
+<span class="out">/sbin/init splash</span>
+
+<span class="comment"># プロセスがオープンしているファイルを確認</span>
+$ <span class="cmd">ls</span> <span class="opt">-la</span> /proc/$$/fd
+<span class="out">lrwx------ 1 teru teru 64 Jan  1 10:00 0 -> /dev/pts/0</span>
+<span class="out">lrwx------ 1 teru teru 64 Jan  1 10:00 1 -> /dev/pts/0</span>
+<span class="out">lrwx------ 1 teru teru 64 Jan  1 10:00 2 -> /dev/pts/0</span>
+
+<span class="comment"># ネットワークインターフェースの統計</span>
+$ <span class="cmd">cat</span> /proc/net/dev
+<span class="hdr">Inter-|   Receive                                                |  Transmit</span>
+<span class="hdr"> face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets</span>
+<span class="out">    lo: 1234567    9876    0    0    0     0          0         0   1234567    9876</span>
+<span class="out">  eth0: 9876543   54321    0    0    0     0          0         0   5432109   43210</span>
+
+<span class="comment"># dmesg でカーネルメッセージを確認（問題解決に重要）</span>
+$ <span class="cmd">dmesg</span> | <span class="cmd">tail</span> <span class="opt">-20</span>
+$ <span class="cmd">dmesg</span> | <span class="cmd">grep</span> <span class="opt">-i</span> <span class="val">error</span>
+$ <span class="cmd">dmesg</span> <span class="opt">-T</span>          <span class="comment"># タイムスタンプを人間が読みやすい形式で表示</span>
+$ <span class="cmd">dmesg</span> <span class="opt">-w</span>          <span class="comment"># リアルタイムで新しいメッセージを表示（tail -f 相当）</span>
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：デバイスファイル -->
+<!-- ============================================================ -->
+<h2 id="devfile">② デバイスファイル</h2>
+
+<div class="note">
+  <strong>重要ポイント②：デバイスファイルはハードウェアをファイルとして抽象化したもので、/dev/ ディレクトリに配置される</strong><br>
+  Linuxの「すべてはファイルである」という設計思想の中核をなします。
+  デバイスファイルには<strong>ブロックデバイス</strong>・<strong>キャラクタデバイス</strong>・<strong>疑似デバイス</strong>の3種類があります。
+</div>
+
+<div class="demo-box">
+  <h3>デバイスファイルの種類（クリックで詳細）</h3>
+  <div class="dev-grid">
+
+    <div class="dev-card block" onclick="showDevDetail('block')">
+      <div class="dev-type">ブロックデバイス（b）</div>
+      <div class="dev-name">HDD / SSD / NVMe</div>
+      <div class="dev-desc">/dev/sda, /dev/nvme0n1, /dev/vda<br>ランダムアクセス可能・バッファリングあり</div>
+    </div>
+
+    <div class="dev-card char" onclick="showDevDetail('char')">
+      <div class="dev-type">キャラクタデバイス（c）</div>
+      <div class="dev-name">端末 / シリアル / キーボード</div>
+      <div class="dev-desc">/dev/tty, /dev/ttyS0, /dev/input/event0<br>順次アクセス・バッファリングなし</div>
+    </div>
+
+    <div class="dev-card pseudo" onclick="showDevDetail('pseudo')">
+      <div class="dev-type">疑似デバイス</div>
+      <div class="dev-name">null / zero / random / urandom</div>
+      <div class="dev-desc">/dev/null, /dev/zero, /dev/random<br>物理デバイスを持たない特殊なデバイス</div>
+    </div>
+
+  </div>
+
+  <!-- デバイス詳細表示エリア -->
+  <div id="dev-detail" style="display:none; margin-top:14px; background:#fff; border:1px solid #bee3f8; border-left:5px solid #567ebb; border-radius:0 8px 8px 0; padding:16px 20px; font-size:0.88em;"></div>
+
+  <script>
+    const devDetails = {
+      block: {
+        title: 'ブロックデバイス（b）',
+        color: '#2b4c7e',
+        body: `データをブロック単位で読み書きするデバイスです。ランダムアクセスが可能でバッファリングが行われます。<br><br>
+          <strong>主なブロックデバイス：</strong><br>
+          ・<code>/dev/sda</code>：1番目のSATA/SCSIディスク全体<br>
+          ・<code>/dev/sda1</code>：sda の1番目のパーティション<br>
+          ・<code>/dev/sdb</code>：2番目のSATA/SCSIディスク<br>
+          ・<code>/dev/nvme0n1</code>：1番目のNVMe SSD<br>
+          ・<code>/dev/nvme0n1p1</code>：nvme0n1 の1番目のパーティション<br>
+          ・<code>/dev/vda</code>：仮想マシンの仮想ディスク<br>
+          ・<code>/dev/md0</code>：ソフトウェアRAIDデバイス<br>
+          ・<code>/dev/dm-0</code>：LVMのデバイスマッパー<br><br>
+          <strong>ls -l での表示例：</strong><br>
+          <code>brw-rw---- 1 root disk 8, 0 Jan 1 10:00 /dev/sda</code><br>
+          先頭の <code>b</code> がブロックデバイスを示す。<code>8, 0</code> はメジャー番号8・マイナー番号0。`
+      },
+      char: {
+        title: 'キャラクタデバイス（c）',
+        color: '#553c9a',
+        body: `データを1文字（バイト）単位で順次読み書きするデバイスです。ランダムアクセスはできません。<br><br>
+          <strong>主なキャラクタデバイス：</strong><br>
+          ・<code>/dev/tty</code>：現在の端末<br>
+          ・<code>/dev/tty0</code>〜<code>/dev/tty63</code>：仮想コンソール<br>
+          ・<code>/dev/pts/0</code>〜：擬似端末（SSH・ターミナルエミュレータ）<br>
+          ・<code>/dev/ttyS0</code>〜：シリアルポート（COM1相当）<br>
+          ・<code>/dev/input/event0</code>：入力デバイス（キーボード・マウス）<br>
+          ・<code>/dev/lp0</code>：プリンタ<br>
+          ・<code>/dev/mem</code>：物理メモリへのアクセス（要root）<br><br>
+          <strong>ls -l での表示例：</strong><br>
+          <code>crw-rw-rw- 1 root tty 5, 0 Jan 1 10:00 /dev/tty</code><br>
+          先頭の <code>c</code> がキャラクタデバイスを示す。`
+      },
+      pseudo: {
+        title: '疑似デバイス（特殊デバイス）',
+        color: '#276749',
+        body: `物理的なハードウェアを持たない特殊なデバイスファイルです。<br><br>
+          <strong>主な疑似デバイス：</strong><br>
+          ・<code>/dev/null</code>：書き込んだデータをすべて捨てる。読み込むと即EOF<br>
+          &nbsp;&nbsp;例：<code>command > /dev/null 2>&1</code>（出力を捨てる）<br>
+          ・<code>/dev/zero</code>：読み込むと0x00バイトを無限に返す<br>
+          &nbsp;&nbsp;例：<code>dd if=/dev/zero of=/dev/sda bs=1M</code>（ディスクをゼロ埋め）<br>
+          ・<code>/dev/random</code>：エントロピープールからランダムデータを生成（ブロックあり）<br>
+          ・<code>/dev/urandom</code>：擬似乱数を生成（ブロックなし・通常はこちらを使用）<br>
+          ・<code>/dev/full</code>：書き込むと常に「デバイスに空き容量なし」エラーを返す<br>
+          ・<code>/dev/loop0</code>〜：ループデバイス（ISOイメージのマウントなどに使用）`
+      }
+    };
+
+    function showDevDetail(key) {
+      const d = devDetails[key];
+      const el = document.getElementById('dev-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display = 'none'; el.dataset.current = ''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-size:0.95em;">${d.title}</strong><br><br>${d.body}`;
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  </script>
+
+  <h3>デバイスファイルの確認と操作</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /dev/ の主要デバイスを確認</span>
+$ <span class="cmd">ls</span> <span class="opt">-l</span> /dev/ | <span class="cmd">head</span> <span class="opt">-20</span>
+<span class="out">total 0</span>
+<span class="hl">brw-rw----  1 root disk      8,   0 Jan  1 10:00 sda</span>    <span class="comment"># b=ブロック</span>
+<span class="hl">brw-rw----  1 root disk      8,   1 Jan  1 10:00 sda1</span>
+<span class="hl">crw-rw-rw-  1 root tty       5,   0 Jan  1 10:00 tty</span>    <span class="comment"># c=キャラクタ</span>
+<span class="hl">crw-rw-rw-  1 root root      1,   3 Jan  1 10:00 null</span>
+<span class="hl">crw-rw-rw-  1 root root      1,   5 Jan  1 10:00 zero</span>
+<span class="comment"># ↑先頭文字：b=ブロック c=キャラクタ</span>
+<span class="comment"># ↑「8, 0」= メジャー番号8（SCSI/SATAディスク）, マイナー番号0（ディスク全体）</span>
+
+<span class="comment"># メジャー番号・マイナー番号の確認</span>
+$ <span class="cmd">ls</span> <span class="opt">-l</span> /dev/sda /dev/sda1 /dev/sda2
+<span class="out">brw-rw---- 1 root disk 8, 0 /dev/sda</span>   <span class="comment"># メジャー8 マイナー0</span>
+<span class="out">brw-rw---- 1 root disk 8, 1 /dev/sda1</span>  <span class="comment"># メジャー8 マイナー1</span>
+<span class="out">brw-rw---- 1 root disk 8, 2 /dev/sda2</span>  <span class="comment"># メジャー8 マイナー2</span>
+
+<span class="comment"># デバイスファイルを手動作成（mknod）</span>
+$ <span class="cmd">sudo mknod</span> /dev/mydev <span class="val">c</span> <span class="val">89</span> <span class="val">0</span>
+<span class="comment">#           ↑パス     ↑種類 ↑メジャー ↑マイナー</span>
+<span class="comment"># c=キャラクタ b=ブロック p=名前付きパイプ</span>
+
+<span class="comment"># 疑似デバイスの活用例</span>
+$ <span class="cmd">echo</span> <span class="val">"不要な出力"</span> > /dev/null        <span class="comment"># 出力を捨てる</span>
+$ <span class="cmd">dd</span> <span class="opt">if</span>=/dev/zero <span class="opt">of</span>=/tmp/test.img <span class="opt">bs</span>=1M <span class="opt">count</span>=100  <span class="comment"># 100MBのゼロ埋めファイル作成</span>
+$ <span class="cmd">dd</span> <span class="opt">if</span>=/dev/urandom <span class="opt">of</span>=/tmp/random.bin <span class="opt">bs</span>=1M <span class="opt">count</span>=1  <span class="comment"># 1MBのランダムデータ</span>
+</pre>
+  </div>
+
+  <h3>メジャー番号・マイナー番号</h3>
+  <table class="ref-table">
+    <thead><tr><th>メジャー番号</th><th>デバイスの種類</th><th>デバイスファイル例</th></tr></thead>
+    <tbody>
+      <tr><td><code>1</code></td><td>メモリデバイス</td><td><code>/dev/mem</code>・<code>/dev/null</code>・<code>/dev/zero</code>・<code>/dev/random</code></td></tr>
+      <tr><td><code>4</code></td><td>仮想コンソール・シリアル</td><td><code>/dev/tty0</code>〜<code>/dev/tty63</code>・<code>/dev/ttyS0</code></td></tr>
+      <tr><td><code>5</code></td><td>端末</td><td><code>/dev/tty</code>・<code>/dev/console</code></td></tr>
+      <tr><td><code>8</code></td><td>SCSI/SATAディスク</td><td><code>/dev/sda</code>〜<code>/dev/sdp</code></td></tr>
+      <tr><td><code>9</code></td><td>ソフトウェアRAID</td><td><code>/dev/md0</code>〜</td></tr>
+      <tr><td><code>11</code></td><td>CD/DVD-ROM</td><td><code>/dev/sr0</code>〜</td></tr>
+      <tr><td><code>136〜143</code></td><td>擬似端末（pts）</td><td><code>/dev/pts/0</code>〜</td></tr>
+      <tr><td><code>252〜</code></td><td>デバイスマッパー（LVM）</td><td><code>/dev/dm-0</code>〜</td></tr>
+      <tr><td><code>259</code></td><td>NVMe SSD</td><td><code>/dev/nvme0n1</code>〜</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：udev -->
+<!-- ============================================================ -->
+<h2 id="udev">③ udev</h2>
+
+<div class="note">
+  <strong>重要ポイント③：udev はデバイスの接続・切断を検知して /dev/ 以下のデバイスファイルを動的に管理するデーモン</strong><br>
+  カーネルからの <code>uevent</code>（デバイスイベント）を受け取り、
+  ルールファイルに従ってデバイスファイルの作成・削除・権限設定・シンボリックリンク作成などを行います。
+</div>
+
+<div class="demo-box">
+  <h3>udev の動作フロー</h3>
+  <div class="udev-flow">
+    <div class="udev-box hw">🖥️ ハードウェア<br><span style="font-size:0.8em; font-weight:normal;">デバイスの接続・切断</span></div>
+    <div class="udev-arrow">→</div>
+    <div class="udev-box kernel">⚙️ カーネル<br><span style="font-size:0.8em; font-weight:normal;">uevent を送信</span></div>
+    <div class="udev-arrow">→</div>
+    <div class="udev-box udev">🔌 udevd<br><span style="font-size:0.8em; font-weight:normal;">uevent を受信</span></div>
+    <div class="udev-arrow">→</div>
+    <div class="udev-box rule">📋 ルール照合<br><span style="font-size:0.8em; font-weight:normal;">/etc/udev/rules.d/</span></div>
+    <div class="udev-arrow">→</div>
+    <div class="udev-box dev">📁 /dev/ 更新<br><span style="font-size:0.8em; font-weight:normal;">デバイスファイル作成・削除</span></div>
+  </div>
+
+  <h3>udev の設定ファイル</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># udev ルールファイルの場所</span>
+/etc/udev/rules.d/       <span class="comment"># ユーザー定義ルール（優先度高）</span>
+/usr/lib/udev/rules.d/   <span class="comment"># システム提供ルール</span>
+/run/udev/rules.d/       <span class="comment"># 実行時に生成されるルール</span>
+
+<span class="comment"># ルールファイルの命名規則</span>
+<span class="comment"># 数字が小さいほど先に処理される（辞書順）</span>
+<span class="out">10-dm.rules</span>
+<span class="out">50-udev-default.rules</span>
+<span class="out">60-persistent-storage.rules</span>
+<span class="out">70-snap.rules</span>
+<span class="out">99-custom.rules</span>   <span class="comment"># ← ユーザー定義は99番台が慣習</span>
+
+<span class="comment"># ルールファイルの例（/etc/udev/rules.d/99-custom.rules）</span>
+<span class="comment"># USBストレージデバイスに固定名を付ける</span>
+<span class="out">SUBSYSTEM=="block", KERNEL=="sd*", ATTRS{idVendor}=="0781", ATTRS{idProduct}=="5567", SYMLINK+="myusb"</span>
+
+<span class="comment"># シリアルポートのパーミッションを変更</span>
+<span class="out">KERNEL=="ttyUSB*", MODE="0666", GROUP="dialout"</span>
+
+<span class="comment"># デバイス接続時にスクリプトを実行</span>
+<span class="out">SUBSYSTEM=="usb", ACTION=="add", RUN+="/usr/local/bin/usb-notify.sh"</span>
+</pre>
+  </div>
+
+  <h3>udev ルールの主要キーワード</h3>
+  <table class="ref-table">
+    <thead><tr><th>キーワード</th><th>種類</th><th>説明</th><th>例</th></tr></thead>
+    <tbody>
+      <tr><td><code>ACTION</code></td><td>マッチ</td><td>イベントの種類</td><td><code>ACTION=="add"</code> / <code>"remove"</code></td></tr>
+      <tr><td><code>KERNEL</code></td><td>マッチ</td><td>カーネルデバイス名</td><td><code>KERNEL=="sda*"</code></td></tr>
+      <tr><td><code>SUBSYSTEM</code></td><td>マッチ</td><td>デバイスのサブシステム</td><td><code>SUBSYSTEM=="block"</code></td></tr>
+      <tr><td><code>ATTRS{属性}</code></td><td>マッチ</td><td>デバイスの属性値</td><td><code>ATTRS{idVendor}=="0781"</code></td></tr>
+      <tr><td><code>NAME</code></td><td>代入</td><td>デバイスファイル名を設定</td><td><code>NAME="mydev"</code></td></tr>
+      <tr><td><code>SYMLINK+</code></td><td>代入</td><td>シンボリックリンクを追加</td><td><code>SYMLINK+="disk/myusb"</code></td></tr>
+      <tr><td><code>MODE</code></td><td>代入</td><td>デバイスファイルのパーミッション</td><td><code>MODE="0666"</code></td></tr>
+      <tr><td><code>OWNER</code></td><td>代入</td><td>デバイスファイルの所有者</td><td><code>OWNER="teru"</code></td></tr>
+      <tr><td><code>GROUP</code></td><td>代入</td><td>デバイスファイルのグループ</td><td><code>GROUP="dialout"</code></td></tr>
+      <tr><td><code>RUN+</code></td><td>代入</td><td>イベント時に実行するコマンド</td><td><code>RUN+="/usr/bin/notify.sh"</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>udevadm コマンド</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># デバイスの詳細情報を表示</span>
+$ <span class="cmd">udevadm info</span> <span class="opt">--query=all</span> <span class="opt">--name</span>=/dev/sda
+<span class="out">P: /devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/block/sda</span>
+<span class="out">N: sda</span>
+<span class="out">S: disk/by-id/ata-SAMSUNG_SSD_860_EVO_1TB_xxxxxxxx</span>
+<span class="out">S: disk/by-path/pci-0000:00:1f.2-ata-1</span>
+<span class="out">E: DEVNAME=/dev/sda</span>
+<span class="out">E: DEVTYPE=disk</span>
+<span class="out">E: ID_BUS=ata</span>
+<span class="out">E: ID_MODEL=SAMSUNG_SSD_860_EVO_1TB</span>
+
+<span class="comment"># デバイスの属性ツリーを表示（ルール作成時に参照）</span>
+$ <span class="cmd">udevadm info</span> <span class="opt">--attribute-walk</span> <span class="opt">--name</span>=/dev/sda
+
+<span class="comment"># udev イベントをリアルタイムで監視</span>
+$ <span class="cmd">udevadm monitor</span>
+<span class="out">monitor will print the received events for:</span>
+<span class="out">UDEV - the event which udev sends out after rule processing</span>
+<span class="out">KERNEL - the kernel uevent</span>
+<span class="comment"># USBデバイスを接続すると以下のようなイベントが表示される</span>
+<span class="out">KERNEL[12345.678] add /devices/pci0000:00/.../usb1/1-1 (usb)</span>
+<span class="out">UDEV  [12345.890] add /devices/pci0000:00/.../usb1/1-1 (usb)</span>
+
+<span class="comment"># ルールファイルを再読み込み（udevd の再起動なしに反映）</span>
+$ <span class="cmd">sudo udevadm control</span> <span class="opt">--reload-rules</span>
+
+<span class="comment"># ルールを再適用（既存デバイスに新しいルールを適用）</span>
+$ <span class="cmd">sudo udevadm trigger</span>
+
+<span class="comment"># 特定デバイスにルールをテスト適用（実際には変更しない）</span>
+$ <span class="cmd">udevadm test</span> /sys/block/sda
+</pre>
+  </div>
+
+  <h3>udev インタラクティブデモ（デバイスイベントシミュレーター）</h3>
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#2b4c7e; margin:0 0 12px;">
+      デバイスイベントを選択して udev の処理フローを確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>イベントの種類</label>
+      <select id="udev-event" onchange="showUdevEvent()">
+        <option value="">-- イベントを選択 --</option>
+        <option value="usb-add">USB ストレージ接続（add）</option>
+        <option value="usb-remove">USB ストレージ切断（remove）</option>
+        <option value="net-add">ネットワークインターフェース追加</option>
+        <option value="disk-add">新しいディスク検出</option>
+      </select>
+    </div>
+    <div class="output-display" id="udev-output" style="display:none;"></div>
+  </div>
+
+  <script>
+    const udevEvents = {
+      'usb-add': {
+        color: '#68d391',
+        text:
+`# USB ストレージデバイス接続イベント
+
+① カーネルが USB デバイスを検出
+   KERNEL[1234.56] add /devices/.../usb1/1-1 (usb)
+
+② udevd が uevent を受信
+   → /etc/udev/rules.d/ のルールを順番に照合
+
+③ 60-persistent-storage.rules が適用
+   → デバイスIDを元に永続的な名前を生成
+
+④ /dev/ にデバイスファイルを作成
+   /dev/sdb         ← ブロックデバイスファイル
+   /dev/sdb1        ← パーティション
+
+⑤ シンボリックリンクを作成
+   /dev/disk/by-id/usb-VENDOR_MODEL-0:0
+   /dev/disk/by-path/pci-0000:00:14.0-usb-0:1:1.0-scsi-0:0:0:0
+
+$ udevadm monitor  # でリアルタイム確認可能`
+      },
+      'usb-remove': {
+        color: '#f6ad55',
+        text:
+`# USB ストレージデバイス切断イベント
+
+① カーネルが USB デバイスの切断を検出
+   KERNEL[5678.90] remove /devices/.../usb1/1-1 (usb)
+
+② udevd が uevent を受信（ACTION=="remove"）
+
+③ ルール照合
+   → RUN+= に指定されたスクリプトがあれば実行
+
+④ /dev/ からデバイスファイルを削除
+   /dev/sdb1  → 削除
+   /dev/sdb   → 削除
+
+⑤ シンボリックリンクを削除
+   /dev/disk/by-id/usb-VENDOR_MODEL-0:0  → 削除
+
+⚠️  マウント中にデバイスを切断するとデータが破損する可能性がある
+   → 事前に umount /dev/sdb1 を実行すること`
+      },
+      'net-add': {
+        color: '#90cdf4',
+        text:
+`# ネットワークインターフェース追加イベント
+
+① カーネルが NIC を検出
+   KERNEL[1234.56] add /devices/.../net/eth0 (net)
+
+② udevd が uevent を受信
+
+③ 75-net-description.rules が適用
+   → MACアドレス・ベンダー情報を取得
+
+④ 永続的なインターフェース名を生成
+   （systemd の Predictable Network Interface Names）
+   enp3s0  ← PCI バス位置ベースの名前
+   enx001122334455  ← MACアドレスベースの名前
+
+⑤ /sys/class/net/ にエントリを作成
+
+# 従来の eth0 形式に戻す場合：
+# /etc/default/grub に以下を追加して update-grub
+# GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"`
+      },
+      'disk-add': {
+        color: '#b794f4',
+        text:
+`# 新しいディスク検出イベント
+
+① カーネルが SCSI/SATA ディスクを検出
+   KERNEL[1234.56] add /devices/.../block/sdb (block)
+
+② udevd が uevent を受信
+
+③ 複数のルールが適用：
+   60-persistent-storage.rules
+   → UUID・ラベル・シリアル番号を読み取り
+
+④ /dev/ にデバイスファイルを作成
+   /dev/sdb     ← ディスク全体（メジャー8 マイナー16）
+   /dev/sdb1    ← パーティション1（メジャー8 マイナー17）
+
+⑤ シンボリックリンクを作成
+   /dev/disk/by-id/ata-VENDOR_MODEL_SERIAL
+   /dev/disk/by-uuid/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+   /dev/disk/by-path/pci-0000:00:1f.2-ata-2
+
+# UUID でマウントすることでデバイス名変更に対応できる
+$ mount UUID=xxxx-xxxx /mnt/data`
+      }
+    };
+
+    function showUdevEvent() {
+      const key = document.getElementById('udev-event').value;
+      const el  = document.getElementById('udev-output');
+      if (!key) { el.style.display='none'; return; }
+      const d = udevEvents[key];
+      el.style.display = 'block';
+      el.style.color   = d.color;
+      el.textContent   = d.text;
+    }
+  </script>
+
+  <h3>udev 関連ファイル・ディレクトリ一覧</h3>
+  <table class="ref-table">
+    <thead><tr><th>パス</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td><code>/etc/udev/rules.d/</code></td><td>ユーザー定義の udev ルールファイル（優先度高）</td></tr>
+      <tr><td><code>/usr/lib/udev/rules.d/</code></td><td>システム提供の udev ルールファイル</td></tr>
+      <tr><td><code>/run/udev/rules.d/</code></td><td>実行時に生成されるルールファイル</td></tr>
+      <tr><td><code>/etc/udev/udev.conf</code></td><td>udevd の設定ファイル（ログレベルなど）</td></tr>
+      <tr><td><code>/dev/</code></td><td>udev が管理するデバイスファイルの配置場所</td></tr>
+      <tr><td><code>/dev/disk/by-id/</code></td><td>デバイスIDによるシンボリックリンク</td></tr>
+      <tr><td><code>/dev/disk/by-uuid/</code></td><td>UUIDによるシンボリックリンク</td></tr>
+      <tr><td><code>/dev/disk/by-path/</code></td><td>物理パスによるシンボリックリンク</td></tr>
+      <tr><td><code>/sys/</code></td><td>sysfs：デバイス・ドライバ情報の仮想FS（udevが参照）</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 4：まとめ -->
+<!-- ============================================================ -->
+<h2>📌 まとめ一覧</h2>
+
+<div class="demo-box">
+  <table class="ref-table">
+    <thead>
+      <tr><th>カテゴリ</th><th>コマンド / パス</th><th>説明</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td colspan="3" style="background:#dbeafe; color:#2b4c7e; font-weight:bold; font-size:0.88em;">▼ /proc の確認</td>
+      </tr>
+      <tr><td>カーネル情報</td><td><code>/proc/version</code></td><td>カーネルバージョン・ビルド情報</td></tr>
+      <tr><td>CPU情報</td><td><code>/proc/cpuinfo</code></td><td>CPU詳細・コア数・フラグ</td></tr>
+      <tr><td>メモリ情報</td><td><code>/proc/meminfo</code></td><td>メモリ・スワップ使用状況</td></tr>
+      <tr><td>ロードアベレージ</td><td><code>/proc/loadavg</code></td><td>1分・5分・15分の平均負荷</td></tr>
+      <tr><td>モジュール</td><td><code>/proc/modules</code></td><td>ロード済みモジュール（lsmodの元データ）</td></tr>
+      <tr><td>デバイス</td><td><code>/proc/devices</code></td><td>登録済みデバイスとメジャー番号</td></tr>
+      <tr><td>カーネルメッセージ</td><td><code>dmesg</code></td><td>カーネルリングバッファのメッセージ</td></tr>
+      <tr>
+        <td colspan="3" style="background:#dbeafe; color:#2b4c7e; font-weight:bold; font-size:0.88em;">▼ デバイスファイル</td>
+      </tr>
+      <tr><td>ブロックデバイス</td><td><code>/dev/sda</code>・<code>/dev/nvme0n1</code></td><td>先頭が <code>b</code>・ランダムアクセス可能</td></tr>
+      <tr><td>キャラクタデバイス</td><td><code>/dev/tty</code>・<code>/dev/ttyS0</code></td><td>先頭が <code>c</code>・順次アクセス</td></tr>
+      <tr><td>疑似デバイス</td><td><code>/dev/null</code>・<code>/dev/zero</code>・<code>/dev/urandom</code></td><td>物理デバイスを持たない特殊デバイス</td></tr>
+      <tr><td>デバイスファイル作成</td><td><code>mknod パス 種類 メジャー マイナー</code></td><td>手動でデバイスファイルを作成</td></tr>
+      <tr>
+        <td colspan="3" style="background:#dbeafe; color:#2b4c7e; font-weight:bold; font-size:0.88em;">▼ udev</td>
+      </tr>
+      <tr><td>デバイス情報表示</td><td><code>udevadm info --query=all --name=/dev/xxx</code></td><td>デバイスの詳細情報を表示</td></tr>
+      <tr><td>属性ツリー表示</td><td><code>udevadm info --attribute-walk --name=/dev/xxx</code></td><td>ルール作成時の属性確認</td></tr>
+      <tr><td>イベント監視</td><td><code>udevadm monitor</code></td><td>udev イベントをリアルタイム表示</td></tr>
+      <tr><td>ルール再読み込み</td><td><code>udevadm control --reload-rules</code></td><td>ルールファイルの変更を反映</td></tr>
+      <tr><td>ルール再適用</td><td><code>udevadm trigger</code></td><td>既存デバイスに新しいルールを適用</td></tr>
+      <tr><td>ルールテスト</td><td><code>udevadm test /sys/block/sda</code></td><td>ルールの動作をテスト（変更なし）</td></tr>
+      <tr><td>ユーザー定義ルール</td><td><code>/etc/udev/rules.d/99-custom.rules</code></td><td>カスタムルールの配置場所</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 穴埋め問題</h3>
+    <p>以下の説明に合うファイル・コマンドを入力してください。</p>
+    <label>① CPUの詳細情報（モデル名・コア数など）を確認できる /proc のファイル：</label>
+    <input type="text" id="q1a" placeholder="/proc/...">
+    <label>② カーネルの起動パラメータを確認できる /proc のファイル：</label>
+    <input type="text" id="q1b" placeholder="/proc/...">
+    <label>③ ロード済みカーネルモジュールの一覧（lsmod の元データ）：</label>
+    <input type="text" id="q1c" placeholder="/proc/...">
+    <label>④ udev のルールファイルを再読み込みさせるコマンド（フルコマンド）：</label>
+    <input type="text" id="q1d" placeholder="udevadm ...">
+    <label>⑤ デバイスの uevent をリアルタイムで監視するコマンド：</label>
+    <input type="text" id="q1e" placeholder="udevadm ...">
+    <br>
+    <button class="btn btn-blue" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const a = document.getElementById('q1a').value.trim().toLowerCase().replace(/\s/g,'');
+        const b = document.getElementById('q1b').value.trim().toLowerCase().replace(/\s/g,'');
+        const c = document.getElementById('q1c').value.trim().toLowerCase().replace(/\s/g,'');
+        const d = document.getElementById('q1d').value.trim().toLowerCase().replace(/\s+/g,'');
+        const e = document.getElementById('q1e').value.trim().toLowerCase().replace(/\s+/g,'');
+        const r = document.getElementById('q1-result');
+        const ca = a === '/proc/cpuinfo';
+        const cb = b === '/proc/cmdline';
+        const cc = c === '/proc/modules';
+        const cd = d === 'udevadmcontrol--reload-rules' || d === 'udevadmcontrol--reload';
+        const ce = e === 'udevadmmonitor';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ /proc/cpuinfo'}　` +
+            `② ${cb?'✅':'❌ /proc/cmdline'}　` +
+            `③ ${cc?'✅':'❌ /proc/modules'}　` +
+            `④ ${cd?'✅':'❌ udevadm control --reload-rules'}　` +
+            `⑤ ${ce?'✅':'❌ udevadm monitor'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 選択問題</h3>
+    <p>
+      <code>ls -l /dev/sda</code> の出力が以下の場合、
+      <code>8, 0</code> が示す情報として正しいものはどれですか？<br>
+      <code style="background:#edf2f7; padding:4px 8px; border-radius:4px;">brw-rw---- 1 root disk 8, 0 Jan 1 10:00 /dev/sda</code>
+    </p>
+    <select id="q2">
+      <option value="">-- 選択してください --</option>
+      <option value="a">ファイルサイズが 8 バイト、作成日が 0 日</option>
+      <option value="b">メジャー番号が 8（SCSI/SATAディスク）、マイナー番号が 0（ディスク全体）</option>
+      <option value="c">ハードリンク数が 8、ソフトリンク数が 0</option>
+      <option value="d">ディスクの読み取り速度が 8MB/s、書き込み速度が 0MB/s</option>
+    </select>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const v = document.getElementById('q2').value;
+        const r = document.getElementById('q2-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            'デバイスファイルの <code>ls -l</code> 出力では、通常ファイルサイズが表示される位置に<br>' +
+            '<strong>メジャー番号, マイナー番号</strong> が表示されます。<br><br>' +
+            '・<strong>メジャー番号（8）</strong>：デバイスの種類（8 = SCSI/SATAディスク）<br>' +
+            '・<strong>マイナー番号（0）</strong>：同種デバイス内の識別番号（0 = ディスク全体、1 = 1番目のパーティション）<br><br>' +
+            '<code>/proc/devices</code> でメジャー番号とデバイス種類の対応を確認できます。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            'デバイスファイルの <code>ls -l</code> では、ファイルサイズの代わりに<br>' +
+            '<strong>メジャー番号, マイナー番号</strong> が表示されます。<br>' +
+            '・メジャー番号：デバイスの種類（8 = SCSI/SATAディスク）<br>' +
+            '・マイナー番号：同種デバイス内の識別番号';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① <code>/proc</code> はディスク上に存在する実際のファイルシステムである
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② <code>/dev/null</code> に書き込んだデータはすべて捨てられる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ ブロックデバイスは <code>ls -l</code> の出力で先頭が <code>b</code> で表示される
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ udev のユーザー定義ルールは <code>/usr/lib/udev/rules.d/</code> に配置する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ <code>udevadm monitor</code> でデバイスの接続・切断イベントをリアルタイムで確認できる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ <code>/proc/meminfo</code> の <code>MemAvailable</code> は実際に利用可能なメモリの推奨指標である
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ <code>mknod</code> コマンドでデバイスファイルを手動作成できる
+    </label>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：②③⑤⑥⑦（b,c,e,f,g）
+        // ① /proc はディスク上に存在しない仮想FS
+        // ④ ユーザー定義ルールは /etc/udev/rules.d/（/usr/lib/ はシステム提供）
+        const correct = { a:false, b:true, c:true, d:false, e:true, f:true, g:true };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>②③⑤⑥⑦<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・① <code>/proc</code> はディスク上に<strong>存在しない仮想ファイルシステム</strong>です。カーネルがアクセス時に動的に内容を生成します<br>' +
+            '・④ udev の<strong>ユーザー定義ルール</strong>は <code>/etc/udev/rules.d/</code> に配置します。<code>/usr/lib/udev/rules.d/</code> はシステム提供のルールです';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. シナリオ問題</h3>
+    <p>
+      USB シリアルアダプタ（<code>/dev/ttyUSB0</code>）を接続すると、
+      デフォルトでは root しかアクセスできません。
+      一般ユーザーもアクセスできるようにするための<strong>正しい対処法</strong>はどれですか？
+    </p>
+    <select id="q4">
+      <option value="">-- 選択してください --</option>
+      <option value="a">毎回 sudo chmod 666 /dev/ttyUSB0 を実行する</option>
+      <option value="b">/etc/udev/rules.d/ にルールファイルを作成して MODE や GROUP を設定する</option>
+      <option value="c">/proc/devices を編集してパーミッションを変更する</option>
+      <option value="d">カーネルを再コンパイルしてデバイスのデフォルトパーミッションを変更する</option>
+    </select>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const v = document.getElementById('q4').value;
+        const r = document.getElementById('q4-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>正しい手順：</strong><br>' +
+            '① <code>/etc/udev/rules.d/99-ttyusb.rules</code> を作成<br>' +
+            '② 以下の内容を記述：<br>' +
+            '<code>KERNEL=="ttyUSB*", MODE="0666", GROUP="dialout"</code><br>' +
+            '③ <code>sudo udevadm control --reload-rules</code> でルールを反映<br>' +
+            '④ デバイスを再接続すると自動的にパーミッションが設定される<br><br>' +
+            '<strong>各選択肢の問題点：</strong><br>' +
+            '・A：デバイスを再接続するたびに手動実行が必要で恒久的な解決にならない<br>' +
+            '・C：<code>/proc/devices</code> は読み取り専用で編集できない<br>' +
+            '・D：カーネルの再コンパイルは不要';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br><br>' +
+            'udev ルールファイルを使うことで、デバイス接続時に自動的にパーミッションを設定できます。<br>' +
+            '<code>/etc/udev/rules.d/99-ttyusb.rules</code> に<br>' +
+            '<code>KERNEL=="ttyUSB*", MODE="0666", GROUP="dialout"</code><br>' +
+            'と記述して <code>udevadm control --reload-rules</code> で反映します。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-block">
+    <h3>Q5. 選択問題</h3>
+    <p>
+      <code>/dev/zero</code> の正しい説明はどれですか？
+    </p>
+    <select id="q5">
+      <option value="">-- 選択してください --</option>
+      <option value="a">読み込むと常にエラーを返す特殊デバイス</option>
+      <option value="b">書き込んだデータをすべて捨てる特殊デバイス</option>
+      <option value="c">読み込むと 0x00 バイトを無限に返す特殊デバイス</option>
+      <option value="d">ランダムなデータを生成する特殊デバイス</option>
+    </select>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ5()">答え合わせ</button>
+    <div class="result-msg" id="q5-result"></div>
+    <script>
+      function checkQ5() {
+        const v = document.getElementById('q5').value;
+        const r = document.getElementById('q5-result');
+        if (v === 'c') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>疑似デバイスの一覧：</strong><br>' +
+            '・<code>/dev/null</code>：書き込んだデータをすべて捨てる（読み込むと即EOF）<br>' +
+            '・<code>/dev/zero</code>：読み込むと <strong>0x00 バイトを無限に返す</strong><br>' +
+            '&nbsp;&nbsp;例：<code>dd if=/dev/zero of=/dev/sda</code>（ディスクをゼロ埋め）<br>' +
+            '・<code>/dev/random</code>：エントロピープールからランダムデータを生成（ブロックあり）<br>' +
+            '・<code>/dev/urandom</code>：擬似乱数を生成（ブロックなし・通常はこちらを使用）<br>' +
+            '・<code>/dev/full</code>：書き込むと常に「空き容量なし」エラーを返す';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '・<code>/dev/zero</code>：読み込むと <strong>0x00 バイトを無限に返す</strong><br>' +
+            '・<code>/dev/null</code>：書き込んだデータをすべて捨てる<br>' +
+            '・<code>/dev/urandom</code>：ランダムなデータを生成する';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 第2章「Linuxカーネル」の全セクションが完了しました！</p>
+  <button class="btn btn-green" onclick="markComplete()">✅ 第2章を完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch2', '100');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  if (parseInt(localStorage.getItem('lpic201_ch2') || '0') >= 100) {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="04_param.html">← カーネルパラメータの変更</a>
+  <a class="home" href="../index.html">🏠 目次へ</a>
+  <a class="next" href="../03_boot/index.html">次章へ：システムの起動 →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
