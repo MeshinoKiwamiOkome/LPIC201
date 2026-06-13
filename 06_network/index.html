@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ネットワークの設定 ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em; color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #553c9a; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #322659, #553c9a);
+      border-radius: 12px; padding: 32px 32px 24px;
+      margin-bottom: 32px; color: #fff;
+      box-shadow: 0 4px 18px rgba(85,60,154,0.35);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em; font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85; letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .chapter-header h1 { margin: 0 0 10px; font-size: 1.6em; color: #fff; border: none; padding: 0; }
+    .chapter-header p  { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px; padding: 3px 12px;
+      font-size: 0.76em; font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 { color: #322659; margin-top: 48px; border-left: 5px solid #553c9a; padding-left: 12px; }
+    h3 { color: #276749; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7; padding: 2px 6px;
+      border-radius: 4px; font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c; color: #e2e8f0;
+      padding: 18px 20px; border-radius: 8px;
+      overflow-x: auto; font-size: 0.88em;
+      line-height: 1.7; font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+    pre .err     { color: #fc8181; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #4a5568; color: #e2e8f0;
+      border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 0.75em;
+      cursor: pointer; font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s; z-index: 1;
+    }
+    .copy-btn:hover { background: #553c9a; }
+
+    /* ボックス */
+    .note {
+      background: #fff; border: 1px dashed #b794f4;
+      border-radius: 6px; padding: 14px 18px;
+      font-size: 0.93em; color: #4a5568; margin: 14px 0;
+    }
+    .note strong { color: #322659; }
+    .warn {
+      background: #fffaf0; border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #744210; margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4; border: 1px solid #68d391;
+      border-left: 5px solid #48bb78; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #276749; margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff; border: 1px solid #e9d8fd;
+      border-radius: 8px; padding: 20px 24px;
+      margin: 12px 0 28px; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff; border: 1px solid #e9d8fd;
+      border-radius: 10px; padding: 18px 22px;
+      margin-bottom: 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 { margin: 0 0 12px; font-size: 0.92em; color: #322659; border: none; padding: 0; }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #553c9a; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #322659; font-weight: bold; }
+
+    /* コマンドカードグリッド */
+    .cmd-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px; margin: 14px 0;
+    }
+    .cmd-card {
+      background: #faf5ff; border: 1px solid #b794f4;
+      border-radius: 8px; padding: 14px 16px;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .cmd-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(85,60,154,0.18);
+      border-color: #553c9a;
+    }
+    .cmd-card .cc-name {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 1em; font-weight: bold;
+      color: #322659; margin-bottom: 4px;
+    }
+    .cmd-card .cc-desc {
+      font-size: 0.82em; color: #4a5568; line-height: 1.6;
+    }
+
+    /* ARP テーブル視覚化 */
+    .arp-table-demo {
+      background: #1a202c; border-radius: 8px;
+      padding: 16px 20px; font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85em; line-height: 2; margin: 14px 0;
+    }
+
+    /* ルーティングテーブル視覚化 */
+    .route-visual {
+      display: flex; align-items: center;
+      gap: 8px; flex-wrap: wrap;
+      justify-content: center; margin: 16px 0;
+    }
+    .route-box {
+      border-radius: 8px; padding: 12px 14px;
+      text-align: center; font-size: 0.82em;
+      font-weight: bold; min-width: 110px;
+    }
+    .route-arrow { font-size: 1.3em; color: #718096; }
+
+    /* インタラクティブデモ */
+    .interactive-demo {
+      background: #faf5ff; border: 1px solid #e9d8fd;
+      border-radius: 8px; padding: 16px 20px; margin: 14px 0;
+    }
+    .slider-row {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em; font-weight: bold;
+      min-width: 180px; color: #322659;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row select {
+      border: 2px solid #e9d8fd; border-radius: 6px;
+      padding: 6px 10px; font-size: 0.88em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #2d3748; background: #fff;
+      cursor: pointer; flex: 1;
+    }
+    .slider-row select:focus { border-color: #553c9a; outline: none; }
+    .output-display {
+      background: #1a202c; color: #68d391;
+      border-radius: 6px; padding: 12px 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em; margin-top: 10px;
+      white-space: pre; overflow-x: auto; line-height: 1.7;
+    }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse; width: 100%;
+      background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0; font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #e9d8fd; padding: 10px 14px; text-align: left;
+    }
+    table.ref-table thead tr { background: #322659; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #faf5ff; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0; border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0; padding: 24px 28px; margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 18px 22px; margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 8px 12px; font-size: 0.95em;
+      width: 100%; max-width: 440px; margin: 6px 0;
+      outline: none; font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus { border-color: #f6ad55; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block; padding: 9px 20px;
+      border-radius: 6px; border: none; cursor: pointer;
+      font-size: 0.95em; font-weight: bold;
+      transition: opacity 0.2s; margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-purple { background: #553c9a; color: #fff; }
+    .btn-done   { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px; padding: 10px 14px;
+      border-radius: 6px; font-weight: bold; display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #e9d8fd; color: #322659; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 48px;
+      padding-top: 20px; border-top: 2px solid #e9d8fd;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block; padding: 10px 20px;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.9em; transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #553c9a; color: #fff; }
+    .page-nav .home { background: #fff; color: #553c9a; border: 2px solid #553c9a; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4; border: 2px solid #48bb78;
+      border-radius: 10px; padding: 20px 24px;
+      margin-top: 40px; text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 2px solid #e9d8fd;
+      font-size: 0.82em; color: #a0aec0; text-align: center;
+    }
+    footer a { color: #553c9a; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .cmd-grid { grid-template-columns: repeat(2, 1fr); }
+      .route-visual { gap: 4px; }
+      .route-box { min-width: 80px; font-size: 0.75em; padding: 8px 10px; }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  第6章：ネットワーク › ネットワークの設定
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 06 › SECTION 01</div>
+  <h1>🌐 ネットワークの設定</h1>
+  <p>ネットワークデバイスの管理、ARP の仕組み、
+  各種ネットワーク管理コマンド（ping・traceroute・tcpdump・ip など）、
+  ルーティング設定、無線ネットワークの設定を学びます。</p>
+  <div class="badge-row">
+    <span class="badge">ip</span>
+    <span class="badge">ping</span>
+    <span class="badge">traceroute</span>
+    <span class="badge">tcpdump</span>
+    <span class="badge">netstat</span>
+    <span class="badge">ss</span>
+    <span class="badge">nc</span>
+    <span class="badge">iw / iwconfig</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第6章のセクション</h2>
+  <ol>
+    <li class="current"><a href="index.html">ネットワークの設定</a></li>
+    <li><a href="02_dns.html">DNS の設定</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：ネットワークデバイス -->
+<!-- ============================================================ -->
+<h2 id="netdev">① ネットワークデバイス</h2>
+
+<div class="note">
+  <strong>重要ポイント①：Linux のネットワークインターフェースは ip コマンドで管理する。従来の ifconfig・route は非推奨</strong><br>
+  systemd 環境では Predictable Network Interface Names（enp3s0 など）が使用されます。
+</div>
+
+<div class="demo-box">
+  <h3>ネットワークインターフェースの命名規則</h3>
+  <table class="ref-table">
+    <thead><tr><th>命名パターン</th><th>意味</th><th>例</th></tr></thead>
+    <tbody>
+      <tr><td><code>eth0</code></td><td>旧来の命名（カーネル検出順）</td><td>eth0, eth1</td></tr>
+      <tr><td><code>enp3s0</code></td><td>PCI バス位置ベース（en=Ethernet, p=PCI bus, s=slot）</td><td>enp3s0, enp0s3</td></tr>
+      <tr><td><code>ens3</code></td><td>PCI ホットプラグスロット番号</td><td>ens3, ens33</td></tr>
+      <tr><td><code>enx001122334455</code></td><td>MAC アドレスベース</td><td>enx001122334455</td></tr>
+      <tr><td><code>wlan0</code></td><td>旧来の無線 LAN</td><td>wlan0</td></tr>
+      <tr><td><code>wlp2s0</code></td><td>PCI バス位置ベースの無線 LAN</td><td>wlp2s0</td></tr>
+      <tr><td><code>lo</code></td><td>ループバックインターフェース</td><td>lo（127.0.0.1）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>ip コマンドによるインターフェース管理</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># インターフェース一覧と状態を表示</span>
+$ <span class="cmd">ip</span> link show
+<span class="out">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN</span>
+<span class="out">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span>
+<span class="hl">2: enp3s0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc fq_codel state UP</span>
+<span class="out">    link/ether aa:bb:cc:dd:ee:ff brd ff:ff:ff:ff:ff:ff</span>
+
+<span class="comment"># IP アドレスの表示</span>
+$ <span class="cmd">ip</span> addr show
+$ <span class="cmd">ip</span> <span class="opt">a</span>                  <span class="comment"># 短縮形</span>
+<span class="out">2: enp3s0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500</span>
+<span class="hl">    inet 192.168.1.10/24 brd 192.168.1.255 scope global enp3s0</span>
+<span class="out">    inet6 fe80::1/64 scope link</span>
+
+<span class="comment"># IP アドレスを設定</span>
+$ <span class="cmd">sudo ip</span> addr add <span class="val">192.168.1.10/24</span> dev enp3s0
+
+<span class="comment"># IP アドレスを削除</span>
+$ <span class="cmd">sudo ip</span> addr del <span class="val">192.168.1.10/24</span> dev enp3s0
+
+<span class="comment"># インターフェースを有効化・無効化</span>
+$ <span class="cmd">sudo ip</span> link set enp3s0 <span class="val">up</span>
+$ <span class="cmd">sudo ip</span> link set enp3s0 <span class="val">down</span>
+
+<span class="comment"># MTU を変更</span>
+$ <span class="cmd">sudo ip</span> link set enp3s0 mtu <span class="val">9000</span>
+
+<span class="comment"># MAC アドレスを変更</span>
+$ <span class="cmd">sudo ip</span> link set enp3s0 address <span class="val">aa:bb:cc:dd:ee:ff</span>
+
+<span class="comment"># 旧来の ifconfig コマンド（参考）</span>
+$ <span class="cmd">ifconfig</span>                          <span class="comment"># 全インターフェース表示</span>
+$ <span class="cmd">sudo ifconfig</span> enp3s0 <span class="val">192.168.1.10</span> netmask <span class="val">255.255.255.0</span>
+$ <span class="cmd">sudo ifconfig</span> enp3s0 <span class="val">up</span>
+</pre>
+  </div>
+
+  <h3>永続的なネットワーク設定</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment">## Debian / Ubuntu 系（/etc/network/interfaces）</span>
+$ <span class="cmd">sudo vi</span> /etc/network/interfaces
+<span class="hdr">auto lo</span>
+<span class="hdr">iface lo inet loopback</span>
+<span class="hdr"></span>
+<span class="hdr">auto enp3s0</span>
+<span class="hdr">iface enp3s0 inet static</span>
+<span class="hdr">    address 192.168.1.10</span>
+<span class="hdr">    netmask 255.255.255.0</span>
+<span class="hdr">    gateway 192.168.1.1</span>
+<span class="hdr">    dns-nameservers 8.8.8.8 8.8.4.4</span>
+
+<span class="comment">## DHCP の場合</span>
+<span class="hdr">iface enp3s0 inet dhcp</span>
+
+<span class="comment">## Netplan（Ubuntu 18.04以降の標準）</span>
+$ <span class="cmd">sudo vi</span> /etc/netplan/01-netcfg.yaml
+<span class="hdr">network:</span>
+<span class="hdr">  version: 2</span>
+<span class="hdr">  ethernets:</span>
+<span class="hdr">    enp3s0:</span>
+<span class="hdr">      addresses: [192.168.1.10/24]</span>
+<span class="hdr">      gateway4: 192.168.1.1</span>
+<span class="hdr">      nameservers:</span>
+<span class="hdr">        addresses: [8.8.8.8, 8.8.4.4]</span>
+$ <span class="cmd">sudo netplan apply</span>
+
+<span class="comment">## RHEL / CentOS 系（/etc/sysconfig/network-scripts/）</span>
+$ <span class="cmd">sudo vi</span> /etc/sysconfig/network-scripts/ifcfg-enp3s0
+<span class="hdr">DEVICE=enp3s0</span>
+<span class="hdr">BOOTPROTO=static</span>
+<span class="hdr">IPADDR=192.168.1.10</span>
+<span class="hdr">NETMASK=255.255.255.0</span>
+<span class="hdr">GATEWAY=192.168.1.1</span>
+<span class="hdr">ONBOOT=yes</span>
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：ARP -->
+<!-- ============================================================ -->
+<h2 id="arp">② ARP（Address Resolution Protocol）</h2>
+
+<div class="note">
+  <strong>重要ポイント②：ARP は IP アドレスから MAC アドレスを解決するプロトコル。arp コマンドまたは ip neigh コマンドで ARP テーブルを確認・操作する</strong>
+</div>
+
+<div class="demo-box">
+  <h3>ARP の仕組み</h3>
+  <div style="background:#1a202c; border-radius:8px; padding:16px 20px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; line-height:2; color:#e2e8f0; margin:14px 0;">
+    <div style="color:#b794f4; font-weight:bold;">【ARP の動作フロー】</div>
+    <div>
+      ホスト A（192.168.1.10）が ホスト B（192.168.1.20）に通信したい
+    </div>
+    <div style="color:#f6ad55;">
+      → ARP Request（ブロードキャスト）：「192.168.1.20 の MAC アドレスは誰？」
+    </div>
+    <div style="color:#68d391;">
+      → ARP Reply（ユニキャスト）：「私が 192.168.1.20 です。MAC は aa:bb:cc:dd:ee:ff」
+    </div>
+    <div style="color:#90cdf4;">
+      → ARP テーブルに 192.168.1.20 → aa:bb:cc:dd:ee:ff を記録
+    </div>
+  </div>
+
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># ARP テーブルを表示（ip neigh：推奨）</span>
+$ <span class="cmd">ip</span> neigh show
+<span class="hl">192.168.1.1  dev enp3s0 lladdr aa:bb:cc:11:22:33 REACHABLE</span>
+<span class="out">192.168.1.20 dev enp3s0 lladdr aa:bb:cc:dd:ee:ff STALE</span>
+<span class="out">192.168.1.30 dev enp3s0 lladdr 11:22:33:44:55:66 DELAY</span>
+<span class="comment"># REACHABLE=到達可能, STALE=古い, DELAY=確認中, FAILED=到達不可</span>
+
+<span class="comment"># 旧来の arp コマンド</span>
+$ <span class="cmd">arp</span> <span class="opt">-n</span>                    <span class="comment"># ARP テーブルを表示（名前解決なし）</span>
+<span class="out">Address          HWtype  HWaddress           Flags Iface</span>
+<span class="out">192.168.1.1      ether   aa:bb:cc:11:22:33   C     enp3s0</span>
+<span class="out">192.168.1.20     ether   aa:bb:cc:dd:ee:ff   C     enp3s0</span>
+
+<span class="comment"># 静的 ARP エントリを追加</span>
+$ <span class="cmd">sudo ip</span> neigh add <span class="val">192.168.1.50</span> lladdr <span class="val">aa:bb:cc:00:11:22</span> dev enp3s0
+$ <span class="cmd">sudo arp</span> <span class="opt">-s</span> <span class="val">192.168.1.50</span> <span class="val">aa:bb:cc:00:11:22</span>
+
+<span class="comment"># ARP エントリを削除</span>
+$ <span class="cmd">sudo ip</span> neigh del <span class="val">192.168.1.50</span> dev enp3s0
+$ <span class="cmd">sudo arp</span> <span class="opt">-d</span> <span class="val">192.168.1.50</span>
+
+<span class="comment"># ARP キャッシュをフラッシュ</span>
+$ <span class="cmd">sudo ip</span> neigh flush all
+
+<span class="comment"># arping：ARP レベルの疎通確認</span>
+$ <span class="cmd">sudo arping</span> <span class="opt">-I</span> enp3s0 <span class="val">192.168.1.1</span>
+<span class="out">ARPING 192.168.1.1 from 192.168.1.10 enp3s0</span>
+<span class="out">Unicast reply from 192.168.1.1 [AA:BB:CC:11:22:33]  1.234ms</span>
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：ネットワーク管理コマンド -->
+<!-- ============================================================ -->
+<h2 id="net-cmds">③ ネットワーク管理コマンド</h2>
+
+<div class="demo-box">
+  <h3>コマンドカード（クリックで使用例を表示）</h3>
+  <div class="cmd-grid">
+    <div class="cmd-card" onclick="showNetCmd('ping')">
+      <div class="cc-name">ping</div>
+      <div class="cc-desc">ICMP Echo で疎通確認。ホストの到達可能性を確認</div>
+    </div>
+    <div class="cmd-card" onclick="showNetCmd('traceroute')">
+      <div class="cc-name">traceroute</div>
+      <div class="cc-desc">パケットの経路（ホップ）を表示</div>
+    </div>
+    <div class="cmd-card" onclick="showNetCmd('tcpdump')">
+      <div class="cc-name">tcpdump</div>
+      <div class="cc-desc">ネットワークパケットをキャプチャして表示</div>
+    </div>
+    <div class="cmd-card" onclick="showNetCmd('wireshark')">
+      <div class="cc-name">Wireshark</div>
+      <div class="cc-desc">GUI のパケットアナライザ。tcpdump の GUI 版</div>
+    </div>
+    <div class="cmd-card" onclick="showNetCmd('netstat')">
+      <div class="cc-name">netstat</div>
+      <div class="cc-desc">ネットワーク接続・ルーティングテーブルを表示（旧来）</div>
+    </div>
+    <div class="cmd-card" onclick="showNetCmd('ss')">
+      <div class="cc-name">ss</div>
+      <div class="cc-desc">ソケット統計を表示（netstat の後継・高速）</div>
+    </div>
+    <div class="cmd-card" onclick="showNetCmd('nc')">
+      <div class="cc-name">nc（netcat）</div>
+      <div class="cc-desc">TCP/UDP 接続のテスト・簡易サーバー・ファイル転送</div>
+    </div>
+    <div class="cmd-card" onclick="showNetCmd('ip')">
+      <div class="cc-name">ip</div>
+      <div class="cc-desc">インターフェース・ルーティング・ARP の統合管理コマンド</div>
+    </div>
+  </div>
+
+  <!-- コマンド詳細 -->
+  <div id="net-cmd-detail" style="display:none; margin-top:14px; background:#fff; border:1px solid #e9d8fd; border-left:5px solid #553c9a; border-radius:0 8px 8px 0; padding:16px 20px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const netCmds = {
+      ping: {
+        title: 'ping',
+        color: '#553c9a',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:12px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.83em; color:#e2e8f0; line-height:1.8; margin-top:8px;">
+<div style="color:#68d391;"># 基本的な疎通確認</div>
+<div>$ ping 192.168.1.1</div>
+<div style="color:#68d391;"># 送信回数を指定（-c）</div>
+<div>$ ping -c 4 192.168.1.1</div>
+<div style="color:#68d391;"># 送信間隔を指定（-i 秒）</div>
+<div>$ ping -c 4 -i 0.5 192.168.1.1</div>
+<div style="color:#68d391;"># パケットサイズを指定（-s バイト）</div>
+<div>$ ping -s 1400 192.168.1.1</div>
+<div style="color:#68d391;"># TTL を指定（-t）</div>
+<div>$ ping -t 64 192.168.1.1</div>
+<div style="color:#68d391;"># IPv6 での疎通確認</div>
+<div>$ ping6 fe80::1</div>
+<div style="color:#68d391;"># 出力例</div>
+<div style="color:#f6ad55;">PING 192.168.1.1 (192.168.1.1) 56(84) bytes of data.</div>
+<div>64 bytes from 192.168.1.1: icmp_seq=1 ttl=64 time=0.456 ms</div>
+<div>--- 192.168.1.1 ping statistics ---</div>
+<div>4 packets transmitted, 4 received, 0% packet loss</div>
+</div>`
+      },
+      traceroute: {
+        title: 'traceroute',
+        color: '#2b4c7e',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:12px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.83em; color:#e2e8f0; line-height:1.8; margin-top:8px;">
+<div style="color:#68d391;"># パケットの経路を表示</div>
+<div>$ traceroute 8.8.8.8</div>
+<div style="color:#68d391;"># UDP の代わりに ICMP を使用（-I）</div>
+<div>$ traceroute -I 8.8.8.8</div>
+<div style="color:#68d391;"># TCP を使用（-T、ポート指定）</div>
+<div>$ traceroute -T -p 80 8.8.8.8</div>
+<div style="color:#68d391;"># 最大ホップ数を指定（-m）</div>
+<div>$ traceroute -m 20 8.8.8.8</div>
+<div style="color:#68d391;"># 出力例</div>
+<div style="color:#f6ad55;">traceroute to 8.8.8.8 (8.8.8.8), 30 hops max</div>
+<div> 1  192.168.1.1 (192.168.1.1)  1.234 ms  0.987 ms  1.012 ms</div>
+<div> 2  10.0.0.1 (10.0.0.1)  5.678 ms  5.432 ms  5.901 ms</div>
+<div> 3  * * *  （応答なし）</div>
+<div style="color:#68d391;"># tracepath：traceroute の代替（root 不要）</div>
+<div>$ tracepath 8.8.8.8</div>
+</div>`
+      },
+      tcpdump: {
+        title: 'tcpdump',
+        color: '#1a4731',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:12px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.83em; color:#e2e8f0; line-height:1.8; margin-top:8px;">
+<div style="color:#68d391;"># 全インターフェースのパケットをキャプチャ</div>
+<div>$ sudo tcpdump -i any</div>
+<div style="color:#68d391;"># 特定インターフェースのみ</div>
+<div>$ sudo tcpdump -i enp3s0</div>
+<div style="color:#68d391;"># 特定ホストのパケットのみ</div>
+<div>$ sudo tcpdump -i enp3s0 host 192.168.1.1</div>
+<div style="color:#68d391;"># 特定ポートのみ</div>
+<div>$ sudo tcpdump -i enp3s0 port 80</div>
+<div style="color:#68d391;"># TCP のみ / UDP のみ</div>
+<div>$ sudo tcpdump -i enp3s0 tcp</div>
+<div>$ sudo tcpdump -i enp3s0 udp</div>
+<div style="color:#68d391;"># ファイルに保存（-w）</div>
+<div>$ sudo tcpdump -i enp3s0 -w capture.pcap</div>
+<div style="color:#68d391;"># ファイルから読み込み（-r）</div>
+<div>$ tcpdump -r capture.pcap</div>
+<div style="color:#68d391;"># 詳細表示（-v, -vv, -vvv）</div>
+<div>$ sudo tcpdump -i enp3s0 -v port 443</div>
+<div style="color:#68d391;"># 名前解決なし（-n）</div>
+<div>$ sudo tcpdump -i enp3s0 -n port 53</div>
+</div>`
+      },
+      wireshark: {
+        title: 'Wireshark',
+        color: '#553c9a',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:12px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.83em; color:#e2e8f0; line-height:1.8; margin-top:8px;">
+<div style="color:#68d391;"># インストール</div>
+<div>$ sudo apt install wireshark tshark</div>
+<div style="color:#68d391;"># GUI 版の起動</div>
+<div>$ wireshark</div>
+<div style="color:#68d391;"># CUI 版（tshark）：tcpdump の代替</div>
+<div>$ sudo tshark -i enp3s0</div>
+<div>$ sudo tshark -i enp3s0 -f "port 80"</div>
+<div>$ sudo tshark -r capture.pcap</div>
+<div style="color:#68d391;"># Wireshark の主な特徴</div>
+<div style="color:#b794f4;"># ・GUI でパケットをリアルタイム表示</div>
+<div style="color:#b794f4;"># ・プロトコル別の詳細な解析</div>
+<div style="color:#b794f4;"># ・tcpdump の .pcap ファイルを読み込み可能</div>
+<div style="color:#b794f4;"># ・フィルタリング機能（BPF フィルタ）</div>
+<div style="color:#b794f4;"># ・HTTP・DNS・TLS などの上位プロトコルを解析</div>
+</div>`
+      },
+      netstat: {
+        title: 'netstat（旧来・非推奨）',
+        color: '#744210',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:12px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.83em; color:#e2e8f0; line-height:1.8; margin-top:8px;">
+<div style="color:#68d391;"># すべての接続を表示</div>
+<div>$ netstat -a</div>
+<div style="color:#68d391;"># TCP 接続のみ（-t）</div>
+<div>$ netstat -t</div>
+<div style="color:#68d391;"># UDP 接続のみ（-u）</div>
+<div>$ netstat -u</div>
+<div style="color:#68d391;"># LISTEN 中のポートを表示</div>
+<div>$ netstat -l</div>
+<div style="color:#68d391;"># プロセス名・PID を表示（-p）</div>
+<div>$ sudo netstat -tlnp</div>
+<div style="color:#68d391;"># ルーティングテーブルを表示（-r）</div>
+<div>$ netstat -r</div>
+<div style="color:#68d391;"># 統計情報を表示（-s）</div>
+<div>$ netstat -s</div>
+<div style="color:#f6ad55;"># ⚠️  netstat は非推奨。代わりに ss コマンドを使用</div>
+</div>`
+      },
+      ss: {
+        title: 'ss（Socket Statistics）',
+        color: '#1a4731',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:12px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.83em; color:#e2e8f0; line-height:1.8; margin-top:8px;">
+<div style="color:#68d391;"># すべての接続を表示</div>
+<div>$ ss -a</div>
+<div style="color:#68d391;"># LISTEN 中の TCP ポートを表示（推奨）</div>
+<div>$ ss -tlnp</div>
+<div style="color:#f6ad55;">State   Recv-Q Send-Q  Local Address:Port  Peer Address:Port</div>
+<div>LISTEN  0      128    0.0.0.0:22         0.0.0.0:*     users:(("sshd",pid=1234))</div>
+<div>LISTEN  0      511    0.0.0.0:80         0.0.0.0:*     users:(("nginx",pid=5678))</div>
+<div style="color:#68d391;"># UDP ポートを表示</div>
+<div>$ ss -ulnp</div>
+<div style="color:#68d391;"># 確立済み接続のみ</div>
+<div>$ ss -t state established</div>
+<div style="color:#68d391;"># 特定ポートの接続を確認</div>
+<div>$ ss -t '( dport = :443 or sport = :443 )'</div>
+<div style="color:#68d391;"># netstat との対応</div>
+<div style="color:#b794f4;"># netstat -tlnp  →  ss -tlnp</div>
+<div style="color:#b794f4;"># netstat -r     →  ip route</div>
+</div>`
+      },
+      nc: {
+        title: 'nc（netcat）',
+        color: '#9b2335',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:12px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.83em; color:#e2e8f0; line-height:1.8; margin-top:8px;">
+<div style="color:#68d391;"># TCP ポートへの接続テスト</div>
+<div>$ nc -zv 192.168.1.1 22</div>
+<div>Connection to 192.168.1.1 22 port [tcp/ssh] succeeded!</div>
+<div style="color:#68d391;"># ポートスキャン（範囲指定）</div>
+<div>$ nc -zv 192.168.1.1 20-25</div>
+<div style="color:#68d391;"># UDP ポートのテスト（-u）</div>
+<div>$ nc -zuv 192.168.1.1 53</div>
+<div style="color:#68d391;"># 簡易 TCP サーバーとして起動（-l）</div>
+<div>$ nc -l 8080</div>
+<div style="color:#68d391;"># ファイル転送（受信側）</div>
+<div>$ nc -l 9999 > received_file</div>
+<div style="color:#68d391;"># ファイル転送（送信側）</div>
+<div>$ nc 192.168.1.20 9999 &lt; send_file</div>
+<div style="color:#68d391;"># タイムアウト指定（-w 秒）</div>
+<div>$ nc -zv -w 3 192.168.1.1 80</div>
+</div>`
+      },
+      ip: {
+        title: 'ip コマンド（統合ネットワーク管理）',
+        color: '#322659',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:12px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.83em; color:#e2e8f0; line-height:1.8; margin-top:8px;">
+<div style="color:#68d391;"># インターフェース一覧</div>
+<div>$ ip link show</div>
+<div style="color:#68d391;"># IP アドレス表示</div>
+<div>$ ip addr show</div>
+<div style="color:#68d391;"># ルーティングテーブル表示</div>
+<div>$ ip route show</div>
+<div style="color:#68d391;"># ARP テーブル表示</div>
+<div>$ ip neigh show</div>
+<div style="color:#68d391;"># IP アドレスを設定</div>
+<div>$ sudo ip addr add 192.168.1.10/24 dev enp3s0</div>
+<div style="color:#68d391;"># デフォルトゲートウェイを設定</div>
+<div>$ sudo ip route add default via 192.168.1.1</div>
+<div style="color:#68d391;"># 旧コマンドとの対応</div>
+<div style="color:#b794f4;"># ifconfig    →  ip addr / ip link</div>
+<div style="color:#b794f4;"># route       →  ip route</div>
+<div style="color:#b794f4;"># arp         →  ip neigh</div>
+</div>`
+      }
+    };
+
+    function showNetCmd(key) {
+      const d = netCmds[key];
+      const el = document.getElementById('net-cmd-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display='none'; el.dataset.current=''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-family:'Consolas','Monaco',monospace; font-size:0.95em;">${d.title}</strong>${d.body}`;
+      el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+  </script>
+
+  <h3>旧コマンドと新コマンドの対応表</h3>
+  <table class="ref-table">
+    <thead><tr><th>旧コマンド（非推奨）</th><th>新コマンド（推奨）</th><th>機能</th></tr></thead>
+    <tbody>
+      <tr><td><code>ifconfig</code></td><td><code>ip addr</code> / <code>ip link</code></td><td>インターフェース・IP アドレスの管理</td></tr>
+      <tr><td><code>route</code></td><td><code>ip route</code></td><td>ルーティングテーブルの管理</td></tr>
+      <tr><td><code>arp</code></td><td><code>ip neigh</code></td><td>ARP テーブルの管理</td></tr>
+      <tr><td><code>netstat</code></td><td><code>ss</code></td><td>ソケット・接続状態の確認</td></tr>
+      <tr><td><code>netstat -r</code></td><td><code>ip route</code></td><td>ルーティングテーブルの表示</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 4：ルーティングの設定 -->
+<!-- ============================================================ -->
+<h2 id="routing">④ ルーティングの設定</h2>
+
+<div class="note">
+  <strong>重要ポイント③：ip route コマンドでルーティングテーブルを管理する。デフォルトゲートウェイと静的ルートの設定方法を理解する</strong>
+</div>
+
+<div class="demo-box">
+  <h3>ルーティングの仕組み</h3>
+  <div class="route-visual">
+    <div class="route-box" style="background:#ebf8ff; border:2px solid #90cdf4; color:#2b4c7e;">
+      💻 ホスト<br>192.168.1.10/24
+    </div>
+    <div class="route-arrow">→</div>
+    <div class="route-box" style="background:#e9d8fd; border:2px solid #b794f4; color:#553c9a;">
+      🔀 ルーター<br>（デフォルト GW）<br>192.168.1.1
+    </div>
+    <div class="route-arrow">→</div>
+    <div class="route-box" style="background:#f0fff4; border:2px solid #68d391; color:#1a4731;">
+      🌐 インターネット<br>（0.0.0.0/0）
+    </div>
+  </div>
+
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># ルーティングテーブルを表示</span>
+$ <span class="cmd">ip</span> route show
+<span class="hl">default via 192.168.1.1 dev enp3s0 proto dhcp src 192.168.1.10 metric 100</span>
+<span class="out">192.168.1.0/24 dev enp3s0 proto kernel scope link src 192.168.1.10</span>
+<span class="out">172.16.0.0/16 via 192.168.1.254 dev enp3s0</span>
+
+<span class="comment"># デフォルトゲートウェイを設定</span>
+$ <span class="cmd">sudo ip</span> route add default via <span class="val">192.168.1.1</span>
+$ <span class="cmd">sudo ip</span> route add default via <span class="val">192.168.1.1</span> dev enp3s0
+
+<span class="comment"># デフォルトゲートウェイを削除</span>
+$ <span class="cmd">sudo ip</span> route del default
+
+<span class="comment"># 静的ルートを追加（172.16.0.0/16 → 192.168.1.254 経由）</span>
+$ <span class="cmd">sudo ip</span> route add <span class="val">172.16.0.0/16</span> via <span class="val">192.168.1.254</span>
+
+<span class="comment"># 静的ルートを削除</span>
+$ <span class="cmd">sudo ip</span> route del <span class="val">172.16.0.0/16</span>
+
+<span class="comment"># 特定の宛先への経路を確認</span>
+$ <span class="cmd">ip</span> route get <span class="val">8.8.8.8</span>
+<span class="out">8.8.8.8 via 192.168.1.1 dev enp3s0 src 192.168.1.10</span>
+
+<span class="comment"># 旧来の route コマンド（参考）</span>
+$ <span class="cmd">route</span> <span class="opt">-n</span>                                   <span class="comment"># ルーティングテーブル表示</span>
+$ <span class="cmd">sudo route</span> add default gw <span class="val">192.168.1.1</span>    <span class="comment"># デフォルトGW 設定</span>
+$ <span class="cmd">sudo route</span> add <span class="opt">-net</span> <span class="val">172.16.0.0/16</span> gw <span class="val">192.168.1.254</span>
+
+<span class="comment"># IP フォワーディングを有効化（ルーター設定）</span>
+$ <span class="cmd">sudo sysctl</span> <span class="opt">-w</span> <span class="val">net.ipv4.ip_forward=1</span>
+$ <span class="cmd">echo</span> <span class="val">"net.ipv4.ip_forward=1"</span> | <span class="cmd">sudo tee</span> <span class="opt">-a</span> /etc/sysctl.conf
+</pre>
+  </div>
+
+  <h3>ルーティング設定インタラクティブデモ</h3>
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#322659; margin:0 0 12px;">
+      シナリオを選択してルーティング設定コマンドを確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>シナリオ</label>
+      <select id="route-sel" onchange="showRouteScenario()">
+        <option value="">-- シナリオを選択 --</option>
+        <option value="default-gw">デフォルトゲートウェイを設定する</option>
+        <option value="static-route">特定ネットワークへの静的ルートを追加</option>
+        <option value="check-route">経路を確認する</option>
+        <option value="persistent">永続的なルート設定</option>
+      </select>
+    </div>
+    <div class="output-display" id="route-output" style="display:none;"></div>
+  </div>
+
+  <script>
+    const routeScenarios = {
+      'default-gw': {
+        color: '#90cdf4',
+        text:
+`# デフォルトゲートウェイの設定
+
+# 現在の設定を確認
+$ ip route show
+192.168.1.0/24 dev enp3s0 proto kernel scope link src 192.168.1.10
+# → デフォルトゲートウェイがない状態
+
+# デフォルトゲートウェイを追加
+$ sudo ip route add default via 192.168.1.1
+
+# 確認
+$ ip route show
+default via 192.168.1.1 dev enp3s0
+192.168.1.0/24 dev enp3s0 proto kernel scope link src 192.168.1.10
+
+# 疎通確認
+$ ping -c 3 8.8.8.8`
+      },
+      'static-route': {
+        color: '#68d391',
+        text:
+`# 特定ネットワークへの静的ルートを追加
+
+# 社内ネットワーク（10.0.0.0/8）へのルートを追加
+# ゲートウェイ：192.168.1.254
+$ sudo ip route add 10.0.0.0/8 via 192.168.1.254
+
+# 確認
+$ ip route show
+default via 192.168.1.1 dev enp3s0
+10.0.0.0/8 via 192.168.1.254 dev enp3s0
+192.168.1.0/24 dev enp3s0 proto kernel scope link
+
+# 特定ホストへのルートを追加
+$ sudo ip route add 10.1.2.3/32 via 192.168.1.254
+
+# ルートを削除
+$ sudo ip route del 10.0.0.0/8`
+      },
+      'check-route': {
+        color: '#b794f4',
+        text:
+`# 経路の確認方法
+
+# 特定の宛先への経路を確認
+$ ip route get 8.8.8.8
+8.8.8.8 via 192.168.1.1 dev enp3s0 src 192.168.1.10
+
+$ ip route get 10.1.2.3
+10.1.2.3 via 192.168.1.254 dev enp3s0 src 192.168.1.10
+
+# traceroute で実際の経路を確認
+$ traceroute 8.8.8.8
+ 1  192.168.1.1 (192.168.1.1)  1.234 ms
+ 2  10.0.0.1 (10.0.0.1)  5.678 ms
+ 3  ...
+
+# ルーティングテーブル全体を表示
+$ ip route show table all`
+      },
+      persistent: {
+        color: '#f6ad55',
+        text:
+`# 永続的なルート設定（再起動後も有効）
+
+## Debian / Ubuntu 系（/etc/network/interfaces）
+# /etc/network/interfaces に追記
+iface enp3s0 inet static
+    address 192.168.1.10
+    netmask 255.255.255.0
+    gateway 192.168.1.1
+    up ip route add 10.0.0.0/8 via 192.168.1.254
+
+## Netplan（Ubuntu 18.04以降）
+# /etc/netplan/01-netcfg.yaml
+network:
+  version: 2
+  ethernets:
+    enp3s0:
+      addresses: [192.168.1.10/24]
+      gateway4: 192.168.1.1
+      routes:
+        - to: 10.0.0.0/8
+          via: 192.168.1.254
+
+$ sudo netplan apply
+
+## RHEL / CentOS 系
+# /etc/sysconfig/network-scripts/route-enp3s0
+10.0.0.0/8 via 192.168.1.254`
+      }
+    };
+
+    function showRouteScenario() {
+      const key = document.getElementById('route-sel').value;
+      const el  = document.getElementById('route-output');
+      if (!key) { el.style.display='none'; return; }
+      const d = routeScenarios[key];
+      el.style.display = 'block';
+      el.style.color   = d.color;
+      el.textContent   = d.text;
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 5：無線ネットワークの設定 -->
+<!-- ============================================================ -->
+<h2 id="wireless">⑤ 無線ネットワークの設定</h2>
+
+<div class="note">
+  <strong>重要ポイント④：無線 LAN の設定は iw（新）または iwconfig（旧）コマンドで行う。WPA/WPA2 の認証には wpa_supplicant を使用する</strong>
+</div>
+
+<div class="demo-box">
+  <h3>無線 LAN の管理コマンド</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment">## iw コマンド（現代の標準）</span>
+
+<span class="comment"># 無線インターフェースの一覧表示</span>
+$ <span class="cmd">iw</span> dev
+<span class="out">phy#0</span>
+<span class="out">        Interface wlp2s0</span>
+<span class="out">                ifindex 3</span>
+<span class="out">                wdev 0x1</span>
+<span class="out">                addr aa:bb:cc:dd:ee:ff</span>
+<span class="out">                type managed</span>
+
+<span class="comment"># 無線インターフェースの詳細情報</span>
+$ <span class="cmd">iw</span> dev wlp2s0 info
+
+<span class="comment"># 周辺の AP をスキャン</span>
+$ <span class="cmd">sudo iw</span> dev wlp2s0 scan | <span class="cmd">grep</span> <span class="val">SSID</span>
+<span class="out">        SSID: MyHomeNetwork</span>
+<span class="out">        SSID: NeighborNetwork</span>
+
+<span class="comment"># 接続状態を確認</span>
+$ <span class="cmd">iw</span> dev wlp2s0 link
+<span class="out">Connected to aa:bb:cc:11:22:33 (on wlp2s0)</span>
+<span class="out">        SSID: MyHomeNetwork</span>
+<span class="out">        freq: 5180</span>
+<span class="out">        RX: 1234567 bytes (9876 packets)</span>
+<span class="out">        TX: 7654321 bytes (6543 packets)</span>
+<span class="out">        signal: -45 dBm</span>
+<span class="out">        tx bitrate: 300.0 MBit/s MCS 15 40MHz</span>
+
+<span class="comment">## iwconfig コマンド（旧来）</span>
+$ <span class="cmd">iwconfig</span>                          <span class="comment"># 全無線インターフェース表示</span>
+$ <span class="cmd">iwconfig</span> wlp2s0                   <span class="comment"># 特定インターフェースの情報</span>
+$ <span class="cmd">sudo iwconfig</span> wlp2s0 essid <span class="val">"MySSID"</span>  <span class="comment"># SSID を設定</span>
+$ <span class="cmd">sudo iwconfig</span> wlp2s0 key <span class="val">s:password</span>  <span class="comment"># WEP キーを設定（非推奨）</span>
+
+<span class="comment">## iwlist コマンド（旧来）</span>
+$ <span class="cmd">sudo iwlist</span> wlp2s0 scan           <span class="comment"># AP をスキャン</span>
+$ <span class="cmd">iwlist</span> wlp2s0 frequency           <span class="comment"># 利用可能な周波数を表示</span>
+</pre>
+  </div>
+
+  <h3>WPA/WPA2 接続（wpa_supplicant）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># wpa_supplicant のインストール</span>
+$ <span class="cmd">sudo apt install</span> wpasupplicant
+
+<span class="comment"># /etc/wpa_supplicant/wpa_supplicant.conf の設定</span>
+$ <span class="cmd">sudo vi</span> /etc/wpa_supplicant/wpa_supplicant.conf
+<span class="hdr">ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev</span>
+<span class="hdr">update_config=1</span>
+<span class="hdr">country=JP</span>
+<span class="hdr"></span>
+<span class="hdr">network={</span>
+<span class="hdr">    ssid="MyHomeNetwork"</span>
+<span class="hdr">    psk="mypassword"</span>
+<span class="hdr">    key_mgmt=WPA-PSK</span>
+<span class="hdr">}</span>
+
+<span class="comment"># パスフレーズをハッシュ化して設定（推奨）</span>
+$ <span class="cmd">wpa_passphrase</span> <span class="val">"MyHomeNetwork"</span> <span class="val">"mypassword"</span>
+<span class="out">network={</span>
+<span class="out">        ssid="MyHomeNetwork"</span>
+<span class="out">        #psk="mypassword"</span>
+<span class="hl">        psk=a1b2c3d4e5f6...（ハッシュ化されたパスフレーズ）</span>
+<span class="out">}</span>
+
+<span class="comment"># wpa_supplicant を起動</span>
+$ <span class="cmd">sudo wpa_supplicant</span> <span class="opt">-B</span> <span class="opt">-i</span> wlp2s0 <span class="opt">-c</span> /etc/wpa_supplicant/wpa_supplicant.conf
+<span class="comment"># -B：バックグラウンドで実行</span>
+
+<span class="comment"># DHCP で IP アドレスを取得</span>
+$ <span class="cmd">sudo dhclient</span> wlp2s0
+
+<span class="comment"># NetworkManager を使用する場合（現代の標準）</span>
+$ <span class="cmd">nmcli</span> dev wifi list                          <span class="comment"># AP 一覧</span>
+$ <span class="cmd">nmcli</span> dev wifi connect <span class="val">"MyHomeNetwork"</span> password <span class="val">"mypassword"</span>
+$ <span class="cmd">nmcli</span> connection show                        <span class="comment"># 接続一覧</span>
+</pre>
+  </div>
+
+  <h3>無線 LAN 関連コマンド一覧</h3>
+  <table class="ref-table">
+    <thead><tr><th>コマンド</th><th>説明</th><th>備考</th></tr></thead>
+    <tbody>
+      <tr><td><code>iw dev</code></td><td>無線インターフェースの一覧</td><td>推奨（新）</td></tr>
+      <tr><td><code>iw dev wlp2s0 scan</code></td><td>周辺 AP のスキャン</td><td>推奨（新）</td></tr>
+      <tr><td><code>iw dev wlp2s0 link</code></td><td>接続状態の確認</td><td>推奨（新）</td></tr>
+      <tr><td><code>iwconfig</code></td><td>無線インターフェースの情報表示・設定</td><td>旧来（非推奨）</td></tr>
+      <tr><td><code>iwlist scan</code></td><td>AP のスキャン</td><td>旧来（非推奨）</td></tr>
+      <tr><td><code>wpa_supplicant</code></td><td>WPA/WPA2 認証デーモン</td><td>設定ファイル必要</td></tr>
+      <tr><td><code>wpa_passphrase</code></td><td>WPA パスフレーズをハッシュ化</td><td>設定ファイル生成</td></tr>
+      <tr><td><code>nmcli</code></td><td>NetworkManager のコマンドライン</td><td>現代の標準</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- まとめ表 -->
+<!-- ============================================================ -->
+<h2>📌 まとめ一覧</h2>
+<div class="demo-box">
+  <table class="ref-table">
+    <thead><tr><th>カテゴリ</th><th>コマンド</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td colspan="3" style="background:#e9d8fd; color:#322659; font-weight:bold; font-size:0.88em;">▼ インターフェース管理</td></tr>
+      <tr><td>インターフェース一覧</td><td><code>ip link show</code></td><td>ネットワークインターフェースの一覧と状態</td></tr>
+      <tr><td>IP アドレス表示</td><td><code>ip addr show</code> / <code>ip a</code></td><td>IP アドレスの一覧</td></tr>
+      <tr><td>IP アドレス設定</td><td><code>ip addr add 192.168.1.10/24 dev enp3s0</code></td><td>IP アドレスを設定</td></tr>
+      <tr><td colspan="3" style="background:#e9d8fd; color:#322659; font-weight:bold; font-size:0.88em;">▼ ARP</td></tr>
+      <tr><td>ARP テーブル表示</td><td><code>ip neigh show</code></td><td>ARP テーブルを表示</td></tr>
+      <tr><td>ARP エントリ追加</td><td><code>ip neigh add 192.168.1.50 lladdr aa:bb:cc:00:11:22 dev enp3s0</code></td><td>静的 ARP エントリを追加</td></tr>
+      <tr><td colspan="3" style="background:#e9d8fd; color:#322659; font-weight:bold; font-size:0.88em;">▼ ネットワーク診断</td></tr>
+      <tr><td>疎通確認</td><td><code>ping -c 4 ホスト</code></td><td>ICMP で疎通確認</td></tr>
+      <tr><td>経路確認</td><td><code>traceroute ホスト</code></td><td>パケットの経路を表示</td></tr>
+      <tr><td>パケットキャプチャ</td><td><code>tcpdump -i enp3s0 -n port 80</code></td><td>パケットをキャプチャ</td></tr>
+      <tr><td>ポート確認</td><td><code>ss -tlnp</code></td><td>LISTEN 中のポートを表示</td></tr>
+      <tr><td>接続テスト</td><td><code>nc -zv ホスト ポート</code></td><td>TCP 接続テスト</td></tr>
+      <tr><td colspan="3" style="background:#e9d8fd; color:#322659; font-weight:bold; font-size:0.88em;">▼ ルーティング</td></tr>
+      <tr><td>ルーティングテーブル</td><td><code>ip route show</code></td><td>ルーティングテーブルを表示</td></tr>
+      <tr><td>デフォルト GW 設定</td><td><code>ip route add default via 192.168.1.1</code></td><td>デフォルトゲートウェイを設定</td></tr>
+      <tr><td>静的ルート追加</td><td><code>ip route add 10.0.0.0/8 via 192.168.1.254</code></td><td>静的ルートを追加</td></tr>
+      <tr><td colspan="3" style="background:#e9d8fd; color:#322659; font-weight:bold; font-size:0.88em;">▼ 無線 LAN</td></tr>
+      <tr><td>AP スキャン</td><td><code>iw dev wlp2s0 scan</code></td><td>周辺の AP を検索</td></tr>
+      <tr><td>接続状態確認</td><td><code>iw dev wlp2s0 link</code></td><td>無線 LAN の接続状態</td></tr>
+      <tr><td>WPA 接続</td><td><code>wpa_supplicant -B -i wlp2s0 -c /etc/wpa_supplicant/wpa_supplicant.conf</code></td><td>WPA/WPA2 で接続</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 穴埋め問題</h3>
+    <p>以下の説明に合うコマンドを入力してください。</p>
+    <label>① ネットワークインターフェースの IP アドレスを表示するコマンド（短縮形）：</label>
+    <input type="text" id="q1a" placeholder="ip x">
+    <label>② LISTEN 中の TCP ポートとプロセス名を表示するコマンド（ss を使用）：</label>
+    <input type="text" id="q1b" placeholder="ss -xxxx">
+    <label>③ enp3s0 インターフェースの HTTP トラフィックをキャプチャするコマンド：</label>
+    <input type="text" id="q1c" placeholder="tcpdump -i enp3s0 ...">
+    <label>④ デフォルトゲートウェイ（192.168.1.1）を設定するコマンド：</label>
+    <input type="text" id="q1d" placeholder="ip route add ...">
+    <label>⑤ 無線 LAN インターフェース（wlp2s0）で周辺の AP をスキャンするコマンド：</label>
+    <input type="text" id="q1e" placeholder="iw dev wlp2s0 ...">
+    <br>
+    <button class="btn btn-purple" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const a = document.getElementById('q1a').value.trim().toLowerCase().replace(/\s+/g,'');
+        const b = document.getElementById('q1b').value.trim().toLowerCase().replace(/\s+/g,'');
+        const c = document.getElementById('q1c').value.trim().toLowerCase().replace(/\s+/g,'');
+        const d = document.getElementById('q1d').value.trim().toLowerCase().replace(/\s+/g,'');
+        const e = document.getElementById('q1e').value.trim().toLowerCase().replace(/\s+/g,'');
+        const r = document.getElementById('q1-result');
+        const ca = a === 'ipa' || a === 'ipaddrshow' || a === 'ipaddr';
+        const cb = b === 'ss-tlnp' || b === 'ss-ltnp';
+        const cc = c === 'tcpdump-ienp3s0port80' || c === 'tcpdump-ienp3s0-nport80';
+        const cd = d === 'iprouteadddefaultvia192.168.1.1';
+        const ce = e === 'iwdevwlp2s0scan';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ ip a（または ip addr show）'}　` +
+            `② ${cb?'✅':'❌ ss -tlnp'}　` +
+            `③ ${cc?'✅':'❌ tcpdump -i enp3s0 port 80'}　` +
+            `④ ${cd?'✅':'❌ ip route add default via 192.168.1.1'}　` +
+            `⑤ ${ce?'✅':'❌ iw dev wlp2s0 scan'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 選択問題</h3>
+    <p>
+      <code>netstat</code> コマンドの後継として推奨されるコマンドはどれですか？
+    </p>
+    <select id="q2">
+      <option value="">-- 選択してください --</option>
+      <option value="a">ifconfig</option>
+      <option value="b">ss</option>
+      <option value="c">nc</option>
+      <option value="d">traceroute</option>
+    </select>
+    <br>
+    <button class="btn btn-purple" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const v = document.getElementById('q2').value;
+        const r = document.getElementById('q2-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>旧コマンドと新コマンドの対応：</strong><br>' +
+            '・<code>netstat</code> → <code>ss</code>（Socket Statistics）<br>' +
+            '・<code>ifconfig</code> → <code>ip addr</code> / <code>ip link</code><br>' +
+            '・<code>route</code> → <code>ip route</code><br>' +
+            '・<code>arp</code> → <code>ip neigh</code><br><br>' +
+            '<code>ss</code> は <code>netstat</code> より高速で、より多くの情報を表示できます。<br>' +
+            '<code>ss -tlnp</code> で LISTEN 中のポートとプロセスを確認できます。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '<code>netstat</code> の後継は <code>ss</code>（Socket Statistics）です。<br>' +
+            '<code>ss -tlnp</code> で LISTEN 中の TCP ポートとプロセス名を確認できます。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① ARP は IP アドレスから MAC アドレスを解決するプロトコルである
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② <code>tcpdump -w capture.pcap</code> でキャプチャ結果をファイルに保存できる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ <code>ip route add default via 192.168.1.1</code> はデフォルトゲートウェイを設定する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ <code>traceroute</code> はデフォルトで ICMP を使用してパケットの経路を調べる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ WPA/WPA2 の無線 LAN 接続には <code>wpa_supplicant</code> を使用する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ <code>nc -l 8080</code> は TCP ポート 8080 で待ち受ける簡易サーバーを起動する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ <code>ip neigh show</code> は ARP テーブルを表示する <code>arp -n</code> の後継コマンドである
+    </label>
+    <br>
+    <button class="btn btn-purple" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：①②③⑤⑥⑦（a,b,c,e,f,g）
+        // ④ traceroute はデフォルトで UDP を使用（ICMP は -I オプション）
+        const correct = { a:true, b:true, c:true, d:false, e:true, f:true, g:true };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>①②③⑤⑥⑦<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・④ <code>traceroute</code> はデフォルトで<strong>UDP</strong>を使用します。<br>' +
+            '&nbsp;&nbsp;ICMP を使用するには <code>-I</code> オプションが必要です。<br>' +
+            '&nbsp;&nbsp;（<code>traceroute -I 8.8.8.8</code>）';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. シナリオ問題</h3>
+    <p>
+      サーバーの TCP ポート 443（HTTPS）が正しく LISTEN 状態になっているか確認したいと思います。
+      <strong>最も適切なコマンド</strong>はどれですか？
+    </p>
+    <select id="q4">
+      <option value="">-- 選択してください --</option>
+      <option value="a">ping localhost</option>
+      <option value="b">ss -tlnp | grep 443</option>
+      <option value="c">traceroute localhost</option>
+      <option value="d">tcpdump -i lo port 443</option>
+    </select>
+    <br>
+    <button class="btn btn-purple" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const v = document.getElementById('q4').value;
+        const r = document.getElementById('q4-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<code>ss -tlnp | grep 443</code> の各オプション：<br>' +
+            '・<code>-t</code>：TCP のみ表示<br>' +
+            '・<code>-l</code>：LISTEN 状態のみ表示<br>' +
+            '・<code>-n</code>：名前解決なし（数字で表示）<br>' +
+            '・<code>-p</code>：プロセス名・PID を表示<br><br>' +
+            '<strong>出力例：</strong><br>' +
+            '<code>LISTEN 0 128 0.0.0.0:443 0.0.0.0:* users:(("nginx",pid=1234))</code>';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br><br>' +
+            'ポートの LISTEN 状態を確認するには <code>ss -tlnp</code> が最適です。<br>' +
+            '・<code>ping</code>：疎通確認（ポート確認ではない）<br>' +
+            '・<code>traceroute</code>：経路確認（ポート確認ではない）<br>' +
+            '・<code>tcpdump</code>：パケットキャプチャ（LISTEN 状態の確認には不向き）';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-block">
+    <h3>Q5. 選択問題</h3>
+    <p>
+      <code>ip route get 8.8.8.8</code> コマンドの説明として正しいものはどれですか？
+    </p>
+    <select id="q5">
+      <option value="">-- 選択してください --</option>
+      <option value="a">8.8.8.8 に ping を送信して疎通確認する</option>
+      <option value="b">8.8.8.8 への経路（使用するインターフェースとゲートウェイ）を表示する</option>
+      <option value="c">8.8.8.8 のルーティングテーブルを取得する</option>
+      <option value="d">8.8.8.8 への静的ルートを追加する</option>
+    </select>
+    <br>
+    <button class="btn btn-purple" onclick="checkQ5()">答え合わせ</button>
+    <div class="result-msg" id="q5-result"></div>
+    <script>
+      function checkQ5() {
+        const v = document.getElementById('q5').value;
+        const r = document.getElementById('q5-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<code>ip route get 宛先IP</code> は指定した宛先への<br>' +
+            '<strong>実際に使用される経路</strong>（インターフェース・ゲートウェイ・送信元IP）を表示します。<br><br>' +
+            '<strong>出力例：</strong><br>' +
+            '<code>8.8.8.8 via 192.168.1.1 dev enp3s0 src 192.168.1.10</code><br><br>' +
+            '複数のルートがある場合に、実際にどのルートが使われるかを確認するのに便利です。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '<code>ip route get 8.8.8.8</code> は 8.8.8.8 への<br>' +
+            '<strong>経路（使用するインターフェースとゲートウェイ）</strong>を表示します。<br>' +
+            '出力例：<code>8.8.8.8 via 192.168.1.1 dev enp3s0 src 192.168.1.10</code>';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 「ネットワークの設定」の学習が完了したら記録しましょう！</p>
+  <button class="btn btn-done" onclick="markComplete()">✅ このセクションを完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch6', '50');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  if (parseInt(localStorage.getItem('lpic201_ch6') || '0') >= 50) {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="../05_storage/03_storage.html">← 第5章：記憶装置へのアクセス</a>
+  <a class="home" href="../index.html">🏠 目次へ</a>
+  <a class="next" href="02_dns.html">次へ：DNS の設定 →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
