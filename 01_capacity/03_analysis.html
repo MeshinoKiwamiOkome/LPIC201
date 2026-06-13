@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>リソース需要の分析と予測 ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em;
+      color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #9f7aea; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #553c9a, #9f7aea);
+      border-radius: 12px;
+      padding: 32px 32px 24px;
+      margin-bottom: 32px;
+      color: #fff;
+      box-shadow: 0 4px 18px rgba(159,122,234,0.25);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .chapter-header h1 {
+      margin: 0 0 10px;
+      font-size: 1.6em;
+      color: #fff;
+      border: none;
+      padding: 0;
+    }
+    .chapter-header p { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 0.76em;
+      font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 { color: #553c9a; margin-top: 48px; border-left: 5px solid #9f7aea; padding-left: 12px; }
+    h3 { color: #276749; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c;
+      color: #e2e8f0;
+      padding: 18px 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.88em;
+      line-height: 1.7;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute;
+      top: 8px; right: 8px;
+      background: #4a5568;
+      color: #e2e8f0;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 0.75em;
+      cursor: pointer;
+      font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s;
+      z-index: 1;
+    }
+    .copy-btn:hover { background: #9f7aea; }
+
+    /* ボックス */
+    .note {
+      background: #fff;
+      border: 1px dashed #b794f4;
+      border-radius: 6px;
+      padding: 14px 18px;
+      font-size: 0.93em;
+      color: #4a5568;
+      margin: 14px 0;
+    }
+    .note strong { color: #553c9a; }
+    .warn {
+      background: #fffaf0;
+      border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55;
+      border-radius: 6px;
+      padding: 14px 18px;
+      font-size: 0.93em;
+      color: #744210;
+      margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4;
+      border: 1px solid #68d391;
+      border-left: 5px solid #48bb78;
+      border-radius: 6px;
+      padding: 14px 18px;
+      font-size: 0.93em;
+      color: #276749;
+      margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff;
+      border: 1px solid #e9d8fd;
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin: 12px 0 28px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff;
+      border: 1px solid #e9d8fd;
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin-bottom: 32px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 {
+      margin: 0 0 12px;
+      font-size: 0.92em;
+      color: #553c9a;
+      border: none;
+      padding: 0;
+    }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #9f7aea; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #553c9a; font-weight: bold; }
+
+    /* ツールカード */
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      margin: 16px 0;
+    }
+    .tool-card {
+      background: #faf5ff;
+      border: 1px solid #e9d8fd;
+      border-radius: 10px;
+      padding: 18px 18px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .tool-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(159,122,234,0.18);
+      border-color: #9f7aea;
+    }
+    .tool-card .tool-name {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 1.05em;
+      font-weight: bold;
+      color: #553c9a;
+      margin-bottom: 6px;
+    }
+    .tool-card .tool-type {
+      display: inline-block;
+      background: #e9d8fd;
+      color: #553c9a;
+      border-radius: 10px;
+      padding: 1px 10px;
+      font-size: 0.72em;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .tool-card .tool-desc {
+      font-size: 0.84em;
+      color: #4a5568;
+      line-height: 1.6;
+    }
+
+    /* インタラクティブデモ */
+    .interactive-demo {
+      background: #faf5ff;
+      border: 1px solid #e9d8fd;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 14px 0;
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em;
+      font-weight: bold;
+      min-width: 180px;
+      color: #553c9a;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row input[type="range"] { flex: 1; min-width: 100px; accent-color: #9f7aea; }
+    .slider-row select {
+      border: 2px solid #e9d8fd;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 0.85em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #2d3748;
+      background: #fff;
+      cursor: pointer;
+      flex: 1;
+    }
+    .slider-row select:focus { border-color: #9f7aea; outline: none; }
+    .val-display {
+      min-width: 64px;
+      text-align: right;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85em;
+      color: #2d3748;
+    }
+    .output-display {
+      background: #1a202c;
+      color: #68d391;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em;
+      margin-top: 10px;
+      white-space: pre;
+      overflow-x: auto;
+      line-height: 1.7;
+    }
+
+    /* トレンドグラフ */
+    .trend-canvas-wrap {
+      background: #1a202c;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 12px 0;
+      overflow-x: auto;
+    }
+    canvas { display: block; max-width: 100%; }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse;
+      width: 100%;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0;
+      font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #e9d8fd;
+      padding: 10px 14px;
+      text-align: left;
+    }
+    table.ref-table thead tr { background: #553c9a; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #faf5ff; }
+
+    /* タブ */
+    .tab-wrap { margin: 14px 0; }
+    .tab-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: -1px; }
+    .tab-btn {
+      padding: 8px 18px;
+      border: 1px solid #e9d8fd;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      background: #edf2f7;
+      color: #553c9a;
+      font-size: 0.85em;
+      font-weight: bold;
+      font-family: 'Consolas', 'Monaco', monospace;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .tab-btn.active { background: #fff; border-bottom: 1px solid #fff; }
+    .tab-btn:hover:not(.active) { background: #e9d8fd; }
+    .tab-content {
+      display: none;
+      background: #fff;
+      border: 1px solid #e9d8fd;
+      border-radius: 0 6px 6px 6px;
+      padding: 18px 20px;
+    }
+    .tab-content.active { display: block; }
+
+    /* 問題解決フローカード */
+    .flow-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+      margin: 14px 0;
+    }
+    .flow-card {
+      background: #faf5ff;
+      border: 1px solid #e9d8fd;
+      border-radius: 8px;
+      padding: 16px 18px;
+    }
+    .flow-card .flow-title {
+      font-weight: bold;
+      color: #553c9a;
+      font-size: 0.95em;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .flow-card ol {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 0.84em;
+      color: #4a5568;
+      line-height: 1.9;
+    }
+
+    /* まとめ表 */
+    table.summary {
+      border-collapse: collapse;
+      width: 100%;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-top: 16px;
+      font-size: 0.88em;
+    }
+    table.summary th, table.summary td {
+      border: 1px solid #e9d8fd;
+      padding: 10px 14px;
+      text-align: left;
+    }
+    table.summary thead tr { background: #553c9a; color: #fff; }
+    table.summary tbody tr:nth-child(even) { background: #faf5ff; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0;
+      border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0;
+      padding: 24px 28px;
+      margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff;
+      border: 1px solid #fbd38d;
+      border-radius: 8px;
+      padding: 18px 22px;
+      margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.95em;
+      width: 100%;
+      max-width: 440px;
+      margin: 6px 0;
+      outline: none;
+      font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus,
+    .quiz-block textarea:focus { border-color: #f6ad55; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block;
+      padding: 9px 20px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.95em;
+      font-weight: bold;
+      transition: opacity 0.2s;
+      margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-purple { background: #9f7aea; color: #fff; }
+    .btn-green  { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-weight: bold;
+      display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #e9d8fd; color: #553c9a; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 48px;
+      padding-top: 20px;
+      border-top: 2px solid #e9d8fd;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 0.9em;
+      transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #9f7aea; color: #fff; }
+    .page-nav .home { background: #fff; color: #9f7aea; border: 2px solid #9f7aea; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4;
+      border: 2px solid #48bb78;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-top: 40px;
+      text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px;
+      padding-top: 16px;
+      border-top: 2px solid #e9d8fd;
+      font-size: 0.82em;
+      color: #a0aec0;
+      text-align: center;
+    }
+    footer a { color: #9f7aea; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .tool-grid { grid-template-columns: 1fr; }
+      .flow-grid { grid-template-columns: 1fr; }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select,
+      .quiz-block textarea { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+      .slider-row label { min-width: 130px; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  <a href="index.html">第1章：キャパシティプランニング</a> ›
+  リソース需要の分析と予測
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 01 › SECTION 03</div>
+  <h1>📈 リソース需要の分析と予測</h1>
+  <p>監視ツールを活用してリソースの使用傾向を分析し、将来の需要を予測する手法と、
+  リソース問題の具体的な解決策を学びます。</p>
+  <div class="badge-row">
+    <span class="badge">collectd</span>
+    <span class="badge">Nagios</span>
+    <span class="badge">MRTG</span>
+    <span class="badge">Cacti</span>
+    <span class="badge">Icinga2</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第1章のセクション</h2>
+  <ol>
+    <li><a href="index.html">キャパシティプランニングとは</a></li>
+    <li><a href="02_measurement.html">リソース使用率の測定とトラブルシューティング</a></li>
+    <li class="current"><a href="03_analysis.html">リソース需要の分析と予測</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：監視ツール概要 -->
+<!-- ============================================================ -->
+<h2 id="tools">① リソース監視ツール一覧</h2>
+
+<div class="note">
+  <strong>重要ポイント①：監視ツールは「データ収集・蓄積型」と「アラート・監視型」に大別される</strong><br>
+  <code>collectd</code>・<code>MRTG</code>・<code>Cacti</code> はデータ収集とグラフ化が主目的で、
+  <code>Nagios</code>・<code>Icinga2</code> はサービス監視とアラート通知が主目的です。
+  実際の運用では両方を組み合わせて使います。
+</div>
+
+<div class="demo-box">
+  <div class="tool-grid">
+    <div class="tool-card" onclick="showToolDetail('collectd')">
+      <div class="tool-name">collectd</div>
+      <div class="tool-type">データ収集・蓄積</div>
+      <div class="tool-desc">軽量なシステム統計収集デーモン。プラグイン方式で多様なリソースを収集しRRDtoolやInfluxDBに保存</div>
+    </div>
+    <div class="tool-card" onclick="showToolDetail('nagios')">
+      <div class="tool-name">Nagios</div>
+      <div class="tool-type">監視・アラート</div>
+      <div class="tool-desc">業界標準のネットワーク・サービス監視ツール。ホスト・サービスの死活監視とアラート通知が中心</div>
+    </div>
+    <div class="tool-card" onclick="showToolDetail('mrtg')">
+      <div class="tool-name">MRTG</div>
+      <div class="tool-type">グラフ生成</div>
+      <div class="tool-desc">Multi Router Traffic Grapher。SNMPでネットワーク機器のトラフィックを収集しHTMLグラフを生成</div>
+    </div>
+    <div class="tool-card" onclick="showToolDetail('cacti')">
+      <div class="tool-name">Cacti</div>
+      <div class="tool-type">グラフ生成・Web UI</div>
+      <div class="tool-desc">MRTGの後継的存在。RRDtoolをバックエンドにWebUIでグラフを管理。SNMPとカスタムスクリプト対応</div>
+    </div>
+    <div class="tool-card" onclick="showToolDetail('icinga2')">
+      <div class="tool-name">Icinga2</div>
+      <div class="tool-type">監視・アラート</div>
+      <div class="tool-desc">Nagiosのフォーク。分散監視・REST API・モダンなWebUI（Icinga Web 2）を備えた次世代監視ツール</div>
+    </div>
+  </div>
+
+  <!-- ツール詳細表示エリア -->
+  <div id="tool-detail" style="display:none; margin-top:16px; background:#faf5ff; border:1px solid #e9d8fd; border-left:5px solid #9f7aea; border-radius:0 8px 8px 0; padding:16px 20px;"></div>
+</div>
+
+<script>
+  const toolDetails = {
+    collectd: {
+      name: 'collectd',
+      color: '#553c9a',
+      sections: [
+        { title: '概要', body: 'C言語で書かれた軽量なデーモンで、システム統計を定期的に収集・保存します。プラグイン方式で機能を拡張でき、CPU・メモリ・ディスク・ネットワークなど多様なリソースに対応しています。' },
+        { title: '主な特徴', body: '・プラグインで機能拡張（100種類以上）<br>・収集間隔はデフォルト10秒（設定変更可）<br>・RRDtool・InfluxDB・Graphiteなど多様なバックエンドに対応<br>・設定ファイル：<code>/etc/collectd/collectd.conf</code>' },
+        { title: '主なプラグイン', body: '<code>cpu</code>・<code>memory</code>・<code>disk</code>・<code>interface</code>（ネットワーク）・<code>load</code>（ロードアベレージ）・<code>processes</code>・<code>rrdtool</code>（データ保存）' },
+        { title: 'インストール', body: '<code>sudo apt install collectd</code><br>設定後 <code>sudo systemctl enable --now collectd</code> で起動' },
+      ]
+    },
+    nagios: {
+      name: 'Nagios',
+      color: '#c05621',
+      sections: [
+        { title: '概要', body: '1999年から続く業界標準の監視ツール。ホスト・サービスの死活監視を行い、障害発生時にメール・SMSなどでアラートを通知します。' },
+        { title: '主な特徴', body: '・ホスト・サービスの死活監視<br>・プラグインによる監視項目の拡張（Nagios Plugins）<br>・スケジュールされたダウンタイム設定<br>・設定ファイル：<code>/etc/nagios3/</code>（Debian系）' },
+        { title: '監視の仕組み', body: '監視プラグインが終了コード（0=OK / 1=WARNING / 2=CRITICAL / 3=UNKNOWN）を返し、Nagiosがその結果に応じてアラートを発報します。' },
+        { title: '主な監視対象', body: 'ホストの死活（ping）・HTTP/HTTPS・SSH・FTP・DNS・SMTP・ディスク使用率・CPU負荷・プロセス数など' },
+      ]
+    },
+    mrtg: {
+      name: 'MRTG',
+      color: '#276749',
+      sections: [
+        { title: '概要', body: 'Multi Router Traffic Grapher。SNMPを使ってネットワーク機器のトラフィックデータを収集し、時系列グラフをHTMLで生成します。1990年代から使われている老舗ツールです。' },
+        { title: '主な特徴', body: '・SNMPでデータ収集（ルーター・スイッチ・サーバー）<br>・5分ごとにデータ収集しRRDファイルに保存<br>・日・週・月・年の4種類のグラフを自動生成<br>・設定ファイル：<code>/etc/mrtg/mrtg.cfg</code>' },
+        { title: '設定の生成', body: '<code>cfgmaker</code> コマンドで設定ファイルを自動生成できます。<br><code>cfgmaker public@router.example.com > /etc/mrtg/mrtg.cfg</code>' },
+        { title: '注意点', body: 'MRTGは主にネットワークトラフィックのグラフ化に特化しており、現在はより高機能なCactiに移行するケースが多いです。' },
+      ]
+    },
+    cacti: {
+      name: 'Cacti',
+      color: '#553c9a',
+      sections: [
+        { title: '概要', body: 'RRDtoolのフロントエンドとして機能するWebベースの監視ツール。MRTGより高機能で、SNMPとカスタムスクリプトによる柔軟なデータ収集が可能です。' },
+        { title: '主な特徴', body: '・WebUIでグラフ・デバイス・データソースを管理<br>・SNMPとカスタムスクリプトでデータ収集<br>・RRDtoolでデータ保存・グラフ生成<br>・テンプレートで監視設定を再利用可能<br>・Nagiosと連携してアラート通知も可能' },
+        { title: 'アーキテクチャ', body: 'ポーラー（データ収集）→ RRDtool（データ保存）→ WebUI（グラフ表示）の3層構造。収集間隔はデフォルト5分。' },
+        { title: 'インストール', body: '<code>sudo apt install cacti</code><br>Apache・MySQL・PHPが必要。インストール時にWebブラウザで初期設定を行います。' },
+      ]
+    },
+    icinga2: {
+      name: 'Icinga2',
+      color: '#9b2335',
+      sections: [
+        { title: '概要', body: 'Nagiosのフォークとして2009年に誕生。Nagiosの監視プラグインと互換性を保ちながら、分散監視・REST API・モダンなWebUIを追加した次世代監視ツールです。' },
+        { title: 'Nagiosとの主な違い', body: '・分散監視アーキテクチャ（マスター・サテライト・エージェント）<br>・REST APIによる設定・監視データの操作<br>・Icinga Web 2：モダンなWebUI<br>・設定言語がより柔軟（DSL形式）<br>・パフォーマンスデータをInfluxDB・Graphiteに送信可能' },
+        { title: '設定ファイル', body: '<code>/etc/icinga2/icinga2.conf</code>（メイン設定）<br><code>/etc/icinga2/conf.d/</code>（ホスト・サービス定義）' },
+        { title: 'インストール', body: '<code>sudo apt install icinga2 icingaweb2</code><br>Nagiosプラグインも併用：<code>sudo apt install monitoring-plugins</code>' },
+      ]
+    },
+  };
+
+  function showToolDetail(key) {
+    const d = toolDetails[key];
+    const el = document.getElementById('tool-detail');
+    el.style.display = 'block';
+    el.style.borderLeftColor = d.color;
+    let html = `<div style="font-size:1.05em; font-weight:bold; color:${d.color}; font-family:'Consolas','Monaco',monospace; margin-bottom:14px;">${d.name}</div>`;
+    html += '<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px;">';
+    d.sections.forEach(s => {
+      html += `<div style="background:#fff; border:1px solid #e9d8fd; border-radius:6px; padding:12px 14px;">
+        <div style="font-weight:bold; color:#553c9a; font-size:0.85em; margin-bottom:6px;">${s.title}</div>
+        <div style="font-size:0.82em; color:#4a5568; line-height:1.7;">${s.body}</div>
+      </div>`;
+    });
+    html += '</div>';
+    el.innerHTML = html;
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+</script>
+
+<!-- ツール比較表 -->
+<div class="demo-box">
+  <h3>監視ツール比較表</h3>
+  <table class="ref-table">
+    <thead>
+      <tr>
+        <th>ツール</th>
+        <th>主な用途</th>
+        <th>データ収集</th>
+        <th>グラフ化</th>
+        <th>アラート</th>
+        <th>WebUI</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>collectd</strong></td>
+        <td>統計収集・蓄積</td>
+        <td>✅ プラグイン</td>
+        <td>△ 別途必要</td>
+        <td>△ プラグイン</td>
+        <td>❌</td>
+      </tr>
+      <tr>
+        <td><strong>Nagios</strong></td>
+        <td>死活監視・アラート</td>
+        <td>✅ プラグイン</td>
+        <td>△ 別途必要</td>
+        <td>✅</td>
+        <td>✅ 基本的</td>
+      </tr>
+      <tr>
+        <td><strong>MRTG</strong></td>
+        <td>ネットワークグラフ</td>
+        <td>✅ SNMP</td>
+        <td>✅ HTML生成</td>
+        <td>❌</td>
+        <td>△ 静的HTML</td>
+      </tr>
+      <tr>
+        <td><strong>Cacti</strong></td>
+        <td>グラフ管理・可視化</td>
+        <td>✅ SNMP/スクリプト</td>
+        <td>✅ RRDtool</td>
+        <td>✅ プラグイン</td>
+        <td>✅ 高機能</td>
+      </tr>
+      <tr>
+        <td><strong>Icinga2</strong></td>
+        <td>総合監視・アラート</td>
+        <td>✅ プラグイン</td>
+        <td>✅ 連携</td>
+        <td>✅</td>
+        <td>✅ モダン</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：需要の分析と将来予測 -->
+<!-- ============================================================ -->
+<h2 id="analysis">② 需要の分析と将来予測</h2>
+
+<div class="note">
+  <strong>重要ポイント②：将来予測は「過去データのトレンド分析」＋「ビジネス計画との照合」で行う</strong><br>
+  単純な線形外挿だけでなく、季節性・イベント・ビジネス成長率を考慮した予測が重要です。
+</div>
+
+<div class="demo-box">
+  <h3>リソース別：分析と予測のポイント（タブで切り替え）</h3>
+  <div class="tab-wrap">
+    <div class="tab-btns">
+      <button class="tab-btn active" onclick="switchTab(this,'tab-cpu')">🖥️ CPU</button>
+      <button class="tab-btn" onclick="switchTab(this,'tab-mem')">🧠 メモリ</button>
+      <button class="tab-btn" onclick="switchTab(this,'tab-disk')">💾 ディスクI/O</button>
+      <button class="tab-btn" onclick="switchTab(this,'tab-net')">🌐 ネットワーク</button>
+    </div>
+
+    <!-- CPU -->
+    <div class="tab-content active" id="tab-cpu">
+      <h3 style="margin-top:0; color:#553c9a;">CPU 需要の分析と予測</h3>
+      <table class="ref-table">
+        <thead><tr><th>分析項目</th><th>確認方法</th><th>閾値の目安</th></tr></thead>
+        <tbody>
+          <tr><td>ロードアベレージ</td><td><code>sar -q</code> / <code>uptime</code></td><td>コア数の70%超で要注意・100%超で過負荷</td></tr>
+          <tr><td>CPU使用率（us）</td><td><code>sar -u</code> / <code>top</code></td><td>継続80%超で増強検討</td></tr>
+          <tr><td>iowait（wa）</td><td><code>sar -u</code> / <code>vmstat</code></td><td>継続20%超でディスクがボトルネック</td></tr>
+          <tr><td>コア別使用率</td><td><code>sar -P ALL</code> / <code>top</code>（1キー）</td><td>特定コアのみ高い場合はシングルスレッド処理の可能性</td></tr>
+        </tbody>
+      </table>
+      <div class="good">
+        ✅ <strong>CPU予測のポイント</strong><br>
+        ・<code>sar -u</code> の長期データでトレンドを確認（週・月単位）<br>
+        ・ピーク時のロードアベレージがコア数の<strong>70%を超えるようになったら</strong>増強計画を開始<br>
+        ・アプリケーションのユーザー数増加率とCPU使用率の相関を分析する
+      </div>
+    </div>
+
+    <!-- メモリ -->
+    <div class="tab-content" id="tab-mem">
+      <h3 style="margin-top:0; color:#553c9a;">メモリ 需要の分析と予測</h3>
+      <table class="ref-table">
+        <thead><tr><th>分析項目</th><th>確認方法</th><th>閾値の目安</th></tr></thead>
+        <tbody>
+          <tr><td>実メモリ使用量</td><td><code>sar -r</code> / <code>free -h</code></td><td>（total - buff/cache）が物理メモリの80%超で要注意</td></tr>
+          <tr><td>スワップ使用量</td><td><code>sar -S</code> / <code>vmstat</code></td><td>使用量が増加傾向にある場合は要増強</td></tr>
+          <tr><td>スワップイン・アウト</td><td><code>sar -W</code> / <code>vmstat</code>（si/so）</td><td>継続的に0以外で深刻なメモリ不足</td></tr>
+          <tr><td>OOMキラー発動</td><td><code>dmesg | grep -i oom</code></td><td>発動している場合は即時増強が必要</td></tr>
+        </tbody>
+      </table>
+      <div class="good">
+        ✅ <strong>メモリ予測のポイント</strong><br>
+        ・Linuxは空きメモリをキャッシュに積極利用するため、<code>free</code>の値だけで判断しない<br>
+        ・<strong>スワップの使用量が増加傾向</strong>にある場合は近い将来メモリ不足になるサイン<br>
+        ・アプリケーションのバージョンアップ・機能追加でメモリ使用量が増加することを考慮する
+      </div>
+    </div>
+
+    <!-- ディスクI/O -->
+    <div class="tab-content" id="tab-disk">
+      <h3 style="margin-top:0; color:#553c9a;">ディスクI/O 需要の分析と予測</h3>
+      <table class="ref-table">
+        <thead><tr><th>分析項目</th><th>確認方法</th><th>閾値の目安</th></tr></thead>
+        <tbody>
+          <tr><td>ディスク使用量</td><td><code>df -h</code> / <code>du -sh</code></td><td>使用率80%超で要注意・90%超で緊急対応</td></tr>
+          <tr><td>I/Oスループット</td><td><code>sar -b</code> / <code>sar -d</code></td><td>デバイスの最大スループットの70%超で要注意</td></tr>
+          <tr><td>I/O待ち時間</td><td><code>sar -d</code>（await）/ <code>iotop</code></td><td>HDDで20ms超・SSDで5ms超で要注意</td></tr>
+          <tr><td>inode使用率</td><td><code>df -i</code></td><td>80%超で要注意（小ファイル多数の場合に枯渇）</td></tr>
+        </tbody>
+      </table>
+      <div class="good">
+        ✅ <strong>ディスク予測のポイント</strong><br>
+        ・ログファイル・データベースの増加率から<strong>ディスク満杯になる時期</strong>を予測する<br>
+        ・<code>df -h</code> を定期的に記録し、使用量の増加トレンドをグラフ化する（Cacti/collectdが有効）<br>
+        ・inode枯渇はディスク空き容量があっても発生するため、<code>df -i</code> も定期確認する
+      </div>
+    </div>
+
+    <!-- ネットワーク -->
+    <div class="tab-content" id="tab-net">
+      <h3 style="margin-top:0; color:#553c9a;">ネットワーク 需要の分析と予測</h3>
+      <table class="ref-table">
+        <thead><tr><th>分析項目</th><th>確認方法</th><th>閾値の目安</th></tr></thead>
+        <tbody>
+          <tr><td>帯域使用率</td><td><code>sar -n DEV</code> / MRTG / Cacti</td><td>回線帯域の70%超で要注意</td></tr>
+          <tr><td>パケットエラー</td><td><code>sar -n EDEV</code> / <code>ip -s link</code></td><td>エラーが増加傾向にある場合はハード障害の可能性</td></tr>
+          <tr><td>TCP接続数</td><td><code>sar -n TCP</code> / <code>ss -s</code></td><td>アプリケーションの最大接続数を超えないよう管理</td></tr>
+          <tr><td>レイテンシ</td><td><code>ping</code> / <code>traceroute</code></td><td>平常時との乖離が大きい場合は経路障害の可能性</td></tr>
+        </tbody>
+      </table>
+      <div class="good">
+        ✅ <strong>ネットワーク予測のポイント</strong><br>
+        ・<strong>MRTGやCacti</strong>でトラフィックの長期トレンドをグラフ化するのが最も効果的<br>
+        ・ピーク時の帯域使用率が70%を超えたら回線増速・CDN導入・負荷分散を検討<br>
+        ・ユーザー数の増加とトラフィック量の相関を分析し、将来の帯域需要を予測する
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(btn, id) {
+      btn.closest('.tab-wrap').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.closest('.tab-wrap').querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(id).classList.add('active');
+    }
+  </script>
+</div>
+
+
+<!-- トレンドグラフ シミュレーター -->
+<h2 id="trend">③ トレンド分析シミュレーター</h2>
+
+<div class="demo-box">
+  <div class="note">
+    <strong>重要ポイント③：トレンド分析では「現在の増加率」から「リソース枯渇時期」を予測する</strong><br>
+    過去データの傾向を線形外挿し、閾値（80%など）に到達する時期を予測することで、
+    計画的な増強が可能になります。
+  </div>
+
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#553c9a; margin:0 0 12px;">
+      現在の使用量と月次増加率を設定して、リソース枯渇時期を予測してみましょう
+    </p>
+    <div class="slider-row">
+      <label>リソース種別</label>
+      <select id="trend-type" onchange="updateTrend()">
+        <option value="disk">💾 ディスク使用量</option>
+        <option value="mem">🧠 メモリ使用量</option>
+        <option value="cpu">🖥️ CPU使用率</option>
+        <option value="net">🌐 ネットワーク帯域</option>
+      </select>
+    </div>
+    <div class="slider-row">
+      <label>現在の使用率（%）</label>
+      <input type="range" id="trend-current" min="10" max="90" value="55" oninput="updateTrend()">
+      <span class="val-display" id="trend-current-val">55%</span>
+    </div>
+    <div class="slider-row">
+      <label>月次増加率（%ポイント）</label>
+      <input type="range" id="trend-rate" min="1" max="15" value="4" oninput="updateTrend()">
+      <span class="val-display" id="trend-rate-val">4%/月</span>
+    </div>
+    <div class="slider-row">
+      <label>警告閾値（%）</label>
+      <input type="range" id="trend-warn" min="60" max="95" value="80" oninput="updateTrend()">
+      <span class="val-display" id="trend-warn-val">80%</span>
+    </div>
+
+    <!-- グラフ -->
+    <div class="trend-canvas-wrap">
+      <canvas id="trend-canvas" width="860" height="220"></canvas>
+    </div>
+
+    <!-- 予測結果 -->
+    <div class="output-display" id="trend-output"></div>
+  </div>
+
+  <script>
+    function updateTrend() {
+      const type    = document.getElementById('trend-type').value;
+      const current = parseInt(document.getElementById('trend-current').value);
+      const rate    = parseInt(document.getElementById('trend-rate').value);
+      const warn    = parseInt(document.getElementById('trend-warn').value);
+
+      document.getElementById('trend-current-val').textContent = current + '%';
+      document.getElementById('trend-rate-val').textContent    = rate + '%/月';
+      document.getElementById('trend-warn-val').textContent    = warn + '%';
+
+      const typeLabels = { disk:'ディスク使用量', mem:'メモリ使用量', cpu:'CPU使用率', net:'ネットワーク帯域' };
+
+      // 月数計算
+      const months = 12;
+      const data = [];
+      for (let i = 0; i <= months; i++) {
+        data.push(Math.min(100, current + rate * i));
+      }
+
+      // 閾値到達月
+      let warnMonth = null;
+      let critMonth = null;
+      for (let i = 0; i <= months; i++) {
+        if (warnMonth === null && data[i] >= warn) warnMonth = i;
+        if (critMonth === null && data[i] >= 95)   critMonth = i;
+      }
+
+      // Canvas描画
+      const canvas = document.getElementById('trend-canvas');
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width, H = canvas.height;
+      const padL = 48, padR = 20, padT = 20, padB = 36;
+      const gW = W - padL - padR;
+      const gH = H - padT - padB;
+
+      ctx.clearRect(0, 0, W, H);
+
+      // 背景グリッド
+      ctx.strokeStyle = '#2d3748';
+      ctx.lineWidth = 1;
+      [0, 25, 50, 75, 100].forEach(v => {
+        const y = padT + gH - (v / 100) * gH;
+        ctx.beginPath();
+        ctx.moveTo(padL, y);
+        ctx.lineTo(padL + gW, y);
+        ctx.stroke();
+        ctx.fillStyle = '#718096';
+        ctx.font = '10px Consolas, Monaco, monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText(v + '%', padL - 6, y + 4);
+      });
+
+      // X軸ラベル
+      ctx.fillStyle = '#718096';
+      ctx.font = '10px Consolas, Monaco, monospace';
+      ctx.textAlign = 'center';
+      for (let i = 0; i <= months; i += 2) {
+        const x = padL + (i / months) * gW;
+        ctx.fillText(i === 0 ? '現在' : '+' + i + 'ヶ月', x, H - 6);
+      }
+
+      // 警告ライン
+      const warnY = padT + gH - (warn / 100) * gH;
+      ctx.strokeStyle = '#f6ad55';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(padL, warnY);
+      ctx.lineTo(padL + gW, warnY);
+      ctx.stroke();
+      ctx.fillStyle = '#f6ad55';
+      ctx.font = 'bold 10px Consolas, Monaco, monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('警告 ' + warn + '%', padL + 4, warnY - 4);
+
+      // 危険ライン
+      const critY = padT + gH - (95 / 100) * gH;
+      ctx.strokeStyle = '#fc8181';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(padL, critY);
+      ctx.lineTo(padL + gW, critY);
+      ctx.stroke();
+      ctx.fillStyle = '#fc8181';
+      ctx.fillText('危険 95%', padL + 4, critY - 4);
+
+      ctx.setLineDash([]);
+
+      // トレンドライン（グラデーション）
+      const grad = ctx.createLinearGradient(padL, 0, padL + gW, 0);
+      grad.addColorStop(0, '#9f7aea');
+      grad.addColorStop(0.5, '#f6ad55');
+      grad.addColorStop(1, '#fc8181');
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      data.forEach((v, i) => {
+        const x = padL + (i / months) * gW;
+        const y = padT + gH - (v / 100) * gH;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // データ点
+      data.forEach((v, i) => {
+        if (i % 2 !== 0) return;
+        const x = padL + (i / months) * gW;
+        const y = padT + gH - (v / 100) * gH;
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = v >= 95 ? '#fc8181' : v >= warn ? '#f6ad55' : '#9f7aea';
+        ctx.fill();
+      });
+
+      // 予測結果テキスト
+      const output = document.getElementById('trend-output');
+      let msg = `📊 ${typeLabels[type]} トレンド予測\n`;
+      msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      msg += `現在の使用率    : ${current}%\n`;
+      msg += `月次増加率      : +${rate}%/月\n`;
+      msg += `警告閾値        : ${warn}%\n`;
+      msg += `\n`;
+      if (warnMonth !== null) {
+        msg += `⚠️  警告閾値到達  : 約 ${warnMonth} ヶ月後\n`;
+      } else {
+        msg += `✅ 警告閾値      : 12ヶ月以内に到達しない\n`;
+      }
+      if (critMonth !== null) {
+        msg += `🔴 危険域到達    : 約 ${critMonth} ヶ月後\n`;
+        msg += `\n`;
+        msg += `👉 推奨アクション：${critMonth <= 3 ? '至急' : critMonth <= 6 ? '早急に' : '計画的に'}増強を検討してください`;
+      } else {
+        msg += `✅ 危険域        : 12ヶ月以内に到達しない\n`;
+        msg += `\n`;
+        msg += `👉 引き続き定期的なモニタリングを継続してください`;
+      }
+      output.textContent = msg;
+      output.style.color = critMonth !== null && critMonth <= 3 ? '#fc8181'
+                         : warnMonth !== null ? '#f6ad55' : '#68d391';
+    }
+    updateTrend();
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：リソース問題の解決 -->
+<!-- ============================================================ -->
+<h2 id="troubleshoot">④ リソース問題の解決</h2>
+
+<div class="note">
+  <strong>重要ポイント④：リソース問題の解決は「カーネル」「サービス」「メモリ・スワップ」の3つの観点から行う</strong><br>
+  ハードウェアを増強する前に、まずソフトウェアレベルのチューニングで解決できないかを検討します。
+</div>
+
+<div class="demo-box">
+  <div class="flow-grid">
+
+    <!-- カーネル -->
+    <div class="flow-card">
+      <div class="flow-title">
+        <span style="font-size:1.4em;">⚙️</span>
+        カーネルによる問題解決
+      </div>
+      <ol>
+        <li>カーネルパラメータの確認<br>
+          <code>sysctl -a</code></li>
+        <li>一時的な変更（即時反映）<br>
+          <code>sysctl -w vm.swappiness=10</code></li>
+        <li>永続的な変更<br>
+          <code>/etc/sysctl.conf</code> に記述<br>
+          <code>sysctl -p</code> で反映</li>
+        <li>カーネルバージョン確認<br>
+          <code>uname -r</code></li>
+      </ol>
+    </div>
+
+    <!-- サービス -->
+    <div class="flow-card">
+      <div class="flow-title">
+        <span style="font-size:1.4em;">🔧</span>
+        サービスによる問題解決
+      </div>
+      <ol>
+        <li>リソース消費プロセスの特定<br>
+          <code>top</code> / <code>ps aux --sort=-%cpu</code></li>
+        <li>不要なサービスの停止<br>
+          <code>systemctl stop サービス名</code></li>
+        <li>自動起動の無効化<br>
+          <code>systemctl disable サービス名</code></li>
+        <li>サービス設定のチューニング<br>
+          （ワーカー数・タイムアウト値など）</li>
+        <li>起動サービス一覧の確認<br>
+          <code>systemctl list-units --type=service</code></li>
+      </ol>
+    </div>
+
+    <!-- メモリとスワップ -->
+    <div class="flow-card">
+      <div class="flow-title">
+        <span style="font-size:1.4em;">🧠</span>
+        メモリとスワップの問題解決
+      </div>
+      <ol>
+        <li>メモリ使用量の確認<br>
+          <code>free -h</code> / <code>sar -r</code></li>
+        <li>スワップ使用状況の確認<br>
+          <code>swapon --show</code></li>
+        <li>swappinessの調整<br>
+          <code>sysctl vm.swappiness=10</code></li>
+        <li>スワップファイルの追加<br>
+          <code>fallocate -l 2G /swapfile</code><br>
+          <code>mkswap /swapfile</code><br>
+          <code>swapon /swapfile</code></li>
+        <li>OOMキラーの確認<br>
+          <code>dmesg | grep -i oom</code></li>
+      </ol>
+    </div>
+
+  </div>
+
+  <h3>カーネルパラメータ：主要なチューニング項目</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># ===== メモリ・スワップ関連 =====</span>
+
+<span class="comment"># vm.swappiness：スワップの積極度（0〜100、デフォルト60）</span>
+<span class="comment"># 低いほどスワップを使わずRAMを優先する</span>
+$ <span class="cmd">sysctl</span> <span class="opt">-w</span> <span class="val">vm.swappiness=10</span>
+
+<span class="comment"># vm.dirty_ratio：ダーティページの最大割合（デフォルト20）</span>
+<span class="comment"># ディスク書き込みのバッファリング量を制御</span>
+$ <span class="cmd">sysctl</span> <span class="opt">-w</span> <span class="val">vm.dirty_ratio=15</span>
+
+<span class="comment"># vm.overcommit_memory：メモリオーバーコミットの設定</span>
+<span class="comment"># 0=ヒューリスティック / 1=常に許可 / 2=制限あり</span>
+$ <span class="cmd">sysctl</span> <span class="opt">-w</span> <span class="val">vm.overcommit_memory=1</span>
+
+<span class="comment"># ===== ネットワーク関連 =====</span>
+
+<span class="comment"># net.core.somaxconn：接続キューの最大サイズ（デフォルト128）</span>
+$ <span class="cmd">sysctl</span> <span class="opt">-w</span> <span class="val">net.core.somaxconn=1024</span>
+
+<span class="comment"># net.ipv4.tcp_fin_timeout：TIME_WAIT状態のタイムアウト（秒）</span>
+$ <span class="cmd">sysctl</span> <span class="opt">-w</span> <span class="val">net.ipv4.tcp_fin_timeout=30</span>
+
+<span class="comment"># ===== ファイルシステム関連 =====</span>
+
+<span class="comment"># fs.file-max：システム全体のファイルディスクリプタ最大数</span>
+$ <span class="cmd">sysctl</span> <span class="opt">-w</span> <span class="val">fs.file-max=100000</span>
+
+<span class="comment"># 永続化（再起動後も有効）</span>
+$ <span class="cmd">echo</span> <span class="val">"vm.swappiness=10"</span> >> /etc/sysctl.conf
+$ <span class="cmd">sysctl</span> <span class="opt">-p</span>   <span class="comment"># /etc/sysctl.conf を即時反映</span>
+</pre>
+  </div>
+
+  <h3>スワップ領域の追加手順</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># 現在のスワップ状況を確認</span>
+$ <span class="cmd">swapon</span> <span class="opt">--show</span>
+<span class="hdr">NAME      TYPE SIZE USED PRIO</span>
+<span class="out">/dev/sda2 partition 2G 68M   -2</span>
+
+<span class="comment"># 2GBのスワップファイルを作成</span>
+$ <span class="cmd">sudo fallocate</span> <span class="opt">-l</span> <span class="val">2G</span> /swapfile
+$ <span class="cmd">sudo chmod</span> <span class="val">600</span> /swapfile        <span class="comment"># root のみ読み書き可能に</span>
+$ <span class="cmd">sudo mkswap</span> /swapfile           <span class="comment"># スワップ領域として初期化</span>
+$ <span class="cmd">sudo swapon</span> /swapfile           <span class="comment"># スワップを有効化</span>
+
+<span class="comment"># 確認</span>
+$ <span class="cmd">swapon</span> <span class="opt">--show</span>
+<span class="hdr">NAME      TYPE  SIZE USED PRIO</span>
+<span class="out">/dev/sda2 partition 2G  68M  -2</span>
+<span class="out">/swapfile file      2G   0B  -3</span>
+
+<span class="comment"># 永続化（/etc/fstabに追記）</span>
+$ <span class="cmd">echo</span> <span class="val">'/swapfile none swap sw 0 0'</span> | sudo tee -a /etc/fstab
+</pre>
+  </div>
+
+  <h3>vm.swappiness インタラクティブデモ</h3>
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#553c9a; margin:0 0 12px;">
+      vm.swappiness の値を変えて、メモリとスワップの使われ方の違いを確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>vm.swappiness</label>
+      <input type="range" id="swappiness" min="0" max="100" value="60" oninput="updateSwappiness()">
+      <span class="val-display" id="swappiness-val">60</span>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;">
+      <div>
+        <div style="font-size:0.8em; font-weight:bold; color:#553c9a; margin-bottom:6px; font-family:'Consolas','Monaco',monospace;">RAM 使用傾向</div>
+        <div style="background:#edf2f7; border-radius:6px; height:18px; overflow:hidden;">
+          <div id="ram-bar" style="height:100%; background:linear-gradient(90deg,#9f7aea,#553c9a); border-radius:6px; transition:width 0.4s;"></div>
+        </div>
+        <div id="ram-label" style="font-size:0.78em; color:#4a5568; margin-top:4px; font-family:'Consolas','Monaco',monospace;"></div>
+      </div>
+      <div>
+        <div style="font-size:0.8em; font-weight:bold; color:#c05621; margin-bottom:6px; font-family:'Consolas','Monaco',monospace;">スワップ 使用傾向</div>
+        <div style="background:#edf2f7; border-radius:6px; height:18px; overflow:hidden;">
+          <div id="swap-bar" style="height:100%; background:linear-gradient(90deg,#f6ad55,#c05621); border-radius:6px; transition:width 0.4s;"></div>
+        </div>
+        <div id="swap-label" style="font-size:0.78em; color:#4a5568; margin-top:4px; font-family:'Consolas','Monaco',monospace;"></div>
+      </div>
+    </div>
+    <div class="output-display" id="swappiness-output" style="margin-top:12px;"></div>
+  </div>
+
+  <script>
+    function updateSwappiness() {
+      const v = parseInt(document.getElementById('swappiness').value);
+      document.getElementById('swappiness-val').textContent = v;
+
+      // RAM使用傾向：swappinessが低いほどRAMを多く使う
+      const ramPct = Math.round(100 - v * 0.6);
+      const swapPct = Math.round(v * 0.6);
+      document.getElementById('ram-bar').style.width = ramPct + '%';
+      document.getElementById('swap-bar').style.width = swapPct + '%';
+      document.getElementById('ram-label').textContent = 'RAMを優先的に使用（' + ramPct + '%）';
+      document.getElementById('swap-label').textContent = 'スワップを使用する積極度（' + swapPct + '%）';
+
+      let msg, color;
+      if (v === 0) {
+        msg = 'vm.swappiness=0\n→ スワップを使わない（OOMが発生するまでRAMを使い続ける）\n→ データベースサーバーなど、レイテンシが重要なシステムに適する';
+        color = '#68d391';
+      } else if (v <= 10) {
+        msg = `vm.swappiness=${v}\n→ スワップをほとんど使わない（推奨設定）\n→ データベース・アプリケーションサーバーに適する`;
+        color = '#68d391';
+      } else if (v <= 40) {
+        msg = `vm.swappiness=${v}\n→ メモリに余裕があるうちはRAMを優先\n→ 一般的なサーバーに適する`;
+        color = '#90cdf4';
+      } else if (v === 60) {
+        msg = `vm.swappiness=${v}（デフォルト）\n→ バランスよくRAMとスワップを使用\n→ デスクトップ環境向けのデフォルト値`;
+        color = '#f6ad55';
+      } else if (v <= 80) {
+        msg = `vm.swappiness=${v}\n→ スワップを積極的に使用\n→ メモリが少ないシステムでの一時的な対処向け`;
+        color = '#f6ad55';
+      } else {
+        msg = `vm.swappiness=${v}\n→ 非常に積極的にスワップを使用\n→ パフォーマンス低下の原因になる可能性が高い`;
+        color = '#fc8181';
+      }
+      const out = document.getElementById('swappiness-output');
+      out.textContent = msg;
+      out.style.color = color;
+    }
+    updateSwappiness();
+  </script>
+
+  <div class="warn">
+    <strong>⚠️ 問題解決の優先順位</strong><br>
+    1. まず<strong>ソフトウェアチューニング</strong>（カーネルパラメータ・不要サービス停止）で改善を試みる<br>
+    2. 改善しない場合は<strong>アプリケーションの最適化</strong>（設定・コード改善）を検討<br>
+    3. それでも不足する場合は<strong>ハードウェア増強</strong>（スケールアップ・スケールアウト）を実施<br>
+    ハードウェア増強は最終手段であり、根本原因を特定せずに増強しても問題が再発します。
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- まとめ表 -->
+<!-- ============================================================ -->
+<h2>📌 まとめ一覧</h2>
+<table class="summary">
+  <thead>
+    <tr><th>カテゴリ</th><th>ツール・コマンド</th><th>主な用途</th><th>特徴</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td colspan="4" style="background:#f3e8ff; color:#553c9a; font-weight:bold; font-size:0.88em;">▼ 監視ツール</td>
+    </tr>
+    <tr>
+      <td>データ収集</td>
+      <td><code>collectd</code></td>
+      <td>システム統計の定期収集・蓄積</td>
+      <td>軽量・プラグイン方式・100種類以上のプラグイン</td>
+    </tr>
+    <tr>
+      <td>死活監視</td>
+      <td><code>Nagios</code></td>
+      <td>ホスト・サービスの死活監視・アラート</td>
+      <td>業界標準・プラグインで拡張・終了コードで判定</td>
+    </tr>
+    <tr>
+      <td>グラフ生成</td>
+      <td><code>MRTG</code></td>
+      <td>ネットワークトラフィックのグラフ化</td>
+      <td>SNMP使用・日週月年グラフ・静的HTML生成</td>
+    </tr>
+    <tr>
+      <td>グラフ管理</td>
+      <td><code>Cacti</code></td>
+      <td>RRDtoolベースのWebグラフ管理</td>
+      <td>SNMP/スクリプト対応・テンプレート機能・WebUI</td>
+    </tr>
+    <tr>
+      <td>総合監視</td>
+      <td><code>Icinga2</code></td>
+      <td>分散監視・REST API・アラート</td>
+      <td>Nagiosのフォーク・モダンWebUI・分散監視対応</td>
+    </tr>
+    <tr>
+      <td colspan="4" style="background:#f3e8ff; color:#553c9a; font-weight:bold; font-size:0.88em;">▼ 問題解決</td>
+    </tr>
+    <tr>
+      <td>カーネル</td>
+      <td><code>sysctl</code></td>
+      <td>カーネルパラメータの確認・変更</td>
+      <td><code>-w</code>で一時変更・<code>/etc/sysctl.conf</code>で永続化</td>
+    </tr>
+    <tr>
+      <td>スワップ</td>
+      <td><code>swapon / swapoff</code></td>
+      <td>スワップ領域の有効化・無効化</td>
+      <td><code>fallocate + mkswap</code>でスワップファイル作成</td>
+    </tr>
+    <tr>
+      <td>サービス</td>
+      <td><code>systemctl</code></td>
+      <td>サービスの停止・無効化</td>
+      <td>不要サービスの停止でリソースを解放</td>
+    </tr>
+    <tr>
+      <td>メモリ</td>
+      <td><code>vm.swappiness</code></td>
+      <td>スワップの積極度を調整</td>
+      <td>デフォルト60・サーバーでは10前後を推奨</td>
+    </tr>
+  </tbody>
+</table>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 選択問題</h3>
+    <p>
+      SNMPを使ってネットワーク機器のトラフィックを収集し、
+      日・週・月・年のグラフをHTMLで自動生成するツールはどれですか？
+    </p>
+    <select id="q1">
+      <option value="">-- 選択してください --</option>
+      <option value="a">collectd</option>
+      <option value="b">Nagios</option>
+      <option value="c">MRTG</option>
+      <option value="d">Icinga2</option>
+    </select>
+    <br>
+    <button class="btn btn-purple" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const v = document.getElementById('q1').value;
+        const r = document.getElementById('q1-result');
+        if (v === 'c') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br>' +
+            '<strong>MRTG（Multi Router Traffic Grapher）</strong><br>' +
+            '・SNMPでネットワーク機器のトラフィックを5分ごとに収集<br>' +
+            '・日・週・月・年の4種類のグラフをHTMLで自動生成<br>' +
+            '・設定ファイル：<code>/etc/mrtg/mrtg.cfg</code><br>' +
+            '・<code>cfgmaker</code>コマンドで設定ファイルを自動生成できる';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            'SNMPでネットワークトラフィックを収集し日・週・月・年グラフをHTMLで生成するのは <strong>MRTG</strong> です。<br>' +
+            'collectdはデータ収集デーモン、Nagios/Icinga2は死活監視ツールです。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 穴埋め問題</h3>
+    <p>以下の説明に合うコマンドまたは値を入力してください。</p>
+    <label>① カーネルパラメータを一覧表示するコマンド：</label>
+    <input type="text" id="q2a" placeholder="コマンド -オプション">
+    <label>② スワップの積極度を制御するカーネルパラメータ名：</label>
+    <input type="text" id="q2b" placeholder="vm.xxx">
+    <label>③ /etc/sysctl.conf の変更を即時反映させるコマンド：</label>
+    <input type="text" id="q2c" placeholder="コマンド -オプション">
+    <label>④ スワップファイルを作成した後、スワップ領域として初期化するコマンド：</label>
+    <input type="text" id="q2d" placeholder="コマンド">
+    <label>⑤ Nagiosの監視プラグインが「正常」を示す終了コード：</label>
+    <input type="text" id="q2e" placeholder="数字">
+    <br>
+    <button class="btn btn-purple" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const a = document.getElementById('q2a').value.trim().toLowerCase().replace(/\s+/g,'');
+        const b = document.getElementById('q2b').value.trim().toLowerCase().replace(/\s/g,'');
+        const c = document.getElementById('q2c').value.trim().toLowerCase().replace(/\s+/g,'');
+        const d = document.getElementById('q2d').value.trim().toLowerCase().replace(/\s/g,'');
+        const e = document.getElementById('q2e').value.trim();
+        const r = document.getElementById('q2-result');
+        const ca = a === 'sysctl-a' || a === 'sysctl--all';
+        const cb = b === 'vm.swappiness';
+        const cc = c === 'sysctl-p' || c === 'sysctl--load';
+        const cd = d === 'mkswap' || d === 'mkswap/swapfile';
+        const ce = e === '0';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ sysctl -a'}　` +
+            `② ${cb?'✅':'❌ vm.swappiness'}　` +
+            `③ ${cc?'✅':'❌ sysctl -p'}　` +
+            `④ ${cd?'✅':'❌ mkswap'}　` +
+            `⑤ ${ce?'✅':'❌ 0（0=OK / 1=WARNING / 2=CRITICAL / 3=UNKNOWN）'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① <code>collectd</code> はプラグイン方式で多様なリソースを収集できる軽量デーモンである
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② <code>Icinga2</code> は <code>Nagios</code> とは全く互換性がなく、プラグインも使えない
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ <code>vm.swappiness=0</code> に設定するとスワップを全く使わなくなる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ <code>Cacti</code> は <code>RRDtool</code> をバックエンドとして使用する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ <code>sysctl -w</code> による変更は再起動後も永続する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ スワップファイルを追加するには <code>fallocate</code> → <code>mkswap</code> → <code>swapon</code> の順で実行する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ <code>MRTG</code> の設定ファイルは <code>cfgmaker</code> コマンドで自動生成できる
+    </label>
+    <br>
+    <button class="btn btn-purple" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：①④⑥⑦（a,d,f,g）
+        // ② Icinga2はNagiosプラグインと互換性あり
+        // ③ vm.swappiness=0はスワップを使わないのではなく「極力使わない」設定
+        // ⑤ sysctl -w は一時的な変更。永続化は /etc/sysctl.conf + sysctl -p
+        const correct = { a:true, b:false, c:false, d:true, e:false, f:true, g:true };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>①④⑥⑦<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・② Icinga2はNagiosのフォークであり、<strong>Nagiosプラグインと互換性があります</strong><br>' +
+            '・③ <code>vm.swappiness=0</code> は「極力スワップを使わない」設定です。OOMが発生するまではスワップを使う場合があります<br>' +
+            '・⑤ <code>sysctl -w</code> は<strong>一時的な変更</strong>です。再起動後も有効にするには <code>/etc/sysctl.conf</code> に記述し <code>sysctl -p</code> で反映します';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. シナリオ問題</h3>
+    <p>
+      Webサーバーの応答が遅くなっており、<code>sar -r</code> で確認したところ
+      スワップ使用量が毎日増加しています。<code>free -h</code> では物理メモリの使用率が常に95%以上です。<br>
+      <strong>最初に行うべき対処として最も適切なもの</strong>はどれですか？
+    </p>
+    <select id="q4">
+      <option value="">-- 選択してください --</option>
+      <option value="a">vm.swappiness を 100 に変更してスワップをより積極的に使う</option>
+      <option value="b">不要なサービスを停止してメモリを解放し、vm.swappiness を下げる</option>
+      <option value="c">ディスクI/Oのチューニングを行う</option>
+      <option value="d">カーネルを最新版にアップデートする</option>
+    </select>
+    <br>
+    <button class="btn btn-purple" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const v = document.getElementById('q4').value;
+        const r = document.getElementById('q4-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '物理メモリが95%使用中でスワップが増加している → <strong>メモリ不足が根本原因</strong>です。<br><br>' +
+            '<strong>推奨手順：</strong><br>' +
+            '① <code>top</code> / <code>ps aux --sort=-%mem</code> でメモリを多く使うプロセスを特定<br>' +
+            '② <code>systemctl list-units --type=service</code> で不要なサービスを確認・停止<br>' +
+            '③ <code>sysctl -w vm.swappiness=10</code> でスワップの積極度を下げる<br>' +
+            '④ 改善しない場合はメモリ増設またはスワップファイルの追加を検討<br><br>' +
+            '⚠️ vm.swappiness を上げてもメモリ不足の根本解決にはなりません。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '物理メモリが95%使用中でスワップが増加している場合、根本原因は<strong>メモリ不足</strong>です。<br>' +
+            'まず不要なサービスを停止してメモリを解放し、<code>vm.swappiness</code>を下げることで<br>' +
+            'スワッピングの頻度を減らすのが最初の対処として適切です。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-block">
+    <h3>Q5. 記述問題</h3>
+    <p>
+      <code>Nagios</code> と <code>Icinga2</code> の主な違いを3点以上挙げてください。
+    </p>
+    <label>あなたの解答：</label>
+    <textarea id="q5" rows="5" placeholder="自由に記述してください..."></textarea>
+    <br>
+    <button class="btn btn-purple" onclick="checkQ5()">模範解答を見る</button>
+    <div class="result-msg" id="q5-result"></div>
+    <script>
+      function checkQ5() {
+        const r = document.getElementById('q5-result');
+        r.className = 'result-msg info';
+        r.innerHTML =
+          '📝 模範解答：<br><br>' +
+          '<table style="border-collapse:collapse; width:100%; font-size:0.88em;">' +
+          '<thead><tr style="background:#553c9a; color:#fff;">' +
+          '<th style="padding:8px; border:1px solid #e9d8fd;">比較項目</th>' +
+          '<th style="padding:8px; border:1px solid #e9d8fd;">Nagios</th>' +
+          '<th style="padding:8px; border:1px solid #e9d8fd;">Icinga2</th>' +
+          '</tr></thead><tbody>' +
+          '<tr><td style="padding:8px; border:1px solid #e9d8fd;">WebUI</td>' +
+          '<td style="padding:8px; border:1px solid #e9d8fd;">基本的なUI</td>' +
+          '<td style="padding:8px; border:1px solid #e9d8fd;">Icinga Web 2（モダンUI）</td></tr>' +
+          '<tr style="background:#faf5ff;"><td style="padding:8px; border:1px solid #e9d8fd;">分散監視</td>' +
+          '<td style="padding:8px; border:1px solid #e9d8fd;">限定的</td>' +
+          '<td style="padding:8px; border:1px solid #e9d8fd;">マスター・サテライト・エージェント構成</td></tr>' +
+          '<tr><td style="padding:8px; border:1px solid #e9d8fd;">REST API</td>' +
+          '<td style="padding:8px; border:1px solid #e9d8fd;">なし（標準）</td>' +
+          '<td style="padding:8px; border:1px solid #e9d8fd;">あり（設定・監視データの操作が可能）</td></tr>' +
+          '<tr style="background:#faf5ff;"><td style="padding:8px; border:1px solid #e9d8fd;">設定言語</td>' +
+          '<td style="padding:8px; border:1px solid #e9d8fd;">独自フォーマット</td>' +
+          '<td style="padding:8px; border:1px solid #e9d8fd;">より柔軟なDSL形式</td></tr>' +
+          '<tr><td style="padding:8px; border:1px solid #e9d8fd;">プラグイン互換性</td>' +
+          '<td style="padding:8px; border:1px solid #e9d8fd;">Nagios Plugins</td>' +
+          '<td style="padding:8px; border:1px solid #e9d8fd;">Nagios Pluginsと互換性あり</td></tr>' +
+          '</tbody></table>';
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 第1章「キャパシティプランニング」の全セクションが完了しました！</p>
+  <button class="btn btn-green" onclick="markComplete()">✅ 第1章を完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch1', '100');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  if (localStorage.getItem('lpic201_ch1') === '100') {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="02_measurement.html">← リソース使用率の測定</a>
+  <a class="home" href="../index.html">🏠 目次へ</a>
+  <a class="next" href="../02_kernel/index.html">次章へ：Linuxカーネル →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
