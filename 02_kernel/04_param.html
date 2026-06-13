@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>カーネルパラメータの変更 ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em; color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #567ebb; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #2b4c7e, #567ebb);
+      border-radius: 12px; padding: 32px 32px 24px;
+      margin-bottom: 32px; color: #fff;
+      box-shadow: 0 4px 18px rgba(86,126,187,0.3);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em; font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85; letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .chapter-header h1 { margin: 0 0 10px; font-size: 1.6em; color: #fff; border: none; padding: 0; }
+    .chapter-header p  { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px; padding: 3px 12px;
+      font-size: 0.76em; font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 { color: #2b4c7e; margin-top: 48px; border-left: 5px solid #567ebb; padding-left: 12px; }
+    h3 { color: #276749; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7; padding: 2px 6px;
+      border-radius: 4px; font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c; color: #e2e8f0;
+      padding: 18px 20px; border-radius: 8px;
+      overflow-x: auto; font-size: 0.88em;
+      line-height: 1.7; font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+    pre .err     { color: #fc8181; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #4a5568; color: #e2e8f0;
+      border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 0.75em;
+      cursor: pointer; font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s; z-index: 1;
+    }
+    .copy-btn:hover { background: #567ebb; }
+
+    /* ボックス */
+    .note {
+      background: #fff; border: 1px dashed #90cdf4;
+      border-radius: 6px; padding: 14px 18px;
+      font-size: 0.93em; color: #4a5568; margin: 14px 0;
+    }
+    .note strong { color: #2b4c7e; }
+    .warn {
+      background: #fffaf0; border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #744210; margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4; border: 1px solid #68d391;
+      border-left: 5px solid #48bb78; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #276749; margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff; border: 1px solid #bee3f8;
+      border-radius: 8px; padding: 20px 24px;
+      margin: 12px 0 28px; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff; border: 1px solid #bee3f8;
+      border-radius: 10px; padding: 18px 22px;
+      margin-bottom: 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 { margin: 0 0 12px; font-size: 0.92em; color: #2b4c7e; border: none; padding: 0; }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #567ebb; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #2b4c7e; font-weight: bold; }
+
+    /* /proc/sys ツリー */
+    .proc-tree {
+      background: #1a202c; border-radius: 8px;
+      padding: 16px 20px; font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85em; line-height: 2; margin: 14px 0;
+    }
+    .proc-tree .dir  { color: #90cdf4; cursor: pointer; }
+    .proc-tree .dir:hover { color: #bee3f8; text-decoration: underline; }
+    .proc-tree .file { color: #e2e8f0; }
+    .proc-tree .desc { color: #68d391; font-size: 0.85em; }
+
+    /* パラメータカード */
+    .param-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px; margin: 14px 0;
+    }
+    .param-card {
+      background: #ebf8ff; border: 1px solid #90cdf4;
+      border-radius: 8px; padding: 14px 16px;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .param-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(86,126,187,0.2);
+      border-color: #567ebb;
+    }
+    .param-card .param-name {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.88em; font-weight: bold;
+      color: #2b4c7e; margin-bottom: 4px;
+    }
+    .param-card .param-short {
+      font-size: 0.82em; color: #4a5568; line-height: 1.6;
+    }
+
+    /* インタラクティブデモ */
+    .interactive-demo {
+      background: #f7fafc; border: 1px solid #bee3f8;
+      border-radius: 8px; padding: 16px 20px; margin: 14px 0;
+    }
+    .slider-row {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em; font-weight: bold;
+      min-width: 200px; color: #2b4c7e;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row input[type="range"] { flex: 1; min-width: 100px; accent-color: #567ebb; }
+    .slider-row select {
+      border: 2px solid #bee3f8; border-radius: 6px;
+      padding: 6px 10px; font-size: 0.88em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #2d3748; background: #fff;
+      cursor: pointer; flex: 1;
+    }
+    .slider-row select:focus { border-color: #567ebb; outline: none; }
+    .val-display {
+      min-width: 60px; text-align: right;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85em; color: #2d3748;
+    }
+    .output-display {
+      background: #1a202c; color: #68d391;
+      border-radius: 6px; padding: 12px 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em; margin-top: 10px;
+      white-space: pre; overflow-x: auto; line-height: 1.7;
+    }
+
+    /* initramfs フロー */
+    .initramfs-flow {
+      display: flex; flex-direction: column;
+      gap: 4px; margin: 16px 0;
+    }
+    .if-row {
+      display: flex; align-items: stretch;
+      gap: 8px;
+    }
+    .if-step {
+      flex: 1; border-radius: 8px;
+      padding: 12px 16px; font-size: 0.85em;
+      font-weight: bold;
+    }
+    .if-step.bios   { background: #2d3748; color: #e2e8f0; border: 2px solid #4a5568; }
+    .if-step.boot   { background: #1a365d; color: #bee3f8; border: 2px solid #2b4c7e; }
+    .if-step.kernel { background: #2b4c7e; color: #fff;    border: 2px solid #567ebb; }
+    .if-step.initrd { background: #553c9a; color: #fff;    border: 2px solid #9f7aea; }
+    .if-step.root   { background: #276749; color: #fff;    border: 2px solid #48bb78; }
+    .if-step .if-title { font-size: 0.9em; margin-bottom: 4px; }
+    .if-step .if-desc  { font-size: 0.78em; font-weight: normal; opacity: 0.88; }
+    .if-arrow {
+      text-align: center; color: #718096;
+      font-size: 1.3em; line-height: 1.2;
+      padding: 2px 0;
+    }
+
+    /* タブ */
+    .tab-wrap { margin: 14px 0; }
+    .tab-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: -1px; }
+    .tab-btn {
+      padding: 8px 18px; border: 1px solid #bee3f8;
+      border-bottom: none; border-radius: 6px 6px 0 0;
+      background: #edf2f7; color: #2b4c7e;
+      font-size: 0.85em; font-weight: bold;
+      font-family: 'Consolas', 'Monaco', monospace;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .tab-btn.active { background: #fff; border-bottom: 1px solid #fff; }
+    .tab-btn:hover:not(.active) { background: #bee3f8; }
+    .tab-content {
+      display: none; background: #fff;
+      border: 1px solid #bee3f8;
+      border-radius: 0 6px 6px 6px; padding: 18px 20px;
+    }
+    .tab-content.active { display: block; }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse; width: 100%;
+      background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0; font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #bee3f8; padding: 10px 14px; text-align: left;
+    }
+    table.ref-table thead tr { background: #2b4c7e; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #ebf8ff; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0; border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0; padding: 24px 28px; margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 18px 22px; margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 8px 12px; font-size: 0.95em;
+      width: 100%; max-width: 440px; margin: 6px 0;
+      outline: none; font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus { border-color: #f6ad55; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block; padding: 9px 20px;
+      border-radius: 6px; border: none; cursor: pointer;
+      font-size: 0.95em; font-weight: bold;
+      transition: opacity 0.2s; margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-blue  { background: #567ebb; color: #fff; }
+    .btn-green { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px; padding: 10px 14px;
+      border-radius: 6px; font-weight: bold; display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #bee3f8; color: #2b4c7e; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 48px;
+      padding-top: 20px; border-top: 2px solid #bee3f8;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block; padding: 10px 20px;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.9em; transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #567ebb; color: #fff; }
+    .page-nav .home { background: #fff; color: #567ebb; border: 2px solid #567ebb; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4; border: 2px solid #48bb78;
+      border-radius: 10px; padding: 20px 24px;
+      margin-top: 40px; text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 2px solid #bee3f8;
+      font-size: 0.82em; color: #a0aec0; text-align: center;
+    }
+    footer a { color: #567ebb; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .param-grid { grid-template-columns: 1fr; }
+      .if-row { flex-direction: column; }
+      .if-arrow { transform: rotate(90deg); }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+      .slider-row label { min-width: 140px; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  <a href="index.html">第2章：Linuxカーネル</a> ›
+  カーネルパラメータの変更
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 02 › SECTION 04</div>
+  <h1>🔧 カーネルパラメータの変更</h1>
+  <p>sysctl を使ったカーネルパラメータの確認・変更・永続化の方法と、
+  初期RAMディスク（initramfs）の仕組みと管理方法を学びます。</p>
+  <div class="badge-row">
+    <span class="badge">sysctl</span>
+    <span class="badge">/proc/sys</span>
+    <span class="badge">/etc/sysctl.conf</span>
+    <span class="badge">initramfs</span>
+    <span class="badge">update-initramfs</span>
+    <span class="badge">dracut</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第2章のセクション</h2>
+  <ol>
+    <li><a href="index.html">カーネルの構成要素</a></li>
+    <li><a href="02_module.html">カーネルモジュールの管理</a></li>
+    <li><a href="03_compile.html">カーネルのコンパイル</a></li>
+    <li class="current"><a href="04_param.html">カーネルパラメータの変更</a></li>
+    <li><a href="05_manage.html">カーネルの管理と問題解決</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：カーネルパラメータとは -->
+<!-- ============================================================ -->
+<h2 id="what">① カーネルパラメータとは</h2>
+
+<div class="note">
+  <strong>重要ポイント①：カーネルパラメータとは、実行中のカーネルの動作を制御する設定値であり、/proc/sys/ 以下のファイルで管理される</strong><br>
+  再起動なしに動的に変更でき、<code>sysctl</code> コマンドまたは
+  <code>/proc/sys/</code> への直接書き込みで変更します。
+</div>
+
+<div class="demo-box">
+  <h3>/proc/sys/ のディレクトリ構造（クリックで詳細）</h3>
+  <div class="proc-tree">
+    <div>/proc/sys/</div>
+    <div>├── <span class="dir" onclick="showProcDir('kernel')">kernel/</span>
+      <span class="desc">  ← カーネル全般の設定</span></div>
+    <div>│   ├── <span class="file">hostname</span>
+      <span class="desc">  ← ホスト名</span></div>
+    <div>│   ├── <span class="file">pid_max</span>
+      <span class="desc">  ← プロセスIDの最大値</span></div>
+    <div>│   └── <span class="file">sysrq</span>
+      <span class="desc">  ← Magic SysRq キーの有効/無効</span></div>
+    <div>├── <span class="dir" onclick="showProcDir('vm')">vm/</span>
+      <span class="desc">  ← 仮想メモリ・スワップの設定</span></div>
+    <div>│   ├── <span class="file">swappiness</span>
+      <span class="desc">  ← スワップの積極度（0〜100）</span></div>
+    <div>│   ├── <span class="file">dirty_ratio</span>
+      <span class="desc">  ← ダーティページの最大割合</span></div>
+    <div>│   └── <span class="file">overcommit_memory</span>
+      <span class="desc">  ← メモリオーバーコミット設定</span></div>
+    <div>├── <span class="dir" onclick="showProcDir('net')">net/</span>
+      <span class="desc">  ← ネットワークスタックの設定</span></div>
+    <div>│   ├── <span class="file">ipv4/ip_forward</span>
+      <span class="desc">  ← IPフォワーディング（0/1）</span></div>
+    <div>│   ├── <span class="file">ipv4/tcp_fin_timeout</span>
+      <span class="desc">  ← TCP FINタイムアウト（秒）</span></div>
+    <div>│   └── <span class="file">core/somaxconn</span>
+      <span class="desc">  ← 接続キューの最大サイズ</span></div>
+    <div>└── <span class="dir" onclick="showProcDir('fs')">fs/</span>
+      <span class="desc">  ← ファイルシステムの設定</span></div>
+    <div>&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="file">file-max</span>
+      <span class="desc">  ← ファイルディスクリプタの最大数</span></div>
+    <div>&nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">inotify/max_user_watches</span>
+      <span class="desc">  ← inotify の最大監視数</span></div>
+  </div>
+
+  <!-- ディレクトリ詳細 -->
+  <div id="proc-dir-detail" style="display:none; margin-top:10px; background:#ebf8ff; border:1px solid #90cdf4; border-left:5px solid #567ebb; border-radius:0 8px 8px 0; padding:14px 18px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const procDirs = {
+      kernel: {
+        title: '/proc/sys/kernel/',
+        body: `カーネル全般の動作を制御するパラメータが格納されています。<br><br>
+          <strong>主なパラメータ：</strong><br>
+          ・<code>hostname</code>：システムのホスト名<br>
+          ・<code>pid_max</code>：プロセスIDの最大値（デフォルト：32768）<br>
+          ・<code>sysrq</code>：Magic SysRq キーの有効/無効（1=有効）<br>
+          ・<code>panic</code>：カーネルパニック後の自動再起動までの秒数（0=再起動しない）<br>
+          ・<code>dmesg_restrict</code>：dmesgへのアクセス制限（0=制限なし、1=root のみ）<br>
+          ・<code>ngroups_max</code>：ユーザーが所属できるグループの最大数`
+      },
+      vm: {
+        title: '/proc/sys/vm/',
+        body: `仮想メモリ・スワップ・ページキャッシュの動作を制御するパラメータです。<br><br>
+          <strong>主なパラメータ：</strong><br>
+          ・<code>swappiness</code>：スワップの積極度（0〜100、デフォルト60）<br>
+          ・<code>dirty_ratio</code>：ダーティページの最大割合（%）<br>
+          ・<code>dirty_background_ratio</code>：バックグラウンドで書き込みを開始する割合（%）<br>
+          ・<code>overcommit_memory</code>：メモリオーバーコミット設定（0/1/2）<br>
+          ・<code>drop_caches</code>：ページキャッシュの手動解放（1/2/3）<br>
+          ・<code>oom_kill_allocating_task</code>：OOM時に割り当て要求プロセスを優先的に終了`
+      },
+      net: {
+        title: '/proc/sys/net/',
+        body: `ネットワークスタック（TCP/IP・ソケット）の動作を制御するパラメータです。<br><br>
+          <strong>主なパラメータ：</strong><br>
+          ・<code>ipv4/ip_forward</code>：IPフォワーディング（0=無効、1=有効）※ルーター設定に必須<br>
+          ・<code>ipv4/tcp_fin_timeout</code>：TCP FINタイムアウト秒数（デフォルト60）<br>
+          ・<code>ipv4/tcp_syncookies</code>：SYN Flood攻撃対策（1=有効）<br>
+          ・<code>core/somaxconn</code>：接続キューの最大サイズ（デフォルト128）<br>
+          ・<code>ipv4/ip_local_port_range</code>：エフェメラルポートの範囲`
+      },
+      fs: {
+        title: '/proc/sys/fs/',
+        body: `ファイルシステム関連のカーネルパラメータです。<br><br>
+          <strong>主なパラメータ：</strong><br>
+          ・<code>file-max</code>：システム全体のファイルディスクリプタ最大数<br>
+          ・<code>file-nr</code>：現在の使用数・空き数・最大数（読み取り専用）<br>
+          ・<code>inotify/max_user_watches</code>：inotify の最大監視ファイル数<br>
+          ・<code>inotify/max_user_instances</code>：ユーザーごとの inotify インスタンス最大数<br>
+          ・<code>nr_open</code>：プロセスごとのファイルディスクリプタ最大数`
+      }
+    };
+
+    function showProcDir(key) {
+      const d = procDirs[key];
+      const el = document.getElementById('proc-dir-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display = 'none'; el.dataset.current = ''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.innerHTML = `<strong style="color:#2b4c7e; font-family:'Consolas','Monaco',monospace;">${d.title}</strong><br><br>${d.body}`;
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：sysctl コマンド -->
+<!-- ============================================================ -->
+<h2 id="sysctl">② sysctl コマンド</h2>
+
+<div class="note">
+  <strong>重要ポイント②：sysctl はカーネルパラメータを確認・変更するコマンド。-w で一時変更、/etc/sysctl.conf で永続化する</strong><br>
+  <code>/proc/sys/</code> への直接書き込みと同等ですが、
+  <code>sysctl</code> の方が安全で推奨されます。
+</div>
+
+<div class="demo-box">
+  <h3>基本的な使い方</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># すべてのパラメータを一覧表示</span>
+$ <span class="cmd">sysctl</span> <span class="opt">-a</span>
+<span class="out">kernel.hostname = teru-LetsNote</span>
+<span class="out">kernel.pid_max = 32768</span>
+<span class="out">vm.swappiness = 60</span>
+<span class="out">net.ipv4.ip_forward = 0</span>
+<span class="out">...</span>
+
+<span class="comment"># 特定のパラメータを確認</span>
+$ <span class="cmd">sysctl</span> <span class="val">vm.swappiness</span>
+<span class="out">vm.swappiness = 60</span>
+
+$ <span class="cmd">sysctl</span> <span class="val">net.ipv4.ip_forward</span>
+<span class="out">net.ipv4.ip_forward = 0</span>
+
+<span class="comment"># /proc/sys/ への直接アクセスでも確認できる</span>
+$ <span class="cmd">cat</span> /proc/sys/vm/swappiness
+<span class="out">60</span>
+</pre>
+  </div>
+
+  <h3>パラメータの変更（一時的）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># -w オプションで値を変更（再起動後は元に戻る）</span>
+$ <span class="cmd">sudo sysctl</span> <span class="opt">-w</span> <span class="val">vm.swappiness=10</span>
+<span class="out">vm.swappiness = 10</span>
+
+$ <span class="cmd">sudo sysctl</span> <span class="opt">-w</span> <span class="val">net.ipv4.ip_forward=1</span>
+<span class="out">net.ipv4.ip_forward = 1</span>
+
+$ <span class="cmd">sudo sysctl</span> <span class="opt">-w</span> <span class="val">net.core.somaxconn=1024</span>
+<span class="out">net.core.somaxconn = 1024</span>
+
+<span class="comment"># /proc/sys/ への直接書き込みでも変更できる（非推奨）</span>
+$ <span class="cmd">echo</span> <span class="val">10</span> | <span class="cmd">sudo tee</span> /proc/sys/vm/swappiness
+<span class="out">10</span>
+
+<span class="comment"># 変更後の確認</span>
+$ <span class="cmd">sysctl</span> <span class="val">vm.swappiness</span>
+<span class="out">vm.swappiness = 10</span>
+</pre>
+  </div>
+
+  <h3>パラメータの永続化（/etc/sysctl.conf）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /etc/sysctl.conf を編集して永続化</span>
+$ <span class="cmd">sudo vi</span> /etc/sysctl.conf
+
+<span class="comment"># 以下の内容を追記</span>
+<span class="hdr"># メモリ・スワップの設定</span>
+<span class="out">vm.swappiness = 10</span>
+<span class="out">vm.dirty_ratio = 15</span>
+
+<span class="hdr"># ネットワークの設定</span>
+<span class="out">net.ipv4.ip_forward = 1</span>
+<span class="out">net.core.somaxconn = 1024</span>
+<span class="out">net.ipv4.tcp_fin_timeout = 30</span>
+
+<span class="hdr"># ファイルシステムの設定</span>
+<span class="out">fs.file-max = 100000</span>
+
+<span class="comment"># /etc/sysctl.conf の設定を即時反映</span>
+$ <span class="cmd">sudo sysctl</span> <span class="opt">-p</span>
+<span class="out">vm.swappiness = 10</span>
+<span class="out">vm.dirty_ratio = 15</span>
+<span class="out">net.ipv4.ip_forward = 1</span>
+<span class="out">...</span>
+
+<span class="comment"># 特定のファイルを指定して反映</span>
+$ <span class="cmd">sudo sysctl</span> <span class="opt">-p</span> /etc/sysctl.d/99-custom.conf
+</pre>
+  </div>
+
+  <div class="good">
+    ✅ <strong>/etc/sysctl.d/ ディレクトリ（推奨）</strong><br>
+    現代のシステムでは <code>/etc/sysctl.conf</code> に直接書くより、
+    <code>/etc/sysctl.d/</code> 以下に <code>*.conf</code> ファイルを作成する方法が推奨されます。<br>
+    例：<code>/etc/sysctl.d/99-network.conf</code>・<code>/etc/sysctl.d/99-vm.conf</code><br>
+    <code>sysctl -p</code> または再起動時に自動的に読み込まれます。
+  </div>
+
+  <h3>sysctl コマンドのオプション一覧</h3>
+  <table class="ref-table">
+    <thead><tr><th>オプション</th><th>説明</th><th>例</th></tr></thead>
+    <tbody>
+      <tr><td><code>-a</code> / <code>--all</code></td><td>すべてのパラメータを表示</td><td><code>sysctl -a</code></td></tr>
+      <tr><td><code>-w</code></td><td>パラメータの値を変更（一時的）</td><td><code>sysctl -w vm.swappiness=10</code></td></tr>
+      <tr><td><code>-p [ファイル]</code></td><td>設定ファイルを読み込んで反映</td><td><code>sysctl -p</code>（デフォルトは /etc/sysctl.conf）</td></tr>
+      <tr><td><code>-n</code></td><td>パラメータ名を表示せず値のみ表示</td><td><code>sysctl -n vm.swappiness</code></td></tr>
+      <tr><td><code>-e</code></td><td>不明なパラメータのエラーを無視</td><td><code>sysctl -e -p</code></td></tr>
+      <tr><td><code>-r パターン</code></td><td>パターンに一致するパラメータを表示</td><td><code>sysctl -r 'net.ipv4'</code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：重要なカーネルパラメータ -->
+<!-- ============================================================ -->
+<h2 id="params">③ 重要なカーネルパラメータ（インタラクティブ）</h2>
+
+<div class="demo-box">
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#2b4c7e; margin:0 0 12px;">
+      カテゴリを選択してパラメータの詳細を確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>カテゴリ</label>
+      <select id="param-cat" onchange="showParamCat()">
+        <option value="">-- カテゴリを選択 --</option>
+        <option value="vm">🧠 vm（仮想メモリ・スワップ）</option>
+        <option value="net">🌐 net（ネットワーク）</option>
+        <option value="kernel">⚙️ kernel（カーネル全般）</option>
+        <option value="fs">💾 fs（ファイルシステム）</option>
+      </select>
+    </div>
+    <div id="param-cat-detail" style="display:none; margin-top:12px;"></div>
+  </div>
+
+  <script>
+    const paramCats = {
+      vm: {
+        title: '🧠 vm（仮想メモリ・スワップ）',
+        params: [
+          { name:'vm.swappiness',              default:'60',  range:'0〜100',  desc:'スワップの積極度。低いほどRAMを優先。サーバーでは10前後を推奨' },
+          { name:'vm.dirty_ratio',             default:'20',  range:'1〜100',  desc:'ダーティページがRAMの何%に達したら書き込みを強制するか' },
+          { name:'vm.dirty_background_ratio',  default:'10',  range:'1〜100',  desc:'バックグラウンドでの書き込みを開始するダーティページの割合' },
+          { name:'vm.overcommit_memory',       default:'0',   range:'0/1/2',   desc:'0=ヒューリスティック / 1=常に許可 / 2=制限あり' },
+          { name:'vm.drop_caches',             default:'0',   range:'1/2/3',   desc:'ページキャッシュを手動解放（1=ページキャッシュ、2=スラブ、3=両方）' },
+          { name:'vm.min_free_kbytes',         default:'可変', range:'正の整数', desc:'常に確保しておく最小空きメモリ量（KB）' },
+        ]
+      },
+      net: {
+        title: '🌐 net（ネットワーク）',
+        params: [
+          { name:'net.ipv4.ip_forward',         default:'0',   range:'0/1',     desc:'IPフォワーディング。ルーター・NATとして機能させる場合は1に設定' },
+          { name:'net.ipv4.tcp_fin_timeout',    default:'60',  range:'秒数',    desc:'TIME_WAIT状態のタイムアウト秒数。短くするとポート枯渇を防ぐ' },
+          { name:'net.ipv4.tcp_syncookies',     default:'1',   range:'0/1',     desc:'SYN Flood攻撃対策。通常は1（有効）のまま' },
+          { name:'net.core.somaxconn',          default:'128', range:'正の整数', desc:'接続キューの最大サイズ。高負荷Webサーバーでは1024〜4096に増やす' },
+          { name:'net.ipv4.ip_local_port_range',default:'32768 60999', range:'ポート範囲', desc:'エフェメラルポートの範囲。接続数が多い場合は範囲を広げる' },
+          { name:'net.ipv4.tcp_tw_reuse',       default:'0',   range:'0/1',     desc:'TIME_WAIT状態のソケットを再利用（1=有効）' },
+        ]
+      },
+      kernel: {
+        title: '⚙️ kernel（カーネル全般）',
+        params: [
+          { name:'kernel.pid_max',          default:'32768', range:'300〜4194304', desc:'プロセスIDの最大値。大量プロセスが必要な場合は増やす' },
+          { name:'kernel.sysrq',            default:'176',   range:'0〜511',       desc:'Magic SysRq キーの有効/無効（0=無効、1=すべて有効）' },
+          { name:'kernel.panic',            default:'0',     range:'秒数',         desc:'カーネルパニック後の自動再起動までの秒数（0=再起動しない）' },
+          { name:'kernel.dmesg_restrict',   default:'0',     range:'0/1',          desc:'dmesgへのアクセス制限（1=root のみ）' },
+          { name:'kernel.core_pattern',     default:'core',  range:'パス',         desc:'コアダンプファイルの出力パスとファイル名のパターン' },
+          { name:'kernel.ngroups_max',      default:'65536', range:'正の整数',     desc:'ユーザーが所属できるグループの最大数' },
+        ]
+      },
+      fs: {
+        title: '💾 fs（ファイルシステム）',
+        params: [
+          { name:'fs.file-max',                  default:'可変',  range:'正の整数', desc:'システム全体のファイルディスクリプタ最大数' },
+          { name:'fs.nr_open',                   default:'1048576', range:'正の整数', desc:'プロセスごとのファイルディスクリプタ最大数' },
+          { name:'fs.inotify.max_user_watches',  default:'8192',  range:'正の整数', desc:'inotify の最大監視ファイル数。VSCodeなどで不足することがある' },
+          { name:'fs.inotify.max_user_instances',default:'128',   range:'正の整数', desc:'ユーザーごとの inotify インスタンス最大数' },
+          { name:'fs.aio-max-nr',                default:'65536', range:'正の整数', desc:'非同期I/Oリクエストの最大数' },
+        ]
+      }
+    };
+
+    function showParamCat() {
+      const key = document.getElementById('param-cat').value;
+      const el  = document.getElementById('param-cat-detail');
+      if (!key) { el.style.display='none'; return; }
+      const d = paramCats[key];
+      let rows = d.params.map(p =>
+        `<tr>
+          <td style="font-family:'Consolas','Monaco',monospace; color:#2b4c7e; font-weight:bold; font-size:0.85em; white-space:nowrap;">${p.name}</td>
+          <td style="font-family:'Consolas','Monaco',monospace; font-size:0.85em; color:#276749;">${p.default}</td>
+          <td style="font-size:0.82em; color:#4a5568;">${p.range}</td>
+          <td style="font-size:0.82em; color:#2d3748;">${p.desc}</td>
+        </tr>`
+      ).join('');
+      el.style.display = 'block';
+      el.innerHTML = `
+        <div style="font-weight:bold; color:#2b4c7e; margin-bottom:10px;">${d.title}</div>
+        <table class="ref-table">
+          <thead><tr>
+            <th>パラメータ名</th>
+            <th>デフォルト</th>
+            <th>設定範囲</th>
+            <th>説明</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+  </script>
+
+  <h3>重要パラメータ：vm.swappiness インタラクティブデモ</h3>
+  <div class="interactive-demo">
+    <div class="slider-row">
+      <label>vm.swappiness</label>
+      <input type="range" id="swappiness" min="0" max="100" value="60" oninput="updateSwappiness()">
+      <span class="val-display" id="swappiness-val">60</span>
+    </div>
+    <div class="output-display" id="swappiness-output"></div>
+  </div>
+
+  <script>
+    function updateSwappiness() {
+      const v   = parseInt(document.getElementById('swappiness').value);
+      document.getElementById('swappiness-val').textContent = v;
+      const out = document.getElementById('swappiness-output');
+      let msg, color;
+      if (v === 0) {
+        msg = `vm.swappiness = 0\n→ スワップをほぼ使用しない（OOM発生までRAMを使い続ける）\n→ 高速レスポンスが必要なDBサーバー向け\n\n$ sudo sysctl -w vm.swappiness=0`;
+        color = '#68d391';
+      } else if (v <= 10) {
+        msg = `vm.swappiness = ${v}\n→ スワップをほとんど使わない（推奨設定）\n→ 一般的なLinuxサーバーに適する\n\n$ sudo sysctl -w vm.swappiness=${v}`;
+        color = '#68d391';
+      } else if (v <= 40) {
+        msg = `vm.swappiness = ${v}\n→ メモリに余裕があるうちはRAMを優先\n→ 一般的なサーバー・ワークステーション向け\n\n$ sudo sysctl -w vm.swappiness=${v}`;
+        color = '#90cdf4';
+      } else if (v === 60) {
+        msg = `vm.swappiness = ${v}（デフォルト値）\n→ バランスよくRAMとスワップを使用\n→ デスクトップ環境向けのデフォルト\n\n$ sudo sysctl -w vm.swappiness=${v}`;
+        color = '#f6ad55';
+      } else if (v <= 80) {
+        msg = `vm.swappiness = ${v}\n→ スワップを積極的に使用\n→ メモリが少ない環境での一時的な対処\n\n$ sudo sysctl -w vm.swappiness=${v}`;
+        color = '#f6ad55';
+      } else {
+        msg = `vm.swappiness = ${v}\n→ 非常に積極的にスワップを使用\n→ パフォーマンス低下の原因になる可能性が高い\n\n$ sudo sysctl -w vm.swappiness=${v}`;
+        color = '#fc8181';
+      }
+      out.textContent = msg;
+      out.style.color = color;
+    }
+    updateSwappiness();
+  </script>
+
+  <h3>IPフォワーディングの設定（ルーター設定の例）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># IPフォワーディングを有効化（一時的）</span>
+$ <span class="cmd">sudo sysctl</span> <span class="opt">-w</span> <span class="val">net.ipv4.ip_forward=1</span>
+<span class="out">net.ipv4.ip_forward = 1</span>
+
+<span class="comment"># 確認</span>
+$ <span class="cmd">cat</span> /proc/sys/net/ipv4/ip_forward
+<span class="out">1</span>
+
+<span class="comment"># 永続化（/etc/sysctl.conf に追記）</span>
+$ <span class="cmd">echo</span> <span class="val">"net.ipv4.ip_forward = 1"</span> | <span class="cmd">sudo tee</span> -a /etc/sysctl.conf
+$ <span class="cmd">sudo sysctl</span> <span class="opt">-p</span>
+
+<span class="comment"># または /etc/sysctl.d/ に専用ファイルを作成（推奨）</span>
+$ <span class="cmd">echo</span> <span class="val">"net.ipv4.ip_forward = 1"</span> | <span class="cmd">sudo tee</span> /etc/sysctl.d/99-ip-forward.conf
+$ <span class="cmd">sudo sysctl</span> <span class="opt">-p</span> /etc/sysctl.d/99-ip-forward.conf
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 4：初期RAMディスク（initramfs） -->
+<!-- ============================================================ -->
+<h2 id="initramfs">④ 初期RAMディスク（initramfs）</h2>
+
+<div class="note">
+  <strong>重要ポイント③：initramfs はカーネル起動直後に使用される一時的なルートファイルシステムで、本来のルートFSをマウントするために必要なツール・ドライバを提供する</strong><br>
+  LVM・RAID・暗号化ディスクなど、カーネル単体では扱えないストレージ構成に対応するために存在します。
+</div>
+
+<div class="demo-box">
+  <h3>システム起動フロー（initramfs の役割）</h3>
+  <div class="initramfs-flow">
+    <div class="if-row">
+      <div class="if-step bios">
+        <div class="if-title">① BIOS / UEFI</div>
+        <div class="if-desc">ハードウェアの初期化・ブートデバイスの選択</div>
+      </div>
+    </div>
+    <div class="if-arrow">↓</div>
+    <div class="if-row">
+      <div class="if-step boot">
+        <div class="if-title">② ブートローダ（GRUB）</div>
+        <div class="if-desc">vmlinuz と initrd.img を読み込んでメモリに展開</div>
+      </div>
+    </div>
+    <div class="if-arrow">↓</div>
+    <div class="if-row">
+      <div class="if-step kernel">
+        <div class="if-title">③ カーネル初期化</div>
+        <div class="if-desc">vmlinuz が自己展開・ハードウェア検出・基本初期化</div>
+      </div>
+    </div>
+    <div class="if-arrow">↓</div>
+    <div class="if-row">
+      <div class="if-step initrd">
+        <div class="if-title">④ initramfs の展開・実行</div>
+        <div class="if-desc">tmpfs 上に展開 → /init スクリプトが実行 → 必要なドライバをロード → 本来のルートFSをマウント</div>
+      </div>
+    </div>
+    <div class="if-arrow">↓</div>
+    <div class="if-row">
+      <div class="if-step root">
+        <div class="if-title">⑤ 本来のルートFS（/）へ切り替え</div>
+        <div class="if-desc">switch_root で本来の / に切り替え → /sbin/init（systemd）を実行</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>initramfs の内容を確認する</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># initramfs ファイルの確認</span>
+$ <span class="cmd">ls</span> <span class="opt">-lh</span> /boot/initrd.img-$(uname -r)
+<span class="out">-rw-r--r-- 1 root root 84M /boot/initrd.img-6.8.0-51-generic</span>
+
+<span class="comment"># initramfs の内容を一覧表示（lsinitramfs コマンド）</span>
+$ <span class="cmd">lsinitramfs</span> /boot/initrd.img-$(uname -r) | <span class="cmd">head</span> <span class="opt">-20</span>
+<span class="out">.</span>
+<span class="out">bin</span>
+<span class="out">bin/sh</span>
+<span class="out">etc</span>
+<span class="out">init</span>
+<span class="out">lib</span>
+<span class="out">lib/modules/6.8.0-51-generic/kernel/fs/ext4/ext4.ko.zst</span>
+<span class="out">sbin</span>
+<span class="out">sbin/modprobe</span>
+<span class="out">...</span>
+
+<span class="comment"># initramfs を手動で展開して内容を確認</span>
+$ <span class="cmd">mkdir</span> /tmp/initramfs-extract
+$ <span class="cmd">cd</span> /tmp/initramfs-extract
+$ <span class="cmd">zcat</span> /boot/initrd.img-$(uname -r) | <span class="cmd">cpio</span> <span class="opt">-idmv</span> 2>/dev/null | <span class="cmd">head</span>
+<span class="out">.</span>
+<span class="out">bin</span>
+<span class="out">etc</span>
+<span class="out">init</span>
+<span class="out">...</span>
+</pre>
+  </div>
+
+  <h3>initramfs の生成・更新（タブで切り替え）</h3>
+  <div class="tab-wrap">
+    <div class="tab-btns">
+      <button class="tab-btn active" onclick="switchTab(this,'tab-ubuntu')">Debian / Ubuntu</button>
+      <button class="tab-btn" onclick="switchTab(this,'tab-rhel')">RHEL / CentOS</button>
+      <button class="tab-btn" onclick="switchTab(this,'tab-dracut')">dracut（共通）</button>
+    </div>
+
+    <!-- Ubuntu -->
+    <div class="tab-content active" id="tab-ubuntu">
+      <h3 style="margin-top:0; color:#2b4c7e;">update-initramfs コマンド</h3>
+      <div class="pre-wrap">
+        <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># 現在のカーネルの initramfs を更新</span>
+$ <span class="cmd">sudo update-initramfs</span> <span class="opt">-u</span>
+<span class="out">update-initramfs: Generating /boot/initrd.img-6.8.0-51-generic</span>
+
+<span class="comment"># 特定バージョンの initramfs を新規作成</span>
+$ <span class="cmd">sudo update-initramfs</span> <span class="opt">-c</span> <span class="opt">-k</span> <span class="val">6.8.0</span>
+<span class="comment">#                       ↑-c：create（新規）  ↑-k：カーネルバージョン</span>
+
+<span class="comment"># すべてのカーネルの initramfs を更新</span>
+$ <span class="cmd">sudo update-initramfs</span> <span class="opt">-u</span> <span class="opt">-k</span> <span class="val">all</span>
+
+<span class="comment"># 特定バージョンの initramfs を削除</span>
+$ <span class="cmd">sudo update-initramfs</span> <span class="opt">-d</span> <span class="opt">-k</span> <span class="val">6.7.0</span>
+<span class="comment">#                       ↑-d：delete（削除）</span>
+
+<span class="comment"># 詳細表示付きで更新</span>
+$ <span class="cmd">sudo update-initramfs</span> <span class="opt">-u</span> <span class="opt">-v</span>
+</pre>
+      </div>
+      <table class="ref-table">
+        <thead><tr><th>オプション</th><th>説明</th></tr></thead>
+        <tbody>
+          <tr><td><code>-u</code></td><td>update：既存の initramfs を更新</td></tr>
+          <tr><td><code>-c</code></td><td>create：新規に initramfs を作成</td></tr>
+          <tr><td><code>-d</code></td><td>delete：initramfs を削除</td></tr>
+          <tr><td><code>-k バージョン</code></td><td>対象カーネルバージョンを指定（<code>all</code> で全バージョン）</td></tr>
+          <tr><td><code>-v</code></td><td>詳細表示（verbose）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- RHEL -->
+    <div class="tab-content" id="tab-rhel">
+      <h3 style="margin-top:0; color:#2b4c7e;">mkinitrd コマンド（旧来の方法）</h3>
+      <div class="pre-wrap">
+        <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># mkinitrd（RHEL/CentOS 6以前・旧来の方法）</span>
+$ <span class="cmd">sudo mkinitrd</span> /boot/initrd-6.8.0.img <span class="val">6.8.0</span>
+<span class="comment">#              ↑出力ファイルパス          ↑カーネルバージョン</span>
+
+<span class="comment"># 上書きする場合は --force オプションを付ける</span>
+$ <span class="cmd">sudo mkinitrd</span> <span class="opt">--force</span> /boot/initrd-6.8.0.img <span class="val">6.8.0</span>
+
+<span class="comment"># RHEL/CentOS 7以降は dracut が標準</span>
+$ <span class="cmd">sudo dracut</span> <span class="opt">--force</span> /boot/initramfs-6.8.0.img <span class="val">6.8.0</span>
+</pre>
+      </div>
+      <div class="warn">
+        <strong>⚠️ mkinitrd について</strong><br>
+        <code>mkinitrd</code> は RHEL/CentOS 6 以前で使われていた旧来のコマンドです。
+        現在の RHEL/CentOS 7 以降・Fedora では <code>dracut</code> が標準となっています。
+        LPIC-201 の試験では両方のコマンドが出題される可能性があります。
+      </div>
+    </div>
+
+    <!-- dracut -->
+    <div class="tab-content" id="tab-dracut">
+      <h3 style="margin-top:0; color:#2b4c7e;">dracut コマンド</h3>
+      <div class="pre-wrap">
+        <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># 現在のカーネルの initramfs を再生成（上書き）</span>
+$ <span class="cmd">sudo dracut</span> <span class="opt">--force</span>
+
+<span class="comment"># 特定バージョン向けに生成</span>
+$ <span class="cmd">sudo dracut</span> <span class="opt">--force</span> /boot/initramfs-6.8.0.img <span class="val">6.8.0</span>
+<span class="comment">#                      ↑出力ファイルパス              ↑カーネルバージョン</span>
+
+<span class="comment"># 詳細表示付きで生成</span>
+$ <span class="cmd">sudo dracut</span> <span class="opt">--force</span> <span class="opt">--verbose</span>
+
+<span class="comment"># initramfs の内容を確認（dracut の場合）</span>
+$ <span class="cmd">sudo dracut</span> <span class="opt">--list-modules</span>
+
+<span class="comment"># 特定モジュールを追加して生成</span>
+$ <span class="cmd">sudo dracut</span> <span class="opt">--add</span> <span class="val">lvm</span> <span class="opt">--force</span>
+</pre>
+      </div>
+      <table class="ref-table">
+        <thead><tr><th>オプション</th><th>説明</th></tr></thead>
+        <tbody>
+          <tr><td><code>--force</code></td><td>既存ファイルを上書き</td></tr>
+          <tr><td><code>--verbose</code></td><td>詳細表示</td></tr>
+          <tr><td><code>--list-modules</code></td><td>利用可能なモジュール一覧を表示</td></tr>
+          <tr><td><code>--add モジュール</code></td><td>特定のモジュールを追加</td></tr>
+          <tr><td><code>--omit モジュール</code></td><td>特定のモジュールを除外</td></tr>
+          <tr><td><code>--no-hostonly</code></td><td>汎用的な initramfs を生成（他のシステムでも使用可能）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(btn, id) {
+      btn.closest('.tab-wrap').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.closest('.tab-wrap').querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(id).classList.add('active');
+    }
+  </script>
+
+  <div class="good">
+    ✅ <strong>initramfs の更新が必要なタイミング</strong><br>
+    ・新しいカーネルをインストールしたとき<br>
+    ・<code>/etc/modprobe.d/</code> の設定を変更したとき<br>
+    ・ストレージ構成（LVM・RAID・暗号化）を変更したとき<br>
+    ・起動に必要なドライバを追加・変更したとき<br>
+    ・<code>make install</code> は自動的に initramfs を更新するため、通常は手動実行不要
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 5：カーネル起動パラメータ（GRUB） -->
+<!-- ============================================================ -->
+<h2 id="boot-param">⑤ カーネル起動パラメータ（GRUB経由）</h2>
+
+<div class="note">
+  <strong>重要ポイント④：カーネル起動パラメータはGRUBのブートメニューまたは /etc/default/grub で設定し、起動時にカーネルに渡される</strong><br>
+  <code>/proc/cmdline</code> で現在の起動パラメータを確認できます。
+</div>
+
+<div class="demo-box">
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># 現在の起動パラメータを確認</span>
+$ <span class="cmd">cat</span> /proc/cmdline
+<span class="out">BOOT_IMAGE=/boot/vmlinuz-6.8.0-51-generic root=UUID=xxxx-xxxx ro quiet splash</span>
+
+<span class="comment"># /etc/default/grub の設定例</span>
+$ <span class="cmd">cat</span> /etc/default/grub
+<span class="hdr">GRUB_DEFAULT=0</span>
+<span class="hdr">GRUB_TIMEOUT=5</span>
+<span class="hl">GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"</span>
+<span class="hl">GRUB_CMDLINE_LINUX=""</span>
+
+<span class="comment"># 起動パラメータを追加する例</span>
+<span class="comment"># GRUB_CMDLINE_LINUX_DEFAULT に追記</span>
+<span class="out">GRUB_CMDLINE_LINUX_DEFAULT="quiet splash net.ifnames=0 biosdevname=0"</span>
+
+<span class="comment"># 変更後は update-grub を実行</span>
+$ <span class="cmd">sudo update-grub</span>
+</pre>
+  </div>
+
+  <h3>主要なカーネル起動パラメータ</h3>
+  <table class="ref-table">
+    <thead><tr><th>パラメータ</th><th>説明</th><th>例</th></tr></thead>
+    <tbody>
+      <tr><td><code>root=</code></td><td>ルートファイルシステムのデバイス</td><td><code>root=/dev/sda1</code> / <code>root=UUID=xxxx</code></td></tr>
+      <tr><td><code>ro</code> / <code>rw</code></td><td>ルートFSを読み取り専用/読み書きでマウント</td><td><code>ro</code>（通常は ro で起動後 rw に再マウント）</td></tr>
+      <tr><td><code>quiet</code></td><td>起動時のカーネルメッセージを抑制</td><td><code>quiet</code></td></tr>
+      <tr><td><code>splash</code></td><td>スプラッシュスクリーンを表示</td><td><code>splash</code></td></tr>
+      <tr><td><code>init=</code></td><td>最初に実行するプロセスを指定</td><td><code>init=/bin/bash</code>（レスキューモード）</td></tr>
+      <tr><td><code>single</code> / <code>1</code></td><td>シングルユーザーモードで起動</td><td><code>single</code></td></tr>
+      <tr><td><code>mem=</code></td><td>使用するメモリ量を制限</td><td><code>mem=2G</code></td></tr>
+      <tr><td><code>nomodeset</code></td><td>カーネルモード設定を無効化（グラフィック問題の回避）</td><td><code>nomodeset</code></td></tr>
+      <tr><td><code>net.ifnames=0</code></td><td>ネットワークインターフェース名を eth0 形式に戻す</td><td><code>net.ifnames=0 biosdevname=0</code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 6：まとめ -->
+<!-- ============================================================ -->
+<h2>📌 まとめ一覧</h2>
+
+<div class="demo-box">
+  <table class="ref-table">
+    <thead>
+      <tr><th>項目</th><th>コマンド / ファイル</th><th>説明</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td colspan="3" style="background:#dbeafe; color:#2b4c7e; font-weight:bold; font-size:0.88em;">
+          ▼ カーネルパラメータの操作
+        </td>
+      </tr>
+      <tr><td>パラメータ一覧</td><td><code>sysctl -a</code></td><td>すべてのカーネルパラメータを表示</td></tr>
+      <tr><td>パラメータ確認</td><td><code>sysctl パラメータ名</code></td><td>特定パラメータの値を表示</td></tr>
+      <tr><td>一時的な変更</td><td><code>sysctl -w パラメータ=値</code></td><td>再起動後は元に戻る</td></tr>
+      <tr><td>設定ファイル反映</td><td><code>sysctl -p</code></td><td>/etc/sysctl.conf の設定を即時反映</td></tr>
+      <tr><td>永続化（旧来）</td><td><code>/etc/sysctl.conf</code></td><td>起動時に自動読み込み</td></tr>
+      <tr><td>永続化（推奨）</td><td><code>/etc/sysctl.d/*.conf</code></td><td>用途別にファイルを分けて管理</td></tr>
+      <tr><td>直接アクセス</td><td><code>/proc/sys/</code></td><td>ファイルへの直接読み書きも可能</td></tr>
+      <tr>
+        <td colspan="3" style="background:#dbeafe; color:#2b4c7e; font-weight:bold; font-size:0.88em;">
+          ▼ initramfs の管理
+        </td>
+      </tr>
+      <tr><td>内容確認</td><td><code>lsinitramfs /boot/initrd.img-*</code></td><td>initramfs 内のファイル一覧</td></tr>
+      <tr><td>更新（Debian系）</td><td><code>update-initramfs -u</code></td><td>現在のカーネルの initramfs を更新</td></tr>
+      <tr><td>新規作成（Debian系）</td><td><code>update-initramfs -c -k バージョン</code></td><td>指定バージョンの initramfs を新規作成</td></tr>
+      <tr><td>削除（Debian系）</td><td><code>update-initramfs -d -k バージョン</code></td><td>指定バージョンの initramfs を削除</td></tr>
+      <tr><td>生成（RHEL旧来）</td><td><code>mkinitrd ファイル バージョン</code></td><td>RHEL/CentOS 6以前の方法</td></tr>
+      <tr><td>生成（dracut）</td><td><code>dracut --force</code></td><td>RHEL 7以降・汎用的な方法</td></tr>
+      <tr>
+        <td colspan="3" style="background:#dbeafe; color:#2b4c7e; font-weight:bold; font-size:0.88em;">
+          ▼ 起動パラメータ
+        </td>
+      </tr>
+      <tr><td>現在の起動パラメータ確認</td><td><code>cat /proc/cmdline</code></td><td>起動時にカーネルに渡されたパラメータ</td></tr>
+      <tr><td>GRUB設定</td><td><code>/etc/default/grub</code></td><td>GRUB_CMDLINE_LINUX_DEFAULT で起動パラメータを設定</td></tr>
+      <tr><td>GRUB設定反映</td><td><code>update-grub</code></td><td>/boot/grub/grub.cfg を再生成</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 穴埋め問題</h3>
+    <p>以下の説明に合うコマンド・ファイル・オプションを入力してください。</p>
+    <label>① カーネルパラメータを一覧表示するコマンド（オプション含む）：</label>
+    <input type="text" id="q1a" placeholder="コマンド -オプション">
+    <label>② vm.swappiness を 10 に一時的に変更するコマンド：</label>
+    <input type="text" id="q1b" placeholder="コマンド -w xxx=10">
+    <label>③ /etc/sysctl.conf の設定を即時反映するコマンド（オプション含む）：</label>
+    <input type="text" id="q1c" placeholder="コマンド -オプション">
+    <label>④ Debian/Ubuntu で initramfs を更新するコマンド（オプション含む）：</label>
+    <input type="text" id="q1d" placeholder="コマンド -オプション">
+    <label>⑤ 現在の起動パラメータを確認できるファイルパス：</label>
+    <input type="text" id="q1e" placeholder="/proc/...">
+    <br>
+    <button class="btn btn-blue" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const a = document.getElementById('q1a').value.trim().toLowerCase().replace(/\s+/g,'');
+        const b = document.getElementById('q1b').value.trim().toLowerCase().replace(/\s+/g,'');
+        const c = document.getElementById('q1c').value.trim().toLowerCase().replace(/\s+/g,'');
+        const d = document.getElementById('q1d').value.trim().toLowerCase().replace(/\s+/g,'');
+        const e = document.getElementById('q1e').value.trim().toLowerCase();
+        const r = document.getElementById('q1-result');
+        const ca = a === 'sysctl-a' || a === 'sysctl--all';
+        const cb = b === 'sysctl-wvm.swappiness=10' || b === 'sudosysctl-wvm.swappiness=10';
+        const cc = c === 'sysctl-p' || c === 'sysctl--load';
+        const cd = d === 'update-initramfs-u' || d === 'sudoupdate-initramfs-u';
+        const ce = e === '/proc/cmdline';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ sysctl -a'}　` +
+            `② ${cb?'✅':'❌ sysctl -w vm.swappiness=10'}　` +
+            `③ ${cc?'✅':'❌ sysctl -p'}　` +
+            `④ ${cd?'✅':'❌ update-initramfs -u'}　` +
+            `⑤ ${ce?'✅':'❌ /proc/cmdline'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 選択問題</h3>
+    <p>
+      <code>sysctl -w</code> でカーネルパラメータを変更した場合、
+      この変更はいつまで有効ですか？
+    </p>
+    <select id="q2">
+      <option value="">-- 選択してください --</option>
+      <option value="a">永続的に有効（再起動後も維持される）</option>
+      <option value="b">次のシステム再起動まで有効（一時的な変更）</option>
+      <option value="c">現在のセッション（ログイン）が終了するまで有効</option>
+      <option value="d">変更後10分間のみ有効</option>
+    </select>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const v = document.getElementById('q2').value;
+        const r = document.getElementById('q2-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<code>sysctl -w</code> による変更は<strong>一時的</strong>で、再起動後は元の値に戻ります。<br><br>' +
+            '<strong>永続化するには：</strong><br>' +
+            '① <code>/etc/sysctl.conf</code> または <code>/etc/sysctl.d/*.conf</code> に設定を記述<br>' +
+            '② <code>sysctl -p</code> で即時反映（再起動後も自動的に読み込まれる）';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '<code>sysctl -w</code> による変更は<strong>次のシステム再起動まで</strong>の一時的な変更です。<br>' +
+            '永続化するには <code>/etc/sysctl.conf</code> に記述して <code>sysctl -p</code> で反映します。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① <code>initramfs</code> はカーネル起動直後に使用される一時的なルートファイルシステムである
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② <code>sysctl -p</code> はデフォルトで <code>/etc/sysctl.conf</code> を読み込んで反映する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ <code>/proc/sys/</code> 以下のファイルに直接書き込むことでカーネルパラメータを変更できる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ <code>update-initramfs -c -k 6.8.0</code> は既存の initramfs を更新するコマンドである
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ <code>net.ipv4.ip_forward=1</code> に設定するとIPフォワーディングが有効になる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ <code>dracut</code> は主に RHEL/CentOS 7 以降で使用される initramfs 生成ツールである
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ カーネルパラメータの永続化には <code>/etc/sysctl.d/</code> 以下に <code>*.conf</code> ファイルを作成する方法が推奨される
+    </label>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：①②③⑤⑥⑦（a,b,c,e,f,g）
+        // ④ -c は新規作成（create）。更新は -u（update）
+        const correct = { a:true, b:true, c:true, d:false, e:true, f:true, g:true };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>①②③⑤⑥⑦<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・④ <code>update-initramfs -c</code> は<strong>新規作成（create）</strong>です。' +
+            '既存の initramfs を<strong>更新</strong>するのは <code>-u（update）</code> オプションです';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. シナリオ問題</h3>
+    <p>
+      Linuxサーバーをルーターとして使用するため、IPフォワーディングを有効にしたいと考えています。
+      再起動後も設定が維持されるようにするための<strong>正しい手順</strong>を選んでください。
+    </p>
+    <select id="q4">
+      <option value="">-- 選択してください --</option>
+      <option value="a">sysctl -w net.ipv4.ip_forward=1 を実行するだけでよい</option>
+      <option value="b">/etc/sysctl.conf に net.ipv4.ip_forward=1 を追記し、sysctl -p を実行する</option>
+      <option value="c">/proc/sys/net/ipv4/ip_forward に 1 を書き込むだけでよい</option>
+      <option value="d">カーネルを再コンパイルしてIPフォワーディング機能を有効にする</option>
+    </select>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const v = document.getElementById('q4').value;
+        const r = document.getElementById('q4-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>正しい手順：</strong><br>' +
+            '① <code>/etc/sysctl.conf</code>（または <code>/etc/sysctl.d/99-ip-forward.conf</code>）に追記：<br>' +
+            '&nbsp;&nbsp;<code>net.ipv4.ip_forward = 1</code><br>' +
+            '② <code>sudo sysctl -p</code> で即時反映<br><br>' +
+            'これにより再起動後も設定が維持されます。<br><br>' +
+            '<strong>各選択肢の問題点：</strong><br>' +
+            '・A：<code>sysctl -w</code> は一時的な変更のみ（再起動で元に戻る）<br>' +
+            '・C：<code>/proc/sys/</code> への直接書き込みも一時的な変更のみ<br>' +
+            '・D：IPフォワーディングはカーネルパラメータで制御でき、再コンパイルは不要';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br><br>' +
+            '再起動後も設定を維持するには、<code>/etc/sysctl.conf</code> に設定を記述して<br>' +
+            '<code>sysctl -p</code> で反映する必要があります。<br>' +
+            '<code>sysctl -w</code> や <code>/proc/sys/</code> への直接書き込みは一時的な変更です。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-block">
+    <h3>Q5. 選択問題</h3>
+    <p>
+      RHEL/CentOS 7 以降で initramfs を再生成するための標準コマンドはどれですか？
+    </p>
+    <select id="q5">
+      <option value="">-- 選択してください --</option>
+      <option value="a">update-initramfs -u</option>
+      <option value="b">mkinitrd --force /boot/initramfs.img $(uname -r)</option>
+      <option value="c">dracut --force</option>
+      <option value="d">make initramfs</option>
+    </select>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ5()">答え合わせ</button>
+    <div class="result-msg" id="q5-result"></div>
+    <script>
+      function checkQ5() {
+        const v = document.getElementById('q5').value;
+        const r = document.getElementById('q5-result');
+        if (v === 'c') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>dracut --force</strong> は RHEL/CentOS 7 以降の標準 initramfs 生成ツールです。<br><br>' +
+            '<strong>ディストリビューション別の対応：</strong><br>' +
+            '・Debian / Ubuntu：<code>update-initramfs -u</code><br>' +
+            '・RHEL/CentOS 7以降：<code>dracut --force</code><br>' +
+            '・RHEL/CentOS 6以前：<code>mkinitrd</code>（旧来の方法）';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            'RHEL/CentOS 7 以降の標準は <code>dracut --force</code> です。<br>' +
+            '・<code>update-initramfs</code> は Debian/Ubuntu 系のコマンドです<br>' +
+            '・<code>mkinitrd</code> は RHEL/CentOS 6 以前の旧来のコマンドです';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 「カーネルパラメータの変更」の学習が完了したら記録しましょう！</p>
+  <button class="btn btn-green" onclick="markComplete()">✅ このセクションを完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch2', '80');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  if (parseInt(localStorage.getItem('lpic201_ch2') || '0') >= 80) {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="03_compile.html">← カーネルのコンパイル</a>
+  <a class="home" href="../index.html">🏠 目次へ</a>
+  <a class="next" href="05_manage.html">次へ：カーネルの管理と問題解決 →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
