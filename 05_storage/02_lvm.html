@@ -1,0 +1,1601 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>LVM の管理 ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em; color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #2c5282; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #1a365d, #2c5282);
+      border-radius: 12px; padding: 32px 32px 24px;
+      margin-bottom: 32px; color: #fff;
+      box-shadow: 0 4px 18px rgba(44,82,130,0.35);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em; font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85; letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .chapter-header h1 { margin: 0 0 10px; font-size: 1.6em; color: #fff; border: none; padding: 0; }
+    .chapter-header p  { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px; padding: 3px 12px;
+      font-size: 0.76em; font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 { color: #1a365d; margin-top: 48px; border-left: 5px solid #2c5282; padding-left: 12px; }
+    h3 { color: #276749; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7; padding: 2px 6px;
+      border-radius: 4px; font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c; color: #e2e8f0;
+      padding: 18px 20px; border-radius: 8px;
+      overflow-x: auto; font-size: 0.88em;
+      line-height: 1.7; font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+    pre .err     { color: #fc8181; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #4a5568; color: #e2e8f0;
+      border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 0.75em;
+      cursor: pointer; font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s; z-index: 1;
+    }
+    .copy-btn:hover { background: #2c5282; }
+
+    /* ボックス */
+    .note {
+      background: #fff; border: 1px dashed #90cdf4;
+      border-radius: 6px; padding: 14px 18px;
+      font-size: 0.93em; color: #4a5568; margin: 14px 0;
+    }
+    .note strong { color: #1a365d; }
+    .warn {
+      background: #fffaf0; border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #744210; margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4; border: 1px solid #68d391;
+      border-left: 5px solid #48bb78; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #276749; margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff; border: 1px solid #bee3f8;
+      border-radius: 8px; padding: 20px 24px;
+      margin: 12px 0 28px; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff; border: 1px solid #bee3f8;
+      border-radius: 10px; padding: 18px 22px;
+      margin-bottom: 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 { margin: 0 0 12px; font-size: 0.92em; color: #1a365d; border: none; padding: 0; }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #2c5282; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #1a365d; font-weight: bold; }
+
+    /* LVM 構造図 */
+    .lvm-diagram {
+      display: flex; flex-direction: column;
+      gap: 6px; margin: 16px 0;
+    }
+    .lvm-layer {
+      border-radius: 8px; padding: 12px 16px;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .lvm-layer:hover {
+      transform: scale(1.01);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+    .lvm-layer.lv  { background: #ebf8ff; border: 2px solid #90cdf4; }
+    .lvm-layer.vg  { background: #e9d8fd; border: 2px solid #b794f4; }
+    .lvm-layer.pv  { background: #fefcbf; border: 2px solid #f6e05e; }
+    .lvm-layer.disk{ background: #2d3748; border: 2px solid #4a5568; color: #e2e8f0; }
+    .lvm-layer-title {
+      font-weight: bold; font-size: 0.9em; margin-bottom: 4px;
+    }
+    .lvm-layer.lv  .lvm-layer-title { color: #2b4c7e; }
+    .lvm-layer.vg  .lvm-layer-title { color: #553c9a; }
+    .lvm-layer.pv  .lvm-layer-title { color: #744210; }
+    .lvm-layer.disk .lvm-layer-title { color: #90cdf4; }
+    .lvm-blocks {
+      display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;
+    }
+    .lvm-block {
+      border-radius: 4px; padding: 4px 10px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.82em; font-weight: bold;
+    }
+    .lvm-arrow { text-align: center; color: #718096; font-size: 1.2em; }
+
+    /* ステップフロー */
+    .step-flow { display: flex; flex-direction: column; gap: 0; margin: 16px 0; }
+    .step-item { display: flex; gap: 16px; align-items: flex-start; position: relative; }
+    .step-item::before {
+      content: ''; position: absolute;
+      left: 19px; top: 40px;
+      width: 2px; height: calc(100% - 8px);
+      background: #bee3f8;
+    }
+    .step-item:last-child::before { display: none; }
+    .step-num {
+      flex-shrink: 0; width: 40px; height: 40px;
+      background: #2c5282; color: #fff;
+      border-radius: 50%; display: flex;
+      align-items: center; justify-content: center;
+      font-weight: bold; font-size: 0.95em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      z-index: 1; margin-top: 4px;
+    }
+    .step-body {
+      flex: 1; background: #fff;
+      border: 1px solid #bee3f8; border-radius: 8px;
+      padding: 12px 16px; margin-bottom: 10px;
+    }
+    .step-body h4 { margin: 0 0 4px; color: #1a365d; font-size: 0.95em; }
+    .step-body p  { margin: 0; font-size: 0.85em; color: #4a5568; }
+
+    /* コマンドカードグリッド */
+    .cmd-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px; margin: 14px 0;
+    }
+    .cmd-card {
+      background: #ebf8ff; border: 1px solid #90cdf4;
+      border-radius: 8px; padding: 14px 16px;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .cmd-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(44,82,130,0.18);
+      border-color: #2c5282;
+    }
+    .cmd-card .cmd-name {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.95em; font-weight: bold;
+      color: #1a365d; margin-bottom: 4px;
+    }
+    .cmd-card .cmd-desc {
+      font-size: 0.82em; color: #4a5568; line-height: 1.6;
+    }
+
+    /* インタラクティブデモ */
+    .interactive-demo {
+      background: #ebf8ff; border: 1px solid #bee3f8;
+      border-radius: 8px; padding: 16px 20px; margin: 14px 0;
+    }
+    .slider-row {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em; font-weight: bold;
+      min-width: 180px; color: #1a365d;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row select {
+      border: 2px solid #bee3f8; border-radius: 6px;
+      padding: 6px 10px; font-size: 0.88em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #2d3748; background: #fff;
+      cursor: pointer; flex: 1;
+    }
+    .slider-row select:focus { border-color: #2c5282; outline: none; }
+    .slider-row input[type="range"] { flex: 1; min-width: 100px; accent-color: #2c5282; }
+    .val-display {
+      min-width: 60px; text-align: right;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85em; color: #2d3748;
+    }
+    .output-display {
+      background: #1a202c; color: #68d391;
+      border-radius: 6px; padding: 12px 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em; margin-top: 10px;
+      white-space: pre; overflow-x: auto; line-height: 1.7;
+    }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse; width: 100%;
+      background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0; font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #bee3f8; padding: 10px 14px; text-align: left;
+    }
+    table.ref-table thead tr { background: #1a365d; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #ebf8ff; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0; border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0; padding: 24px 28px; margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 18px 22px; margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 8px 12px; font-size: 0.95em;
+      width: 100%; max-width: 440px; margin: 6px 0;
+      outline: none; font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus { border-color: #f6ad55; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block; padding: 9px 20px;
+      border-radius: 6px; border: none; cursor: pointer;
+      font-size: 0.95em; font-weight: bold;
+      transition: opacity 0.2s; margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-blue { background: #2c5282; color: #fff; }
+    .btn-done { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px; padding: 10px 14px;
+      border-radius: 6px; font-weight: bold; display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #bee3f8; color: #1a365d; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 48px;
+      padding-top: 20px; border-top: 2px solid #bee3f8;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block; padding: 10px 20px;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.9em; transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #2c5282; color: #fff; }
+    .page-nav .home { background: #fff; color: #2c5282; border: 2px solid #2c5282; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4; border: 2px solid #48bb78;
+      border-radius: 10px; padding: 20px 24px;
+      margin-top: 40px; text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 2px solid #bee3f8;
+      font-size: 0.82em; color: #a0aec0; text-align: center;
+    }
+    footer a { color: #2c5282; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .cmd-grid { grid-template-columns: 1fr; }
+      .lvm-blocks { gap: 4px; }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  <a href="index.html">第5章：高度なストレージ管理</a> ›
+  LVM の管理
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 05 › SECTION 02</div>
+  <h1>📦 LVM の管理</h1>
+  <p>LVM（Logical Volume Manager）の3層構造（PV・VG・LV）を理解し、
+  作成から拡張・縮小・スナップショットまで LVM の全操作を学びます。</p>
+  <div class="badge-row">
+    <span class="badge">pvcreate</span>
+    <span class="badge">vgcreate</span>
+    <span class="badge">lvcreate</span>
+    <span class="badge">pvdisplay</span>
+    <span class="badge">vgdisplay</span>
+    <span class="badge">lvdisplay</span>
+    <span class="badge">lvextend</span>
+    <span class="badge">resize2fs</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第5章のセクション</h2>
+  <ol>
+    <li><a href="index.html">RAID</a></li>
+    <li class="current"><a href="02_lvm.html">LVM の管理</a></li>
+    <li><a href="03_storage.html">ストレージデバイスの管理</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：LVM の仕組み -->
+<!-- ============================================================ -->
+<h2 id="lvm-overview">① LVM の仕組み</h2>
+
+<div class="note">
+  <strong>重要ポイント①：LVM は物理ディスクを抽象化して柔軟なボリューム管理を実現する。PV（物理ボリューム）→ VG（ボリュームグループ）→ LV（論理ボリューム）の3層構造</strong><br>
+  パーティションサイズを後から自由に変更できることが最大の利点です。
+</div>
+
+<div class="demo-box">
+  <h3>LVM の3層構造（クリックで詳細）</h3>
+  <div class="lvm-diagram">
+
+    <!-- LV 層 -->
+    <div class="lvm-layer lv" onclick="showLvmLayer('lv')">
+      <div class="lvm-layer-title">🔵 論理ボリューム（LV：Logical Volume）</div>
+      <div class="lvm-blocks">
+        <div class="lvm-block" style="background:#2b4c7e; color:#fff;">/dev/vg0/lv_root（20G）</div>
+        <div class="lvm-block" style="background:#2b4c7e; color:#fff;">/dev/vg0/lv_home（50G）</div>
+        <div class="lvm-block" style="background:#2b4c7e; color:#fff;">/dev/vg0/lv_data（30G）</div>
+      </div>
+    </div>
+
+    <div class="lvm-arrow">↕ LV は VG から任意のサイズで切り出す</div>
+
+    <!-- VG 層 -->
+    <div class="lvm-layer vg" onclick="showLvmLayer('vg')">
+      <div class="lvm-layer-title">🟣 ボリュームグループ（VG：Volume Group）</div>
+      <div class="lvm-blocks">
+        <div class="lvm-block" style="background:#553c9a; color:#fff;">vg0（100G）</div>
+        <div class="lvm-block" style="background:#553c9a; color:#fff; opacity:0.6;">vg1（別グループ）</div>
+      </div>
+    </div>
+
+    <div class="lvm-arrow">↕ VG は複数の PV を束ねたストレージプール</div>
+
+    <!-- PV 層 -->
+    <div class="lvm-layer pv" onclick="showLvmLayer('pv')">
+      <div class="lvm-layer-title">🟡 物理ボリューム（PV：Physical Volume）</div>
+      <div class="lvm-blocks">
+        <div class="lvm-block" style="background:#744210; color:#fff;">/dev/sdb1（50G）</div>
+        <div class="lvm-block" style="background:#744210; color:#fff;">/dev/sdc1（50G）</div>
+      </div>
+    </div>
+
+    <div class="lvm-arrow">↕ PV はディスクまたはパーティション</div>
+
+    <!-- 物理ディスク層 -->
+    <div class="lvm-layer disk" onclick="showLvmLayer('disk')">
+      <div class="lvm-layer-title">⚫ 物理ディスク（Physical Disk）</div>
+      <div class="lvm-blocks">
+        <div class="lvm-block" style="background:#4a5568; color:#e2e8f0;">/dev/sdb（50G）</div>
+        <div class="lvm-block" style="background:#4a5568; color:#e2e8f0;">/dev/sdc（50G）</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- LVM 層詳細 -->
+  <div id="lvm-layer-detail" style="display:none; margin-top:12px; background:#fff; border:1px solid #bee3f8; border-left:5px solid #2c5282; border-radius:0 8px 8px 0; padding:14px 18px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const lvmLayers = {
+      lv: {
+        title: '🔵 論理ボリューム（LV：Logical Volume）',
+        color: '#2b4c7e',
+        body: `ユーザーが実際に使用するボリュームです。VG から任意のサイズで切り出します。<br><br>
+          <strong>特徴：</strong><br>
+          ・デバイスファイルは <code>/dev/VG名/LV名</code> または <code>/dev/mapper/VG名-LV名</code><br>
+          ・通常のブロックデバイスと同様に <code>mkfs</code> でフォーマットして使用<br>
+          ・VG に空き容量がある限り、後からサイズを拡張できる<br>
+          ・スナップショット LV を作成してバックアップに活用できる<br><br>
+          <strong>主なコマンド：</strong><br>
+          ・作成：<code>lvcreate -L サイズ -n LV名 VG名</code><br>
+          ・表示：<code>lvdisplay</code> / <code>lvs</code><br>
+          ・拡張：<code>lvextend -L +サイズ /dev/VG名/LV名</code><br>
+          ・削除：<code>lvremove /dev/VG名/LV名</code>`
+      },
+      vg: {
+        title: '🟣 ボリュームグループ（VG：Volume Group）',
+        color: '#553c9a',
+        body: `複数の PV を束ねたストレージプールです。LV はこの VG から切り出されます。<br><br>
+          <strong>特徴：</strong><br>
+          ・VG に PV を追加することで容量を動的に拡張できる<br>
+          ・PE（Physical Extent）という固定サイズのブロック単位で管理（デフォルト 4MB）<br>
+          ・複数のディスクにまたがることができる<br><br>
+          <strong>主なコマンド：</strong><br>
+          ・作成：<code>vgcreate VG名 /dev/sdb1 /dev/sdc1</code><br>
+          ・表示：<code>vgdisplay</code> / <code>vgs</code><br>
+          ・拡張：<code>vgextend VG名 /dev/sdd1</code><br>
+          ・縮小：<code>vgreduce VG名 /dev/sdb1</code><br>
+          ・削除：<code>vgremove VG名</code>`
+      },
+      pv: {
+        title: '🟡 物理ボリューム（PV：Physical Volume）',
+        color: '#744210',
+        body: `LVM が管理するディスクまたはパーティションです。<br><br>
+          <strong>特徴：</strong><br>
+          ・ディスク全体（<code>/dev/sdb</code>）またはパーティション（<code>/dev/sdb1</code>）を PV にできる<br>
+          ・PV には LVM のメタデータ（PV ヘッダー）が書き込まれる<br>
+          ・PE（Physical Extent）という固定サイズのブロックに分割される<br><br>
+          <strong>主なコマンド：</strong><br>
+          ・初期化：<code>pvcreate /dev/sdb1</code><br>
+          ・表示：<code>pvdisplay</code> / <code>pvs</code><br>
+          ・移動：<code>pvmove /dev/sdb1</code>（データを他の PV に移動）<br>
+          ・削除：<code>pvremove /dev/sdb1</code>`
+      },
+      disk: {
+        title: '⚫ 物理ディスク',
+        color: '#4a5568',
+        body: `実際の物理的なストレージデバイスです。<br><br>
+          <strong>LVM 用パーティションの準備：</strong><br>
+          ① <code>fdisk</code> または <code>parted</code> でパーティションを作成<br>
+          ② パーティションタイプを <strong>8e（Linux LVM）</strong> に設定<br>
+          ③ <code>pvcreate</code> で PV として初期化<br><br>
+          <strong>注意：</strong><br>
+          ・ディスク全体を PV にする場合はパーティション作成不要<br>
+          ・ただし、パーティションを使う方が管理しやすい`
+      }
+    };
+
+    function showLvmLayer(key) {
+      const d = lvmLayers[key];
+      const el = document.getElementById('lvm-layer-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display='none'; el.dataset.current=''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-size:0.95em;">${d.title}</strong><br><br>${d.body}`;
+      el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+  </script>
+
+  <h3>LVM の利点</h3>
+  <table class="ref-table">
+    <thead><tr><th>利点</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td><strong>動的なサイズ変更</strong></td><td>稼働中のシステムでも LV のサイズを拡張・縮小できる</td></tr>
+      <tr><td><strong>複数ディスクの統合</strong></td><td>複数の物理ディスクを1つの大きなストレージプールとして扱える</td></tr>
+      <tr><td><strong>スナップショット</strong></td><td>LV のある時点の状態を保存してバックアップや回復に活用</td></tr>
+      <tr><td><strong>ストライピング</strong></td><td>複数の PV にデータを分散して I/O 性能を向上</td></tr>
+      <tr><td><strong>ミラーリング</strong></td><td>LVM レベルでのミラーリングによる冗長性確保</td></tr>
+      <tr><td><strong>シンプロビジョニング</strong></td><td>実際の容量より大きな LV を作成（使用時に実容量を割り当て）</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：LVM の作成 -->
+<!-- ============================================================ -->
+<h2 id="lvm-create">② LVM の作成</h2>
+
+<div class="demo-box">
+  <h3>LVM 作成の全手順（ステップフロー）</h3>
+  <div class="step-flow">
+
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>💾 LVM 用パーティションの準備</h4>
+        <p>fdisk でパーティションを作成し、タイプを 8e（Linux LVM）に設定する</p>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>🟡 物理ボリューム（PV）の初期化</h4>
+        <p>pvcreate でパーティションを LVM の PV として初期化する</p>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>🟣 ボリュームグループ（VG）の作成</h4>
+        <p>vgcreate で PV を束ねて VG（ストレージプール）を作成する</p>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h4>🔵 論理ボリューム（LV）の作成</h4>
+        <p>lvcreate で VG から LV を切り出す</p>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <h4>🔨 ファイルシステムの作成とマウント</h4>
+        <p>mkfs で LV をフォーマットして mount でマウントする</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment">## ステップ1：LVM 用パーティションの準備</span>
+$ <span class="cmd">sudo fdisk</span> /dev/sdb
+<span class="comment"># → n（新規）→ p（プライマリ）→ Enter → Enter → t（タイプ変更）→ 8e（Linux LVM）→ w（書き込み）</span>
+$ <span class="cmd">sudo fdisk</span> /dev/sdc
+<span class="comment"># 同様に /dev/sdc1 を作成</span>
+
+<span class="comment">## ステップ2：物理ボリューム（PV）の初期化</span>
+$ <span class="cmd">sudo pvcreate</span> /dev/sdb1 /dev/sdc1
+<span class="out">  Physical volume "/dev/sdb1" successfully created.</span>
+<span class="out">  Physical volume "/dev/sdc1" successfully created.</span>
+
+<span class="comment">## ステップ3：ボリュームグループ（VG）の作成</span>
+$ <span class="cmd">sudo vgcreate</span> <span class="val">vg0</span> /dev/sdb1 /dev/sdc1
+<span class="out">  Volume group "vg0" successfully created</span>
+
+<span class="comment"># PE サイズを指定して VG を作成（デフォルト 4MB）</span>
+$ <span class="cmd">sudo vgcreate</span> <span class="opt">-s</span> <span class="val">8m</span> vg0 /dev/sdb1 /dev/sdc1
+
+<span class="comment">## ステップ4：論理ボリューム（LV）の作成</span>
+<span class="comment"># サイズを指定して作成</span>
+$ <span class="cmd">sudo lvcreate</span> <span class="opt">-L</span> <span class="val">20G</span> <span class="opt">-n</span> <span class="val">lv_root</span> vg0
+<span class="out">  Logical volume "lv_root" created.</span>
+
+<span class="comment"># VG の空き容量の割合で作成（-l = PE 数または割合）</span>
+$ <span class="cmd">sudo lvcreate</span> <span class="opt">-l</span> <span class="val">50%FREE</span> <span class="opt">-n</span> <span class="val">lv_home</span> vg0
+$ <span class="cmd">sudo lvcreate</span> <span class="opt">-l</span> <span class="val">100%FREE</span> <span class="opt">-n</span> <span class="val">lv_data</span> vg0
+
+<span class="comment">## ステップ5：ファイルシステムの作成とマウント</span>
+$ <span class="cmd">sudo mkfs.ext4</span> /dev/vg0/lv_root
+$ <span class="cmd">sudo mkfs.xfs</span>  /dev/vg0/lv_home
+$ <span class="cmd">sudo mkdir</span> /mnt/root /mnt/home
+$ <span class="cmd">sudo mount</span> /dev/vg0/lv_root /mnt/root
+$ <span class="cmd">sudo mount</span> /dev/vg0/lv_home /mnt/home
+
+<span class="comment"># /etc/fstab に追記して永続化</span>
+$ <span class="cmd">echo</span> <span class="val">'/dev/vg0/lv_root /mnt/root ext4 defaults 0 2'</span> | <span class="cmd">sudo tee</span> <span class="opt">-a</span> /etc/fstab
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：LVM の管理（情報表示） -->
+<!-- ============================================================ -->
+<h2 id="lvm-info">③ LVM の管理 ― 情報表示</h2>
+
+<div class="demo-box">
+  <h3>PV・VG・LV の情報表示コマンド</h3>
+
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#1a365d; margin:0 0 12px;">
+      表示コマンドを選択して出力例を確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>コマンド</label>
+      <select id="info-cmd-sel" onchange="showInfoCmd()">
+        <option value="">-- 選択してください --</option>
+        <option value="pvdisplay">pvdisplay（PV 詳細）</option>
+        <option value="pvs">pvs（PV 一覧）</option>
+        <option value="vgdisplay">vgdisplay（VG 詳細）</option>
+        <option value="vgs">vgs（VG 一覧）</option>
+        <option value="lvdisplay">lvdisplay（LV 詳細）</option>
+        <option value="lvs">lvs（LV 一覧）</option>
+      </select>
+    </div>
+    <div class="output-display" id="info-cmd-output" style="display:none;"></div>
+  </div>
+
+  <script>
+    const infoCmds = {
+      pvdisplay: {
+        color: '#fbd38d',
+        text:
+`$ sudo pvdisplay /dev/sdb1
+  --- Physical volume ---
+  PV Name               /dev/sdb1
+  VG Name               vg0
+  PV Size               50.00 GiB / not usable 4.00 MiB
+  Allocatable           yes
+  PE Size               4.00 MiB
+  Total PE              12799
+  Free PE               5119
+  Allocated PE          7680
+  PV UUID               xxxxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxxxx
+
+# 簡易表示（pvs）
+$ sudo pvs
+  PV         VG  Fmt  Attr PSize   PFree
+  /dev/sdb1  vg0 lvm2 a--  50.00g 20.00g
+  /dev/sdc1  vg0 lvm2 a--  50.00g 20.00g`
+      },
+      pvs: {
+        color: '#fbd38d',
+        text:
+`$ sudo pvs
+  PV         VG  Fmt  Attr PSize   PFree
+  /dev/sdb1  vg0 lvm2 a--  50.00g 20.00g
+  /dev/sdc1  vg0 lvm2 a--  50.00g 20.00g
+
+# 列の意味
+# PV   : 物理ボリュームのデバイス名
+# VG   : 所属するボリュームグループ名
+# Fmt  : LVM フォーマット（lvm2）
+# Attr : 属性（a=allocatable, -=not allocatable）
+# PSize: PV の総サイズ
+# PFree: PV の空き容量`
+      },
+      vgdisplay: {
+        color: '#b794f4',
+        text:
+`$ sudo vgdisplay vg0
+  --- Volume group ---
+  VG Name               vg0
+  System ID
+  Format                lvm2
+  Metadata Areas        2
+  Metadata Sequence No  5
+  VG Access             read/write
+  VG Status             resizable
+  MAX LV                0
+  Cur LV                3
+  Open LV               2
+  Max PV                0
+  Cur PV                2
+  Act PV                2
+  VG Size               99.99 GiB
+  PE Size               4.00 MiB
+  Total PE              25598
+  Alloc PE / Size       18432 / 72.00 GiB
+  Free  PE / Size       7166  / 27.99 GiB
+  VG UUID               xxxxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxxxx`
+      },
+      vgs: {
+        color: '#b794f4',
+        text:
+`$ sudo vgs
+  VG  #PV #LV #SN Attr   VSize   VFree
+  vg0   2   3   0 wz--n- 99.99g 27.99g
+
+# 列の意味
+# VG   : ボリュームグループ名
+# #PV  : PV の数
+# #LV  : LV の数
+# #SN  : スナップショットの数
+# Attr : 属性（w=writable, z=zeroed, n=not exported）
+# VSize: VG の総サイズ
+# VFree: VG の空き容量`
+      },
+      lvdisplay: {
+        color: '#90cdf4',
+        text:
+`$ sudo lvdisplay /dev/vg0/lv_root
+  --- Logical volume ---
+  LV Path                /dev/vg0/lv_root
+  LV Name                lv_root
+  VG Name                vg0
+  LV UUID                xxxxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxxxx
+  LV Write Access        read/write
+  LV Creation host, time hostname, 2026-01-01 10:00:00 +0900
+  LV Status              available
+  # open                 1
+  LV Size                20.00 GiB
+  Current LE             5120
+  Segments               1
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     256
+  Block device           253:0`
+      },
+      lvs: {
+        color: '#90cdf4',
+        text:
+`$ sudo lvs
+  LV      VG  Attr       LSize  Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert
+  lv_data vg0 -wi-a----- 27.99g
+  lv_home vg0 -wi-ao---- 50.00g
+  lv_root vg0 -wi-ao---- 20.00g
+
+# Attr の意味（-wi-ao----）
+# 1文字目: v=仮想, m=ミラー, o=オリジン, s=スナップショット, -=通常
+# 2文字目: w=書き込み可, r=読み取り専用
+# 5文字目: a=アクティブ
+# 6文字目: o=オープン中`
+      }
+    };
+
+    function showInfoCmd() {
+      const key = document.getElementById('info-cmd-sel').value;
+      const el  = document.getElementById('info-cmd-output');
+      if (!key) { el.style.display='none'; return; }
+      const d = infoCmds[key];
+      el.style.display = 'block';
+      el.style.color   = d.color;
+      el.textContent   = d.text;
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 4：LVM の管理（拡張・縮小・移動） -->
+<!-- ============================================================ -->
+<h2 id="lvm-manage">④ LVM の管理 ― 拡張・縮小・移動</h2>
+
+<div class="demo-box">
+  <h3>ボリュームグループの拡張（PV の追加）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># 新しいディスクを PV として初期化</span>
+$ <span class="cmd">sudo pvcreate</span> /dev/sdd1
+<span class="out">  Physical volume "/dev/sdd1" successfully created.</span>
+
+<span class="comment"># VG に PV を追加（VG が拡張される）</span>
+$ <span class="cmd">sudo vgextend</span> vg0 /dev/sdd1
+<span class="out">  Volume group "vg0" successfully extended</span>
+
+<span class="comment"># 確認</span>
+$ <span class="cmd">sudo vgs</span>
+<span class="out">  VG  #PV #LV #SN Attr   VSize    VFree</span>
+<span class="out">  vg0   3   3   0 wz--n- 149.99g  77.99g</span>
+<span class="comment"># → PV が 2→3 台、VG サイズが 99.99G→149.99G に拡張</span>
+</pre>
+  </div>
+
+  <h3>物理ボリュームの移動（pvmove）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /dev/sdb1 のデータを他の PV に移動（ディスク交換前の準備）</span>
+$ <span class="cmd">sudo pvmove</span> /dev/sdb1
+<span class="out">  /dev/sdb1: Moved: 12.34%</span>
+<span class="out">  /dev/sdb1: Moved: 45.67%</span>
+<span class="out">  /dev/sdb1: Moved: 100.00%</span>
+
+<span class="comment"># 移動先を指定することもできる</span>
+$ <span class="cmd">sudo pvmove</span> /dev/sdb1 /dev/sdd1
+
+<span class="comment"># バックグラウンドで実行（-b）</span>
+$ <span class="cmd">sudo pvmove</span> <span class="opt">-b</span> /dev/sdb1
+
+<span class="comment"># 進捗確認</span>
+$ <span class="cmd">sudo pvs</span> <span class="opt">-o</span> <span class="val">+pv_mda_free</span>
+</pre>
+  </div>
+
+  <h3>ボリュームグループの縮小（PV の削除）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># ステップ1：対象 PV のデータを他の PV に移動</span>
+$ <span class="cmd">sudo pvmove</span> /dev/sdb1
+
+<span class="comment"># ステップ2：VG から PV を削除</span>
+$ <span class="cmd">sudo vgreduce</span> vg0 /dev/sdb1
+<span class="out">  Removed "/dev/sdb1" from volume group "vg0"</span>
+
+<span class="comment"># ステップ3：PV の LVM メタデータを消去</span>
+$ <span class="cmd">sudo pvremove</span> /dev/sdb1
+<span class="out">  Labels on physical volume "/dev/sdb1" successfully wiped.</span>
+</pre>
+  </div>
+
+  <h3>論理ボリュームの拡張（最重要操作）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment">## ext4 LV の拡張手順</span>
+
+<span class="comment"># 方法1：LV 拡張 → FS 拡張を別々に実行</span>
+<span class="comment"># ステップ1：LV を 10GB 拡張</span>
+$ <span class="cmd">sudo lvextend</span> <span class="opt">-L</span> <span class="val">+10G</span> /dev/vg0/lv_root
+<span class="out">  Size of logical volume vg0/lv_root changed from 20.00 GiB (5120 extents) to 30.00 GiB (7680 extents).</span>
+<span class="out">  Logical volume vg0/lv_root successfully resized.</span>
+
+<span class="comment"># ステップ2：ファイルシステムを拡張（ext4 の場合）</span>
+$ <span class="cmd">sudo resize2fs</span> /dev/vg0/lv_root
+<span class="out">Resizing the filesystem on /dev/vg0/lv_root to 7864320 (4k) blocks.</span>
+<span class="out">The filesystem on /dev/vg0/lv_root is now 7864320 (4k) blocks long.</span>
+
+<span class="comment"># 方法2：LV 拡張と FS 拡張を同時に実行（-r オプション）</span>
+$ <span class="cmd">sudo lvextend</span> <span class="opt">-L</span> <span class="val">+10G</span> <span class="opt">-r</span> /dev/vg0/lv_root
+<span class="comment">#                              ↑-r：FS も同時に拡張（resize2fs を自動実行）</span>
+
+<span class="comment"># VG の空き容量をすべて使って拡張</span>
+$ <span class="cmd">sudo lvextend</span> <span class="opt">-l</span> <span class="val">+100%FREE</span> <span class="opt">-r</span> /dev/vg0/lv_root
+
+<span class="comment">## XFS LV の拡張（マウント中でも可能）</span>
+$ <span class="cmd">sudo lvextend</span> <span class="opt">-L</span> <span class="val">+10G</span> /dev/vg0/lv_home
+$ <span class="cmd">sudo xfs_growfs</span> /mnt/home    <span class="comment"># XFS はマウントポイントを指定</span>
+</pre>
+  </div>
+
+  <h3>論理ボリュームの縮小（ext4 のみ）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment">## LV の縮小（ext4 のみ。XFS は縮小不可）</span>
+<span class="comment">## ⚠️  必ずアンマウントしてから実行すること！</span>
+
+<span class="comment"># ステップ1：アンマウント</span>
+$ <span class="cmd">sudo umount</span> /mnt/root
+
+<span class="comment"># ステップ2：ファイルシステムのチェック（必須）</span>
+$ <span class="cmd">sudo e2fsck</span> <span class="opt">-f</span> /dev/vg0/lv_root
+
+<span class="comment"># ステップ3：ファイルシステムを縮小（目標サイズより小さく縮小）</span>
+$ <span class="cmd">sudo resize2fs</span> /dev/vg0/lv_root <span class="val">15G</span>
+
+<span class="comment"># ステップ4：LV を縮小</span>
+$ <span class="cmd">sudo lvreduce</span> <span class="opt">-L</span> <span class="val">15G</span> /dev/vg0/lv_root
+<span class="out">  WARNING: Reducing active logical volume to 15.00 GiB.</span>
+<span class="out">  THIS MAY DESTROY YOUR DATA (filesystem etc.)</span>
+<span class="out">Do you really want to reduce vg0/lv_root? [y/n]: y</span>
+<span class="out">  Logical volume vg0/lv_root successfully resized.</span>
+
+<span class="comment"># ステップ5：再マウント</span>
+$ <span class="cmd">sudo mount</span> /dev/vg0/lv_root /mnt/root
+</pre>
+  </div>
+
+  <div class="warn">
+    <strong>⚠️ LV 縮小時の注意事項</strong><br>
+    ・<strong>必ずアンマウント状態</strong>で実行する<br>
+    ・<strong>FS のサイズを先に縮小</strong>してから LV を縮小する（逆順はデータ破損の原因）<br>
+    ・<strong>XFS は縮小不可</strong>（ext2/3/4 のみ縮小可能）<br>
+    ・縮小前に必ず <code>e2fsck -f</code> でファイルシステムをチェックする<br>
+    ・重要なデータは事前にバックアップを取ること
+  </div>
+
+  <h3>論理ボリュームの削除</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># LV を削除（アンマウント後に実行）</span>
+$ <span class="cmd">sudo umount</span> /mnt/data
+$ <span class="cmd">sudo lvremove</span> /dev/vg0/lv_data
+<span class="out">Do you really want to remove active logical volume vg0/lv_data? [y/n]: y</span>
+<span class="out">  Logical volume "lv_data" successfully removed.</span>
+
+<span class="comment"># 確認なしで削除（-f オプション）</span>
+$ <span class="cmd">sudo lvremove</span> <span class="opt">-f</span> /dev/vg0/lv_data
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 5：スナップショットの作成 -->
+<!-- ============================================================ -->
+<h2 id="snapshot">⑤ スナップショットの作成</h2>
+
+<div class="note">
+  <strong>重要ポイント②：LVM スナップショットはある時点の LV の状態を保存する。CoW（Copy-on-Write）方式で変更されたブロックのみを保存するため効率的</strong><br>
+  バックアップ前の一時的なスナップショットや、テスト環境の作成に活用できます。
+</div>
+
+<div class="demo-box">
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment">## スナップショットの作成</span>
+<span class="comment"># -s：スナップショット -L：スナップショット用の領域サイズ</span>
+$ <span class="cmd">sudo lvcreate</span> <span class="opt">-s</span> <span class="opt">-L</span> <span class="val">5G</span> <span class="opt">-n</span> <span class="val">lv_root_snap</span> /dev/vg0/lv_root
+<span class="out">  Logical volume "lv_root_snap" created.</span>
+
+<span class="comment"># スナップショットの確認</span>
+$ <span class="cmd">sudo lvs</span>
+<span class="out">  LV           VG  Attr       LSize  Pool Origin  Data%  Meta%</span>
+<span class="out">  lv_root      vg0 owi-aos--- 20.00g</span>
+<span class="hl">  lv_root_snap vg0 swi-a-s---  5.00g      lv_root  0.00</span>
+<span class="comment"># s=スナップショット, o=オリジン（元の LV）</span>
+
+<span class="comment">## スナップショットをマウントして内容を確認</span>
+$ <span class="cmd">sudo mkdir</span> /mnt/snap
+$ <span class="cmd">sudo mount</span> <span class="opt">-o</span> <span class="val">ro</span> /dev/vg0/lv_root_snap /mnt/snap
+$ <span class="cmd">ls</span> /mnt/snap
+
+<span class="comment">## スナップショットからリストア（元の LV を上書き）</span>
+$ <span class="cmd">sudo umount</span> /mnt/root
+$ <span class="cmd">sudo lvconvert</span> <span class="opt">--merge</span> /dev/vg0/lv_root_snap
+<span class="out">  Merging of volume vg0/lv_root_snap started.</span>
+<span class="out">  vg0/lv_root: Merged: 100.00%</span>
+
+<span class="comment">## スナップショットの削除</span>
+$ <span class="cmd">sudo umount</span> /mnt/snap
+$ <span class="cmd">sudo lvremove</span> /dev/vg0/lv_root_snap
+
+<span class="comment">## スナップショット使用量の監視</span>
+<span class="comment"># Data% が 100% に近づくとスナップショットが無効になる</span>
+$ <span class="cmd">sudo lvs</span> <span class="opt">-o</span> <span class="val">+snap_percent</span>
+</pre>
+  </div>
+
+  <div class="good">
+    ✅ <strong>スナップショットの活用例</strong><br>
+    ① <strong>バックアップ前のスナップショット</strong>：<code>lvcreate -s</code> → バックアップ実行 → <code>lvremove</code><br>
+    ② <strong>システム更新前の保護</strong>：更新前にスナップショット作成 → 問題があれば <code>lvconvert --merge</code> で復元<br>
+    ③ <strong>テスト環境の作成</strong>：本番 LV のスナップショットをテスト環境として使用
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 6：LVM 関連コマンド一覧 -->
+<!-- ============================================================ -->
+<h2 id="lvm-cmds">⑥ LVM 関連コマンド一覧</h2>
+
+<div class="demo-box">
+  <h3>コマンドカード（クリックで使用例を表示）</h3>
+  <div class="cmd-grid">
+
+    <div class="cmd-card" onclick="showLvmCmd('pvcreate')">
+      <div class="cmd-name">pvcreate</div>
+      <div class="cmd-desc">パーティション/ディスクを PV として初期化</div>
+    </div>
+    <div class="cmd-card" onclick="showLvmCmd('pvdisplay')">
+      <div class="cmd-name">pvdisplay / pvs</div>
+      <div class="cmd-desc">PV の詳細情報を表示</div>
+    </div>
+    <div class="cmd-card" onclick="showLvmCmd('pvmove')">
+      <div class="cmd-name">pvmove</div>
+      <div class="cmd-desc">PV のデータを他の PV に移動</div>
+    </div>
+    <div class="cmd-card" onclick="showLvmCmd('pvremove')">
+      <div class="cmd-name">pvremove</div>
+      <div class="cmd-desc">PV の LVM メタデータを消去</div>
+    </div>
+    <div class="cmd-card" onclick="showLvmCmd('vgcreate')">
+      <div class="cmd-name">vgcreate</div>
+      <div class="cmd-desc">VG を作成</div>
+    </div>
+    <div class="cmd-card" onclick="showLvmCmd('vgdisplay')">
+      <div class="cmd-name">vgdisplay / vgs</div>
+      <div class="cmd-desc">VG の詳細情報を表示</div>
+    </div>
+    <div class="cmd-card" onclick="showLvmCmd('vgextend')">
+      <div class="cmd-name">vgextend</div>
+      <div class="cmd-desc">VG に PV を追加して拡張</div>
+    </div>
+    <div class="cmd-card" onclick="showLvmCmd('vgreduce')">
+      <div class="cmd-name">vgreduce</div>
+      <div class="cmd-desc">VG から PV を削除して縮小</div>
+    </div>
+    <div class="cmd-card" onclick="showLvmCmd('vgremove')">
+      <div class="cmd-name">vgremove</div>
+      <div class="cmd-desc">VG を削除</div>
+    </div>
+    <div class="cmd-card" onclick="showLvmCmd('lvcreate')">
+      <div class="cmd-name">lvcreate</div>
+      <div class="cmd-desc">LV を作成（スナップショットも）</div>
+    </div>
+    <div class="cmd-card" onclick="showLvmCmd('lvdisplay')">
+      <div class="cmd-name">lvdisplay / lvs</div>
+      <div class="cmd-desc">LV の詳細情報を表示</div>
+    </div>
+    <div class="cmd-card" onclick="showLvmCmd('lvextend')">
+      <div class="cmd-name">lvextend</div>
+      <div class="cmd-desc">LV を拡張（-r でFS も同時拡張）</div>
+    </div>
+    <div class="cmd-card" onclick="showLvmCmd('lvreduce')">
+      <div class="cmd-name">lvreduce</div>
+      <div class="cmd-desc">LV を縮小（ext4 のみ）</div>
+    </div>
+    <div class="cmd-card" onclick="showLvmCmd('lvremove')">
+      <div class="cmd-name">lvremove</div>
+      <div class="cmd-desc">LV を削除</div>
+    </div>
+    <div class="cmd-card" onclick="showLvmCmd('lvconvert')">
+      <div class="cmd-name">lvconvert --merge</div>
+      <div class="cmd-desc">スナップショットを元の LV にマージ（リストア）</div>
+    </div>
+
+  </div>
+
+  <!-- コマンド詳細 -->
+  <div id="lvm-cmd-detail" style="display:none; margin-top:14px; background:#fff; border:1px solid #bee3f8; border-left:5px solid #2c5282; border-radius:0 8px 8px 0; padding:14px 18px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const lvmCmds = {
+      pvcreate: {
+        title: 'pvcreate',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; color:#e2e8f0; line-height:1.7; margin-top:8px;">
+          <div style="color:#68d391;"># 単一デバイスを PV として初期化</div>
+          <div>$ sudo pvcreate /dev/sdb1</div>
+          <div style="color:#68d391;"># 複数デバイスを一括初期化</div>
+          <div>$ sudo pvcreate /dev/sdb1 /dev/sdc1 /dev/sdd1</div>
+          <div style="color:#68d391;"># ディスク全体を PV にする（パーティション不要）</div>
+          <div>$ sudo pvcreate /dev/sdb</div>
+        </div>`
+      },
+      pvdisplay: {
+        title: 'pvdisplay / pvs',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; color:#e2e8f0; line-height:1.7; margin-top:8px;">
+          <div style="color:#68d391;"># 詳細表示</div>
+          <div>$ sudo pvdisplay</div>
+          <div>$ sudo pvdisplay /dev/sdb1  # 特定 PV のみ</div>
+          <div style="color:#68d391;"># 簡易一覧表示</div>
+          <div>$ sudo pvs</div>
+          <div>$ sudo pvs -o +pv_used  # 使用量も表示</div>
+        </div>`
+      },
+      pvmove: {
+        title: 'pvmove',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; color:#e2e8f0; line-height:1.7; margin-top:8px;">
+          <div style="color:#68d391;"># PV のデータを他の PV に移動（ディスク交換前に使用）</div>
+          <div>$ sudo pvmove /dev/sdb1</div>
+          <div style="color:#68d391;"># 移動先を指定</div>
+          <div>$ sudo pvmove /dev/sdb1 /dev/sdd1</div>
+          <div style="color:#68d391;"># バックグラウンドで実行</div>
+          <div>$ sudo pvmove -b /dev/sdb1</div>
+        </div>`
+      },
+      pvremove: {
+        title: 'pvremove',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; color:#e2e8f0; line-height:1.7; margin-top:8px;">
+          <div style="color:#68d391;"># PV の LVM メタデータを消去（VG から削除後に実行）</div>
+          <div>$ sudo pvremove /dev/sdb1</div>
+          <div style="color:#68d391;"># 複数を一括削除</div>
+          <div>$ sudo pvremove /dev/sdb1 /dev/sdc1</div>
+        </div>`
+      },
+      vgcreate: {
+        title: 'vgcreate',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; color:#e2e8f0; line-height:1.7; margin-top:8px;">
+          <div style="color:#68d391;"># VG を作成</div>
+          <div>$ sudo vgcreate vg0 /dev/sdb1 /dev/sdc1</div>
+          <div style="color:#68d391;"># PE サイズを指定（デフォルト 4MB）</div>
+          <div>$ sudo vgcreate -s 8m vg0 /dev/sdb1</div>
+        </div>`
+      },
+      vgdisplay: {
+        title: 'vgdisplay / vgs',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; color:#e2e8f0; line-height:1.7; margin-top:8px;">
+          <div style="color:#68d391;"># 詳細表示</div>
+          <div>$ sudo vgdisplay</div>
+          <div>$ sudo vgdisplay vg0  # 特定 VG のみ</div>
+          <div style="color:#68d391;"># 簡易一覧表示</div>
+          <div>$ sudo vgs</div>
+        </div>`
+      },
+      vgextend: {
+        title: 'vgextend',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; color:#e2e8f0; line-height:1.7; margin-top:8px;">
+          <div style="color:#68d391;"># VG に PV を追加して容量を拡張</div>
+          <div>$ sudo vgextend vg0 /dev/sdd1</div>
+          <div style="color:#68d391;"># 複数の PV を一括追加</div>
+          <div>$ sudo vgextend vg0 /dev/sdd1 /dev/sde1</div>
+        </div>`
+      },
+      vgreduce: {
+        title: 'vgreduce',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; color:#e2e8f0; line-height:1.7; margin-top:8px;">
+          <div style="color:#68d391;"># VG から PV を削除（pvmove でデータ移動後に実行）</div>
+          <div>$ sudo vgreduce vg0 /dev/sdb1</div>
+          <div style="color:#68d391;"># 使用されていない全 PV を削除</div>
+          <div>$ sudo vgreduce --removemissing vg0</div>
+        </div>`
+      },
+      vgremove: {
+        title: 'vgremove',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; color:#e2e8f0; line-height:1.7; margin-top:8px;">
+          <div style="color:#68d391;"># VG を削除（全 LV を削除後に実行）</div>
+          <div>$ sudo vgremove vg0</div>
+          <div style="color:#68d391;"># 確認なしで削除</div>
+          <div>$ sudo vgremove -f vg0</div>
+        </div>`
+      },
+      lvcreate: {
+        title: 'lvcreate',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; color:#e2e8f0; line-height:1.7; margin-top:8px;">
+          <div style="color:#68d391;"># サイズ指定で LV を作成</div>
+          <div>$ sudo lvcreate -L 20G -n lv_root vg0</div>
+          <div style="color:#68d391;"># 空き容量の割合で作成</div>
+          <div>$ sudo lvcreate -l 100%FREE -n lv_data vg0</div>
+          <div style="color:#68d391;"># スナップショット LV を作成</div>
+          <div>$ sudo lvcreate -s -L 5G -n lv_snap /dev/vg0/lv_root</div>
+        </div>`
+      },
+      lvdisplay: {
+        title: 'lvdisplay / lvs',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; color:#e2e8f0; line-height:1.7; margin-top:8px;">
+          <div style="color:#68d391;"># 詳細表示</div>
+          <div>$ sudo lvdisplay</div>
+          <div>$ sudo lvdisplay /dev/vg0/lv_root</div>
+          <div style="color:#68d391;"># 簡易一覧表示</div>
+          <div>$ sudo lvs</div>
+          <div>$ sudo lvs -o +seg_size  # セグメントサイズも表示</div>
+        </div>`
+      },
+      lvextend: {
+        title: 'lvextend',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; color:#e2e8f0; line-height:1.7; margin-top:8px;">
+          <div style="color:#68d391;"># LV を 10GB 拡張</div>
+          <div>$ sudo lvextend -L +10G /dev/vg0/lv_root</div>
+          <div style="color:#68d391;"># LV 拡張と FS 拡張を同時実行（推奨）</div>
+          <div>$ sudo lvextend -L +10G -r /dev/vg0/lv_root</div>
+          <div style="color:#68d391;"># 空き容量すべてを使って拡張</div>
+          <div>$ sudo lvextend -l +100%FREE -r /dev/vg0/lv_root</div>
+        </div>`
+      },
+      lvreduce: {
+        title: 'lvreduce',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; color:#e2e8f0; line-height:1.7; margin-top:8px;">
+          <div style="color:#fc8181;"># ⚠️  必ずアンマウント後、FS 縮小後に実行すること</div>
+          <div style="color:#68d391;"># LV を 15GB に縮小</div>
+          <div>$ sudo lvreduce -L 15G /dev/vg0/lv_root</div>
+          <div style="color:#68d391;"># LV を 5GB 縮小</div>
+          <div>$ sudo lvreduce -L -5G /dev/vg0/lv_root</div>
+        </div>`
+      },
+      lvremove: {
+        title: 'lvremove',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; color:#e2e8f0; line-height:1.7; margin-top:8px;">
+          <div style="color:#68d391;"># LV を削除（アンマウント後に実行）</div>
+          <div>$ sudo lvremove /dev/vg0/lv_data</div>
+          <div style="color:#68d391;"># 確認なしで削除</div>
+          <div>$ sudo lvremove -f /dev/vg0/lv_data</div>
+        </div>`
+      },
+      lvconvert: {
+        title: 'lvconvert --merge',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; color:#e2e8f0; line-height:1.7; margin-top:8px;">
+          <div style="color:#68d391;"># スナップショットを元の LV にマージ（リストア）</div>
+          <div>$ sudo umount /mnt/root</div>
+          <div>$ sudo lvconvert --merge /dev/vg0/lv_root_snap</div>
+          <div style="color:#68d391;"># マージ後は再マウント</div>
+          <div>$ sudo mount /dev/vg0/lv_root /mnt/root</div>
+        </div>`
+      }
+    };
+
+    function showLvmCmd(key) {
+      const d = lvmCmds[key];
+      const el = document.getElementById('lvm-cmd-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display='none'; el.dataset.current=''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.innerHTML = `<strong style="color:#1a365d; font-family:'Consolas','Monaco',monospace; font-size:0.95em;">${d.title}</strong>${d.body}`;
+      el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+  </script>
+
+  <h3>LVM コマンドまとめ表</h3>
+  <table class="ref-table">
+    <thead><tr><th>操作</th><th>PV</th><th>VG</th><th>LV</th></tr></thead>
+    <tbody>
+      <tr><td><strong>作成・初期化</strong></td><td><code>pvcreate</code></td><td><code>vgcreate</code></td><td><code>lvcreate</code></td></tr>
+      <tr><td><strong>詳細表示</strong></td><td><code>pvdisplay</code></td><td><code>vgdisplay</code></td><td><code>lvdisplay</code></td></tr>
+      <tr><td><strong>簡易一覧</strong></td><td><code>pvs</code></td><td><code>vgs</code></td><td><code>lvs</code></td></tr>
+      <tr><td><strong>拡張</strong></td><td>—</td><td><code>vgextend</code></td><td><code>lvextend</code></td></tr>
+      <tr><td><strong>縮小</strong></td><td>—</td><td><code>vgreduce</code></td><td><code>lvreduce</code></td></tr>
+      <tr><td><strong>削除</strong></td><td><code>pvremove</code></td><td><code>vgremove</code></td><td><code>lvremove</code></td></tr>
+      <tr><td><strong>データ移動</strong></td><td><code>pvmove</code></td><td>—</td><td>—</td></tr>
+      <tr><td><strong>スナップショット</strong></td><td>—</td><td>—</td><td><code>lvcreate -s</code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- まとめ表 -->
+<!-- ============================================================ -->
+<h2>📌 LVM 作成・管理の全手順まとめ</h2>
+<div class="demo-box">
+  <table class="ref-table">
+    <thead><tr><th>手順</th><th>コマンド例</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td colspan="3" style="background:#dbeafe; color:#1a365d; font-weight:bold; font-size:0.88em;">▼ 作成手順</td></tr>
+      <tr><td>① PV 初期化</td><td><code>pvcreate /dev/sdb1 /dev/sdc1</code></td><td>パーティションを PV として初期化</td></tr>
+      <tr><td>② VG 作成</td><td><code>vgcreate vg0 /dev/sdb1 /dev/sdc1</code></td><td>PV を束ねて VG を作成</td></tr>
+      <tr><td>③ LV 作成</td><td><code>lvcreate -L 20G -n lv_root vg0</code></td><td>VG から LV を切り出す</td></tr>
+      <tr><td>④ FS 作成</td><td><code>mkfs.ext4 /dev/vg0/lv_root</code></td><td>LV をフォーマット</td></tr>
+      <tr><td>⑤ マウント</td><td><code>mount /dev/vg0/lv_root /mnt/root</code></td><td>マウントして使用開始</td></tr>
+      <tr><td colspan="3" style="background:#dbeafe; color:#1a365d; font-weight:bold; font-size:0.88em;">▼ 拡張手順</td></tr>
+      <tr><td>VG 拡張</td><td><code>pvcreate /dev/sdd1</code> → <code>vgextend vg0 /dev/sdd1</code></td><td>新 PV を追加して VG を拡張</td></tr>
+      <tr><td>LV 拡張（ext4）</td><td><code>lvextend -L +10G -r /dev/vg0/lv_root</code></td><td>LV と FS を同時拡張</td></tr>
+      <tr><td>LV 拡張（XFS）</td><td><code>lvextend -L +10G /dev/vg0/lv_home</code> → <code>xfs_growfs /mnt/home</code></td><td>LV 拡張後に XFS を拡張</td></tr>
+      <tr><td colspan="3" style="background:#dbeafe; color:#1a365d; font-weight:bold; font-size:0.88em;">▼ 縮小・削除手順</td></tr>
+      <tr><td>LV 縮小（ext4）</td><td><code>umount</code> → <code>e2fsck -f</code> → <code>resize2fs</code> → <code>lvreduce</code></td><td>必ずこの順序で実行</td></tr>
+      <tr><td>PV 削除</td><td><code>pvmove /dev/sdb1</code> → <code>vgreduce vg0 /dev/sdb1</code> → <code>pvremove /dev/sdb1</code></td><td>データ移動→VGから削除→PV消去</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 穴埋め問題</h3>
+    <p>以下の説明に合うコマンドを入力してください。</p>
+    <label>① /dev/sdb1 を PV として初期化するコマンド：</label>
+    <input type="text" id="q1a" placeholder="コマンド /dev/sdb1">
+    <label>② PV（/dev/sdb1, /dev/sdc1）から vg0 という VG を作成するコマンド：</label>
+    <input type="text" id="q1b" placeholder="コマンド vg0 /dev/sdb1 /dev/sdc1">
+    <label>③ vg0 から 20GB の lv_root という LV を作成するコマンド：</label>
+    <input type="text" id="q1c" placeholder="コマンド -L 20G -n lv_root vg0">
+    <label>④ /dev/vg0/lv_root を 10GB 拡張し FS も同時に拡張するコマンド：</label>
+    <input type="text" id="q1d" placeholder="コマンド -L +10G -r /dev/vg0/lv_root">
+    <label>⑤ /dev/sdb1 のデータを他の PV に移動するコマンド：</label>
+    <input type="text" id="q1e" placeholder="コマンド /dev/sdb1">
+    <br>
+    <button class="btn btn-blue" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const a = document.getElementById('q1a').value.trim().toLowerCase().replace(/\s+/g,'');
+        const b = document.getElementById('q1b').value.trim().toLowerCase().replace(/\s+/g,'');
+        const c = document.getElementById('q1c').value.trim().toLowerCase().replace(/\s+/g,'');
+        const d = document.getElementById('q1d').value.trim().toLowerCase().replace(/\s+/g,'');
+        const e = document.getElementById('q1e').value.trim().toLowerCase().replace(/\s+/g,'');
+        const r = document.getElementById('q1-result');
+        const ca = a === 'pvcreate/dev/sdb1';
+        const cb = b === 'vgcreatevg0/dev/sdb1/dev/sdc1';
+        const cc = c === 'lvcreate-l20g-nlv_rootvg0' || c === 'lvcreate-l20g-nrootlv_rootvg0' ||
+                   c === 'lvcreate-l20g-nlv_rootvg0';
+        const cd = d === 'lvextend-l+10g-r/dev/vg0/lv_root';
+        const ce = e === 'pvmove/dev/sdb1';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ pvcreate /dev/sdb1'}　` +
+            `② ${cb?'✅':'❌ vgcreate vg0 /dev/sdb1 /dev/sdc1'}　` +
+            `③ ${cc?'✅':'❌ lvcreate -L 20G -n lv_root vg0'}　` +
+            `④ ${cd?'✅':'❌ lvextend -L +10G -r /dev/vg0/lv_root'}　` +
+            `⑤ ${ce?'✅':'❌ pvmove /dev/sdb1'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 選択問題</h3>
+    <p>
+      ext4 でフォーマットされた LV を縮小する場合の正しい手順はどれですか？
+    </p>
+    <select id="q2">
+      <option value="">-- 選択してください --</option>
+      <option value="a">lvreduce → resize2fs → e2fsck の順で実行する</option>
+      <option value="b">umount → e2fsck -f → resize2fs → lvreduce の順で実行する</option>
+      <option value="c">resize2fs → lvreduce → e2fsck の順で実行する</option>
+      <option value="d">lvreduce → umount → resize2fs の順で実行する</option>
+    </select>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const v = document.getElementById('q2').value;
+        const r = document.getElementById('q2-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>LV 縮小の正しい手順：</strong><br>' +
+            '① <code>umount</code>：アンマウント（必須）<br>' +
+            '② <code>e2fsck -f</code>：ファイルシステムのチェック（必須）<br>' +
+            '③ <code>resize2fs</code>：ファイルシステムを縮小<br>' +
+            '④ <code>lvreduce</code>：LV を縮小<br><br>' +
+            '<strong>重要：</strong>FS を先に縮小してから LV を縮小します。<br>' +
+            'LV を先に縮小すると FS が破損します！';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br><br>' +
+            '正しい順序：<strong>umount → e2fsck -f → resize2fs → lvreduce</strong><br>' +
+            '必ず FS を先に縮小してから LV を縮小してください。<br>' +
+            '逆順で実行するとデータが破損します。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① LVM の3層構造は「物理ボリューム（PV）→ ボリュームグループ（VG）→ 論理ボリューム（LV）」である
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② <code>lvextend -r</code> オプションを使うと LV の拡張と同時にファイルシステムも拡張される
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ XFS でフォーマットされた LV は縮小することができる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ <code>pvmove</code> コマンドは PV のデータを他の PV に移動する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ LVM スナップショットは CoW（Copy-on-Write）方式で変更されたブロックのみを保存する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ <code>vgextend</code> は VG から PV を削除して容量を縮小するコマンドである
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ LV のデバイスファイルは <code>/dev/VG名/LV名</code> または <code>/dev/mapper/VG名-LV名</code> でアクセスできる
+    </label>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：①②④⑤⑦（a,b,d,e,g）
+        // ③ XFS は縮小不可（ext4 のみ縮小可能）
+        // ⑥ vgextend は拡張。縮小は vgreduce
+        const correct = { a:true, b:true, c:false, d:true, e:true, f:false, g:true };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>①②④⑤⑦<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・③ XFS は<strong>縮小できません</strong>。縮小できるのは ext2/3/4 のみです<br>' +
+            '・⑥ <code>vgextend</code> は VG に PV を<strong>追加して拡張</strong>するコマンドです。<br>' +
+            '&nbsp;&nbsp;VG から PV を削除して縮小するのは <code>vgreduce</code> です';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. 手順並べ替え問題</h3>
+    <p>
+      古いディスク（<code>/dev/sdb1</code>）を新しいディスク（<code>/dev/sdd1</code>）に交換するための
+      LVM 操作の正しい順序を答えてください。
+    </p>
+    <div style="background:#ebf8ff; border:1px solid #90cdf4; border-radius:6px; padding:12px 16px; margin:10px 0; font-size:0.88em;">
+      <div>A. <code>sudo pvremove /dev/sdb1</code></div>
+      <div>B. <code>sudo pvcreate /dev/sdd1</code></div>
+      <div>C. <code>sudo pvmove /dev/sdb1</code></div>
+      <div>D. <code>sudo vgextend vg0 /dev/sdd1</code></div>
+      <div>E. <code>sudo vgreduce vg0 /dev/sdb1</code></div>
+    </div>
+    <label>正しい順序（例：B→D→... の形式で入力）：</label>
+    <input type="text" id="q4" placeholder="X→X→X→X→X">
+    <br>
+    <button class="btn btn-blue" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const v = document.getElementById('q4').value.trim().toUpperCase()
+                    .replace(/[^A-E→>-]/g,'').replace(/[-›>]+/g,'→');
+        const r = document.getElementById('q4-result');
+        if (v === 'B→D→C→E→A') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>正しい手順：</strong><br>' +
+            '① B：<code>pvcreate /dev/sdd1</code>（新ディスクを PV として初期化）<br>' +
+            '② D：<code>vgextend vg0 /dev/sdd1</code>（VG に新 PV を追加）<br>' +
+            '③ C：<code>pvmove /dev/sdb1</code>（旧 PV のデータを移動）<br>' +
+            '④ E：<code>vgreduce vg0 /dev/sdb1</code>（VG から旧 PV を削除）<br>' +
+            '⑤ A：<code>pvremove /dev/sdb1</code>（旧 PV の LVM メタデータを消去）';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ 不正解。あなたの回答：${v || '（未入力）'}<br><br>` +
+            '<strong>正しい順序：B→D→C→E→A</strong><br>' +
+            '① B：pvcreate（新 PV 初期化）<br>' +
+            '② D：vgextend（VG に追加）<br>' +
+            '③ C：pvmove（データ移動）<br>' +
+            '④ E：vgreduce（VG から削除）<br>' +
+            '⑤ A：pvremove（PV 消去）';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-block">
+    <h3>Q5. 選択問題</h3>
+    <p>
+      <code>lvcreate -s -L 5G -n lv_snap /dev/vg0/lv_root</code> コマンドの説明として正しいものはどれですか？
+    </p>
+    <select id="q5">
+      <option value="">-- 選択してください --</option>
+      <option value="a">vg0 に 5GB の lv_snap という新しい LV を作成する</option>
+      <option value="b">/dev/vg0/lv_root の 5GB のスナップショット lv_snap を作成する</option>
+      <option value="c">/dev/vg0/lv_root を 5GB に縮小して lv_snap に名前を変更する</option>
+      <option value="d">lv_root から 5GB を切り出して lv_snap という別の LV を作成する</option>
+    </select>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ5()">答え合わせ</button>
+    <div class="result-msg" id="q5-result"></div>
+    <script>
+      function checkQ5() {
+        const v = document.getElementById('q5').value;
+        const r = document.getElementById('q5-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>コマンドの解説：</strong><br>' +
+            '<code>lvcreate -s -L 5G -n lv_snap /dev/vg0/lv_root</code><br>' +
+            '・<code>-s</code>：スナップショット（snapshot）を作成<br>' +
+            '・<code>-L 5G</code>：スナップショット用の差分データを保存する領域のサイズ（5GB）<br>' +
+            '・<code>-n lv_snap</code>：スナップショット LV の名前<br>' +
+            '・<code>/dev/vg0/lv_root</code>：スナップショットの元となる LV（オリジン）<br><br>' +
+            'スナップショットは CoW 方式で動作し、変更されたブロックのみを保存します。<br>' +
+            '<code>Data%</code> が 100% に近づくとスナップショットが無効になるため注意が必要です。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '<code>-s</code> オプションはスナップショット（snapshot）を作成します。<br>' +
+            '<code>-L 5G</code> はスナップショット用の差分保存領域のサイズです。<br>' +
+            '最後の引数 <code>/dev/vg0/lv_root</code> がスナップショットの元となる LV です。';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 「LVM の管理」の学習が完了したら記録しましょう！</p>
+  <button class="btn btn-done" onclick="markComplete()">✅ このセクションを完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch5', '66');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  if (parseInt(localStorage.getItem('lpic201_ch5') || '0') >= 66) {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="index.html">← RAID</a>
+  <a class="home" href="../index.html">🏠 目次へ</a>
+  <a class="next" href="03_storage.html">次へ：ストレージデバイスの管理 →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
