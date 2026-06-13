@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>弱点分析ダッシュボード ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 20px 48px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.7;
+    }
+
+    /* ヘッダー */
+    .dash-header {
+      background: linear-gradient(135deg, #1a365d, #2c5282);
+      border-radius: 12px;
+      padding: 28px 28px 22px;
+      margin: 24px 0 28px;
+      color: #fff;
+      box-shadow: 0 4px 18px rgba(44,82,130,0.35);
+    }
+    .dash-header h1 { margin: 0 0 6px; font-size: 1.5em; }
+    .dash-header p  { margin: 0; font-size: 0.9em; opacity: 0.85; }
+    .dash-header-nav {
+      display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap;
+    }
+    .dash-header-nav a {
+      padding: 7px 16px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.85em;
+      font-weight: bold;
+      transition: opacity 0.2s;
+    }
+    .dash-header-nav a:hover { opacity: 0.85; }
+    .dash-header-nav .btn-exam { background: #fff; color: #1a365d; }
+    .dash-header-nav .btn-home { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.4); }
+
+    /* 空データ表示 */
+    .no-data {
+      text-align: center;
+      padding: 60px 20px;
+      background: #fff;
+      border-radius: 12px;
+      border: 2px dashed #bee3f8;
+    }
+    .no-data .nd-icon { font-size: 3em; margin-bottom: 12px; }
+    .no-data h3 { color: #2c5282; margin: 0 0 8px; }
+    .no-data p  { color: #718096; font-size: 0.9em; margin: 0 0 20px; }
+    .no-data a  {
+      display: inline-block; padding: 10px 24px;
+      background: #2c5282; color: #fff;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.95em;
+    }
+
+    /* セクションタイトル */
+    .section-title {
+      font-size: 1.05em;
+      font-weight: bold;
+      color: #1a365d;
+      margin: 0 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* サマリーカードグリッド */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .summary-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 18px 14px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .summary-card .sc-icon  { font-size: 1.8em; margin-bottom: 6px; }
+    .summary-card .sc-val   { font-size: 1.6em; font-weight: bold; color: #1a365d; line-height: 1; }
+    .summary-card .sc-label { font-size: 0.78em; color: #718096; margin-top: 4px; }
+
+    /* レーダーチャート */
+    .radar-wrap {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 28px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    #radar-canvas {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+    }
+
+    /* 章別スコアバー */
+    .chapter-bars {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 28px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .ch-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .ch-bar-name {
+      font-size: 0.82em;
+      min-width: 180px;
+      color: #4a5568;
+      font-weight: bold;
+    }
+    .ch-bar-bg {
+      flex: 1;
+      background: #edf2f7;
+      border-radius: 6px;
+      height: 14px;
+      overflow: hidden;
+      position: relative;
+    }
+    .ch-bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.8s ease;
+      position: relative;
+    }
+    .ch-bar-pct {
+      font-size: 0.82em;
+      font-weight: bold;
+      min-width: 40px;
+      text-align: right;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .ch-bar-count {
+      font-size: 0.75em;
+      color: #a0aec0;
+      min-width: 60px;
+      text-align: right;
+    }
+
+    /* 弱点問題リスト */
+    .weak-list {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 28px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .weak-item {
+      border: 1px solid #fed7d7;
+      border-left: 4px solid #e53e3e;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      font-size: 0.88em;
+    }
+    .weak-item-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+    .wi-badge {
+      font-size: 0.75em;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+    .wi-badge.cat  { background: #e9d8fd; color: #553c9a; }
+    .wi-badge.rate { background: #fed7d7; color: #9b2335; }
+    .weak-item-q { color: #2d3748; line-height: 1.6; }
+
+    /* 推奨学習 */
+    .recommend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .recommend-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .rc-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 8px;
+    }
+    .rc-icon { font-size: 1.4em; }
+    .rc-title { font-weight: bold; font-size: 0.9em; color: #1a365d; }
+    .rc-body { font-size: 0.82em; color: #4a5568; line-height: 1.6; }
+    .rc-link {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 5px 12px;
+      background: #ebf8ff;
+      color: #2c5282;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.80em;
+      font-weight: bold;
+    }
+    .rc-link:hover { background: #bee3f8; }
+
+    /* 学習履歴グラフ */
+    .history-wrap {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 28px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    #history-canvas {
+      display: block;
+      max-width: 100%;
+    }
+
+    /* リセットボタン */
+    .danger-zone {
+      background: #fff5f5;
+      border: 1px solid #fed7d7;
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .danger-zone p { margin: 0; font-size: 0.88em; color: #744210; }
+    .btn-reset {
+      padding: 8px 18px;
+      background: #e53e3e;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.85em;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-reset:hover { background: #c53030; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.86em; }
+      .ch-bar-name { min-width: 120px; font-size: 0.78em; }
+      .ch-bar-count { display: none; }
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<div class="dash-header">
+  <h1>📊 弱点分析ダッシュボード</h1>
+  <p>模擬試験の結果を分析して、重点的に学習すべき分野を把握しましょう</p>
+  <div class="dash-header-nav">
+    <a href="index.html" class="btn-exam">📝 模擬試験を受ける</a>
+    <a href="../index.html" class="btn-home">🏠 学習トップへ</a>
+  </div>
+</div>
+
+<!-- メインコンテンツ（JS で描画） -->
+<div id="main-content"></div>
+
+<script>
+/* =====================================================
+   問題データ（試験ページと同じ定義）
+===================================================== */
+const CHAPTER_NAMES = {
+  1: '第1章：カーネル',
+  2: '第2章：起動',
+  3: '第3章：システムの起動',
+  4: '第4章：デバイスとFS',
+  5: '第5章：ストレージ管理',
+  6: '第6章：ネットワーク',
+  7: '第7章：システムメンテナンス',
+};
+const CHAPTER_COLORS = {
+  1:'#553c9a', 2:'#2b4c7e', 3:'#744210',
+  4:'#b7791f', 5:'#2c5282', 6:'#553c9a', 7:'#276749'
+};
+const CHAPTER_LINKS = {
+  1:'../01_kernel/index.html',
+  2:'../02_boot/index.html',
+  3:'../03_boot/index.html',
+  4:'../04_filesystem/index.html',
+  5:'../05_storage/index.html',
+  6:'../06_network/index.html',
+  7:'../07_maintenance/index.html',
+};
+
+/* =====================================================
+   データ取得
+===================================================== */
+function getHistory() {
+  return JSON.parse(localStorage.getItem('lpic201_exam_history') || '{}');
+}
+function getChapterScores() {
+  return JSON.parse(localStorage.getItem('lpic201_chapter_scores') || '{}');
+}
+function hasData() {
+  const h = getHistory();
+  return Object.keys(h).length > 0;
+}
+
+/* =====================================================
+   メイン描画
+===================================================== */
+function renderDashboard() {
+  const main = document.getElementById('main-content');
+
+  if (!hasData()) {
+    main.innerHTML = `
+      <div class="no-data">
+        <div class="nd-icon">📝</div>
+        <h3>まだ試験データがありません</h3>
+        <p>模擬試験を受けると、ここに分析結果が表示されます。<br>まずは試験を受けてみましょう！</p>
+        <a href="index.html">模擬試験を受ける →</a>
+      </div>`;
+    return;
+  }
+
+  const history = getHistory();
+  const chScores = getChapterScores();
+
+  // 集計
+  let totalQ = 0, totalC = 0, totalW = 0;
+  Object.values(history).forEach(h => {
+    totalQ += h.total;
+    totalC += h.correct;
+    totalW += h.wrong;
+  });
+  const overallPct = totalQ > 0 ? Math.round(totalC / totalQ * 100) : 0;
+
+  // 章別スコア集計
+  const chData = {};
+  Object.entries(chScores).forEach(([ch, data]) => {
+    const num = parseInt(ch.replace('ch',''));
+    chData[num] = {
+      name: CHAPTER_NAMES[num] || ch,
+      color: CHAPTER_COLORS[num] || '#4a5568',
+      pct: data.total > 0 ? Math.round(data.correct / data.total * 100) : null,
+      correct: data.correct,
+      total: data.total,
+    };
+  });
+
+  // 弱点問題（正答率50%未満・3回以上回答）
+  const weakItems = Object.entries(history)
+    .filter(([,h]) => h.total >= 2 && (h.correct / h.total) < 0.6)
+    .sort((a,b) => (a[1].correct/a[1].total) - (b[1].correct/b[1].total))
+    .slice(0, 10);
+
+  // HTML 構築
+  let html = '';
+
+  /* --- サマリーカード --- */
+  html += `
+    <div class="section-title">📈 総合サマリー</div>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="sc-icon">📋</div>
+        <div class="sc-val">${totalQ}</div>
+        <div class="sc-label">累計解答数</div>
+      </div>
+      <div class="summary-card">
+        <div class="sc-icon">✅</div>
+        <div class="sc-val" style="color:#276749;">${totalC}</div>
+        <div class="sc-label">累計正解数</div>
+      </div>
+      <div class="summary-card">
+        <div class="sc-icon">❌</div>
+        <div class="sc-val" style="color:#e53e3e;">${totalW}</div>
+        <div class="sc-label">累計不正解数</div>
+      </div>
+      <div class="summary-card">
+        <div class="sc-icon">🎯</div>
+        <div class="sc-val" style="color:${overallPct>=65?'#276749':'#e53e3e'};">${overallPct}%</div>
+        <div class="sc-label">総合正答率</div>
+      </div>
+    </div>`;
+
+  /* --- レーダーチャート --- */
+  html += `
+    <div class="radar-wrap">
+      <div class="section-title">🕸️ 章別スコア レーダーチャート</div>
+      <canvas id="radar-canvas" width="480" height="380"></canvas>
+    </div>`;
+
+  /* --- 章別スコアバー --- */
+  html += `
+    <div class="chapter-bars">
+      <div class="section-title">📊 章別スコア詳細</div>`;
+
+  for (let ch = 1; ch <= 7; ch++) {
+    const d = chData[ch];
+    if (!d || d.total === 0) {
+      html += `
+        <div class="ch-bar-row">
+          <div class="ch-bar-name">${CHAPTER_NAMES[ch]}</div>
+          <div class="ch-bar-bg" style="flex:1;">
+            <div style="height:100%; background:#edf2f7; border-radius:6px; display:flex; align-items:center; padding-left:8px;">
+              <span style="font-size:0.75em; color:#a0aec0;">未受験</span>
+            </div>
+          </div>
+          <div class="ch-bar-pct" style="color:#a0aec0;">--</div>
+          <div class="ch-bar-count">0問</div>
+        </div>`;
+      continue;
+    }
+    const pct = d.pct;
+    const fillColor = pct >= 80 ? '#48bb78' : pct >= 65 ? '#f6ad55' : '#fc8181';
+    html += `
+      <div class="ch-bar-row">
+        <div class="ch-bar-name">${d.name}</div>
+        <div class="ch-bar-bg">
+          <div class="ch-bar-fill" style="width:${pct}%; background:${fillColor};"></div>
+        </div>
+        <div class="ch-bar-pct" style="color:${fillColor};">${pct}%</div>
+        <div class="ch-bar-count">${d.correct}/${d.total}問</div>
+      </div>`;
+  }
+  html += `</div>`;
+
+  /* --- 弱点問題リスト --- */
+  if (weakItems.length > 0) {
+    html += `
+      <div class="weak-list">
+        <div class="section-title">⚠️ 重点復習が必要な問題（正答率60%未満）</div>`;
+    weakItems.forEach(([id, h]) => {
+      const pct = Math.round(h.correct / h.total * 100);
+      const qText = id.replace(/^ch\d+_/, '').replace(/_/g, ' ');
+      html += `
+        <div class="weak-item">
+          <div class="weak-item-header">
+            <span class="wi-badge cat">${h.category || '不明'}</span>
+            <span class="wi-badge rate">正答率 ${pct}%（${h.correct}/${h.total}問）</span>
+          </div>
+          <div class="weak-item-q">${qText}...</div>
+        </div>`;
+    });
+    html += `</div>`;
+  }
+
+  /* --- 推奨学習 --- */
+  const weakChapters = Object.entries(chData)
+    .filter(([,d]) => d.total > 0 && d.pct < 65)
+    .sort((a,b) => a[1].pct - b[1].pct)
+    .slice(0, 4);
+
+  if (weakChapters.length > 0) {
+    html += `
+      <div class="section-title">💡 推奨学習セクション</div>
+      <div class="recommend-grid">`;
+    weakChapters.forEach(([ch, d]) => {
+      html += `
+        <div class="recommend-card">
+          <div class="rc-header">
+            <div class="rc-icon">📚</div>
+            <div class="rc-title">${d.name}</div>
+          </div>
+          <div class="rc-body">
+            正答率 <strong style="color:#e53e3e;">${d.pct}%</strong><br>
+            ${d.total}問中 ${d.correct}問正解<br>
+            重点的に復習しましょう
+          </div>
+          <a href="${CHAPTER_LINKS[ch]}" class="rc-link">学習ページへ →</a>
+        </div>`;
+    });
+    html += `</div>`;
+  } else if (Object.values(chData).some(d => d.total > 0)) {
+    html += `
+      <div class="recommend-grid">
+        <div class="recommend-card" style="grid-column:1/-1; text-align:center; padding:24px;">
+          <div style="font-size:2em; margin-bottom:8px;">🎉</div>
+          <div style="font-weight:bold; color:#276749; margin-bottom:4px;">全章で合格ライン（65%）を超えています！</div>
+          <div style="font-size:0.85em; color:#718096;">引き続き模擬試験で実力を磨きましょう</div>
+        </div>
+      </div>`;
+  }
+
+  /* --- 学習履歴グラフ --- */
+  html += `
+    <div class="history-wrap">
+      <div class="section-title">📅 学習履歴（直近10回の模擬試験）</div>
+      <canvas id="history-canvas" width="700" height="200"></canvas>
+    </div>`;
+
+  /* --- 危険ゾーン --- */
+  html += `
+    <div class="danger-zone">
+      <p>⚠️ 学習履歴をリセットすると、すべての分析データが削除されます</p>
+      <button class="btn-reset" onclick="resetData()">データをリセット</button>
+    </div>`;
+
+  main.innerHTML = html;
+
+  /* --- Canvas 描画 --- */
+  setTimeout(() => {
+    drawRadar(chData);
+    drawHistory();
+  }, 50);
+}
+
+/* =====================================================
+   レーダーチャート描画
+===================================================== */
+function drawRadar(chData) {
+  const canvas = document.getElementById('radar-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2;
+  const R  = Math.min(W, H) * 0.36;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const chapters = [1,2,3,4,5,6,7];
+  const N = chapters.length;
+  const angles = chapters.map((_, i) => (i / N) * Math.PI * 2 - Math.PI / 2);
+
+  // グリッド（5段階）
+  for (let level = 1; level <= 5; level++) {
+    const r = R * level / 5;
+    ctx.beginPath();
+    angles.forEach((a, i) => {
+      const x = cx + r * Math.cos(a);
+      const y = cy + r * Math.sin(a);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.strokeStyle = level === 5 ? '#cbd5e0' : '#e2e8f0';
+    ctx.lineWidth = level === 5 ? 1.5 : 1;
+    ctx.stroke();
+
+    // パーセント表示
+    if (level % 2 === 0) {
+      ctx.fillStyle = '#a0aec0';
+      ctx.font = '11px Consolas, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${level * 20}%`, cx + 4, cy - r + 4);
+    }
+  }
+
+  // 軸線
+  angles.forEach(a => {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + R * Math.cos(a), cy + R * Math.sin(a));
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+
+  // データプロット
+  const scores = chapters.map(ch => {
+    const d = chData[ch];
+    return d && d.total > 0 ? d.pct / 100 : 0;
+  });
+
+  ctx.beginPath();
+  angles.forEach((a, i) => {
+    const r = R * scores[i];
+    const x = cx + r * Math.cos(a);
+    const y = cy + r * Math.sin(a);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.closePath();
+  ctx.fillStyle   = 'rgba(49,130,206,0.2)';
+  ctx.strokeStyle = '#3182ce';
+  ctx.lineWidth   = 2.5;
+  ctx.fill();
+  ctx.stroke();
+
+  // 合格ライン（65%）
+  const passR = R * 0.65;
+  ctx.beginPath();
+  angles.forEach((a, i) => {
+    const x = cx + passR * Math.cos(a);
+    const y = cy + passR * Math.sin(a);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.closePath();
+  ctx.strokeStyle = '#f6ad55';
+  ctx.lineWidth   = 1.5;
+  ctx.setLineDash([4, 4]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 頂点ドット
+  angles.forEach((a, i) => {
+    const r = R * scores[i];
+    const x = cx + r * Math.cos(a);
+    const y = cy + r * Math.sin(a);
+    const pct = Math.round(scores[i] * 100);
+    const color = pct >= 80 ? '#48bb78' : pct >= 65 ? '#f6ad55' : '#fc8181';
+
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fillStyle   = color;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth   = 2;
+    ctx.fill();
+    ctx.stroke();
+
+    // スコア表示
+    if (scores[i] > 0) {
+      ctx.fillStyle = color;
+      ctx.font = 'bold 11px Consolas, monospace';
+      ctx.textAlign = 'center';
+      const lx = cx + (R * 0.58) * Math.cos(a);
+      const ly = cy + (R * 0.58) * Math.sin(a);
+      ctx.fillText(`${pct}%`, lx, ly + 4);
+    }
+  });
+
+  // ラベル
+  const labelR = R + 36;
+  const shortNames = ['カーネル','起動','システム起動','デバイスFS','ストレージ','ネットワーク','メンテナンス'];
+  angles.forEach((a, i) => {
+    const x = cx + labelR * Math.cos(a);
+    const y = cy + labelR * Math.sin(a);
+    const d = chData[chapters[i]];
+    const pct = d && d.total > 0 ? d.pct : null;
+    const color = pct === null ? '#a0aec0' : pct >= 65 ? '#2c5282' : '#e53e3e';
+
+    ctx.fillStyle = color;
+    ctx.font = `bold 12px 'Segoe UI', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(shortNames[i], x, y);
+  });
+
+  // 凡例
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+
+  ctx.strokeStyle = '#f6ad55';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(20, H - 20); ctx.lineTo(50, H - 20); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#718096';
+  ctx.fillText('合格ライン (65%)', 56, H - 20);
+}
+
+/* =====================================================
+   学習履歴グラフ
+===================================================== */
+function drawHistory() {
+  const canvas = document.getElementById('history-canvas');
+  if (!canvas) return;
+
+  // localStorage から試験履歴を取得（簡易版）
+  const rawHistory = JSON.parse(localStorage.getItem('lpic201_exam_sessions') || '[]');
+  if (rawHistory.length === 0) {
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#a0aec0';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('試験を受けると履歴グラフが表示されます', canvas.width/2, canvas.height/2);
+    return;
+  }
+
+  const sessions = rawHistory.slice(-10);
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const pad = { top:20, right:20, bottom:40, left:50 };
+  const gW = W - pad.left - pad.right;
+  const gH = H - pad.top - pad.bottom;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // グリッド
+  [0,25,50,65,75,100].forEach(v => {
+    const y = pad.top + gH * (1 - v/100);
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(W - pad.right, y);
+    ctx.strokeStyle = v === 65 ? '#f6ad55' : '#e2e8f0';
+    ctx.lineWidth   = v === 65 ? 1.5 : 1;
+    ctx.setLineDash(v === 65 ? [4,4] : []);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#a0aec0';
+    ctx.font = '11px Consolas, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${v}%`, pad.left - 6, y + 4);
+  });
+
+  // 折れ線
+  const step = gW / Math.max(sessions.length - 1, 1);
+  ctx.beginPath();
+  sessions.forEach((s, i) => {
+    const x = pad.left + i * step;
+    const y = pad.top + gH * (1 - s.score/100);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = '#3182ce';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // ドット
+  sessions.forEach((s, i) => {
+    const x = pad.left + i * step;
+    const y = pad.top + gH * (1 - s.score/100);
+    const color = s.score >= 65 ? '#48bb78' : '#fc8181';
+
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fillStyle   = color;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth   = 2;
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = color;
+    ctx.font = 'bold 11px Consolas, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${s.score}%`, x, y - 10);
+
+    ctx.fillStyle = '#a0aec0';
+    ctx.font = '10px sans-serif';
+    ctx.fillText(s.date, x, H - pad.bottom + 16);
+  });
+}
+
+/* =====================================================
+   データリセット
+===================================================== */
+function resetData() {
+  if (!confirm('すべての学習履歴・分析データをリセットしますか？\nこの操作は取り消せません。')) return;
+  localStorage.removeItem('lpic201_exam_history');
+  localStorage.removeItem('lpic201_chapter_scores');
+  localStorage.removeItem('lpic201_exam_sessions');
+  renderDashboard();
+}
+
+/* =====================================================
+   初期化
+===================================================== */
+renderDashboard();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>模擬試験モード ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 20px 40px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.7;
+    }
+
+    /* ============ 共通 ============ */
+    code {
+      background: #edf2f7; padding: 2px 6px;
+      border-radius: 4px; font-size: 0.92em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .hidden { display: none !important; }
+
+    /* ============ スタート画面 ============ */
+    #start-screen {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .start-logo {
+      font-size: 3.5em;
+      margin-bottom: 8px;
+    }
+    .start-title {
+      font-size: 1.8em;
+      font-weight: bold;
+      color: #1a365d;
+      margin-bottom: 6px;
+    }
+    .start-sub {
+      color: #718096;
+      font-size: 0.95em;
+      margin-bottom: 32px;
+    }
+    .start-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+      margin: 0 auto 32px;
+      max-width: 600px;
+    }
+    .start-info-card {
+      background: #fff;
+      border: 1px solid #bee3f8;
+      border-radius: 10px;
+      padding: 16px 12px;
+      text-align: center;
+    }
+    .start-info-card .sic-icon { font-size: 1.8em; margin-bottom: 4px; }
+    .start-info-card .sic-val  { font-size: 1.3em; font-weight: bold; color: #1a365d; }
+    .start-info-card .sic-label{ font-size: 0.78em; color: #718096; margin-top: 2px; }
+
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      max-width: 680px;
+      margin: 0 auto 28px;
+    }
+    .mode-card {
+      background: #fff;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 18px 16px;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+      text-align: center;
+    }
+    .mode-card:hover {
+      border-color: #4299e1;
+      box-shadow: 0 4px 12px rgba(66,153,225,0.2);
+      transform: translateY(-2px);
+    }
+    .mode-card.selected {
+      border-color: #3182ce;
+      background: #ebf8ff;
+      box-shadow: 0 4px 12px rgba(49,130,206,0.25);
+    }
+    .mode-card .mc-icon  { font-size: 2em; margin-bottom: 6px; }
+    .mode-card .mc-title { font-weight: bold; color: #1a365d; margin-bottom: 4px; }
+    .mode-card .mc-desc  { font-size: 0.80em; color: #718096; line-height: 1.5; }
+
+    .btn-start {
+      display: inline-block;
+      padding: 14px 48px;
+      background: linear-gradient(135deg, #1a365d, #2c5282);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.1em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      box-shadow: 0 4px 14px rgba(44,82,130,0.35);
+    }
+    .btn-start:hover { opacity: 0.88; transform: translateY(-2px); }
+
+    /* ============ 試験画面 ============ */
+    #exam-screen { padding: 20px 0; }
+
+    /* ヘッダーバー */
+    .exam-header {
+      background: #1a365d;
+      border-radius: 10px;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .exam-header .eh-left {
+      display: flex; align-items: center; gap: 16px;
+    }
+    .q-counter {
+      color: #fff;
+      font-size: 0.9em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .q-counter span { color: #90cdf4; font-weight: bold; font-size: 1.1em; }
+
+    /* タイマー */
+    .timer {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 1.3em;
+      font-weight: bold;
+      color: #68d391;
+      min-width: 70px;
+      text-align: right;
+    }
+    .timer.warn  { color: #f6ad55; }
+    .timer.danger{ color: #fc8181; animation: pulse 0.8s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+    /* 進捗バー */
+    .exam-progress-wrap {
+      background: #2d3748;
+      border-radius: 4px;
+      height: 6px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .exam-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4299e1, #68d391);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    /* フラグボタン */
+    .btn-flag {
+      background: transparent;
+      border: 1px solid #4a5568;
+      border-radius: 6px;
+      color: #a0aec0;
+      padding: 4px 10px;
+      font-size: 0.82em;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-flag.flagged {
+      background: #744210;
+      border-color: #f6ad55;
+      color: #fbd38d;
+    }
+
+    /* 問題カード */
+    .question-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 24px 28px;
+      margin-bottom: 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .q-category {
+      display: inline-block;
+      font-size: 0.75em;
+      font-weight: bold;
+      padding: 3px 10px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+    .q-text {
+      font-size: 1.0em;
+      color: #1a202c;
+      margin-bottom: 6px;
+      line-height: 1.7;
+    }
+    .q-code-block {
+      background: #1a202c;
+      color: #e2e8f0;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85em;
+      margin: 10px 0 16px;
+      line-height: 1.6;
+    }
+
+    /* 選択肢 */
+    .choices { display: flex; flex-direction: column; gap: 10px; }
+    .choice-btn {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: #f7fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 16px;
+      cursor: pointer;
+      font-size: 0.93em;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s;
+      line-height: 1.6;
+    }
+    .choice-btn:hover:not(:disabled) {
+      border-color: #4299e1;
+      background: #ebf8ff;
+    }
+    .choice-btn .choice-label {
+      flex-shrink: 0;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      color: #4a5568;
+      font-weight: bold;
+      font-size: 0.85em;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .choice-btn.selected {
+      border-color: #3182ce;
+      background: #ebf8ff;
+    }
+    .choice-btn.selected .choice-label {
+      background: #3182ce;
+      color: #fff;
+    }
+    .choice-btn.correct {
+      border-color: #38a169;
+      background: #f0fff4;
+    }
+    .choice-btn.correct .choice-label {
+      background: #38a169;
+      color: #fff;
+    }
+    .choice-btn.wrong {
+      border-color: #e53e3e;
+      background: #fff5f5;
+    }
+    .choice-btn.wrong .choice-label {
+      background: #e53e3e;
+      color: #fff;
+    }
+    .choice-btn:disabled { cursor: default; }
+
+    /* 解説 */
+    .explanation {
+      background: #fffaf0;
+      border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55;
+      border-radius: 0 8px 8px 0;
+      padding: 14px 18px;
+      margin-top: 16px;
+      font-size: 0.88em;
+      color: #2d3748;
+      line-height: 1.7;
+      display: none;
+    }
+    .explanation.show { display: block; }
+    .explanation strong { color: #744210; }
+
+    /* ナビゲーション */
+    .exam-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn-nav {
+      padding: 10px 24px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.95em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-nav:hover { opacity: 0.85; }
+    .btn-nav.prev { background: #edf2f7; color: #4a5568; }
+    .btn-nav.next { background: #2c5282; color: #fff; }
+    .btn-nav.submit { background: #276749; color: #fff; }
+    .btn-nav:disabled { opacity: 0.4; cursor: default; }
+
+    /* 問題一覧パネル */
+    .q-map-toggle {
+      background: transparent;
+      border: 1px solid #4a5568;
+      border-radius: 6px;
+      color: #a0aec0;
+      padding: 6px 12px;
+      font-size: 0.82em;
+      cursor: pointer;
+    }
+    .q-map {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 18px;
+      display: none;
+    }
+    .q-map.show { display: block; }
+    .q-map-title {
+      font-size: 0.82em;
+      font-weight: bold;
+      color: #4a5568;
+      margin-bottom: 10px;
+    }
+    .q-map-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .q-map-btn {
+      width: 34px; height: 34px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      background: #f7fafc;
+      font-size: 0.78em;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: 'Consolas', 'Monaco', monospace;
+      transition: all 0.15s;
+    }
+    .q-map-btn.answered  { background: #bee3f8; border-color: #4299e1; color: #1a365d; }
+    .q-map-btn.flagged   { background: #fefcbf; border-color: #f6ad55; color: #744210; }
+    .q-map-btn.current   { background: #2c5282; border-color: #2c5282; color: #fff; }
+
+    /* ============ 結果画面 ============ */
+    #result-screen { padding: 20px 0; }
+
+    .result-hero {
+      text-align: center;
+      background: linear-gradient(135deg, #1a365d, #2c5282);
+      border-radius: 14px;
+      padding: 36px 24px;
+      color: #fff;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 18px rgba(44,82,130,0.35);
+    }
+    .result-score-circle {
+      width: 140px; height: 140px;
+      border-radius: 50%;
+      border: 6px solid rgba(255,255,255,0.3);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+      background: rgba(255,255,255,0.1);
+    }
+    .result-score-num {
+      font-size: 2.6em;
+      font-weight: bold;
+      line-height: 1;
+    }
+    .result-score-label {
+      font-size: 0.78em;
+      opacity: 0.8;
+    }
+    .result-verdict {
+      font-size: 1.5em;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .result-verdict.pass { color: #68d391; }
+    .result-verdict.fail { color: #fc8181; }
+    .result-sub { font-size: 0.9em; opacity: 0.85; }
+
+    /* 結果詳細グリッド */
+    .result-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .result-stat-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px 12px;
+      text-align: center;
+    }
+    .result-stat-card .rsc-icon  { font-size: 1.6em; margin-bottom: 4px; }
+    .result-stat-card .rsc-val   { font-size: 1.4em; font-weight: bold; color: #1a365d; }
+    .result-stat-card .rsc-label { font-size: 0.78em; color: #718096; }
+
+    /* カテゴリ別スコア */
+    .category-scores {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+    }
+    .category-scores h3 {
+      margin: 0 0 16px;
+      color: #1a365d;
+      font-size: 1em;
+    }
+    .cat-score-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .cat-score-name {
+      font-size: 0.85em;
+      min-width: 160px;
+      color: #4a5568;
+    }
+    .cat-score-bar-bg {
+      flex: 1;
+      background: #edf2f7;
+      border-radius: 4px;
+      height: 10px;
+      overflow: hidden;
+    }
+    .cat-score-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+    .cat-score-pct {
+      font-size: 0.82em;
+      font-weight: bold;
+      min-width: 36px;
+      text-align: right;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+
+    /* 問題レビュー */
+    .review-section {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+    }
+    .review-section h3 { margin: 0 0 16px; color: #1a365d; font-size: 1em; }
+    .review-item {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      font-size: 0.88em;
+    }
+    .review-item.correct-item { border-left: 4px solid #38a169; }
+    .review-item.wrong-item   { border-left: 4px solid #e53e3e; }
+    .review-item .ri-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 6px; font-weight: bold;
+    }
+    .ri-badge {
+      font-size: 0.75em; padding: 2px 8px;
+      border-radius: 10px; font-weight: bold;
+    }
+    .ri-badge.ok  { background: #c6f6d5; color: #276749; }
+    .ri-badge.ng  { background: #fed7d7; color: #9b2335; }
+    .ri-badge.cat { background: #e9d8fd; color: #553c9a; }
+
+    /* 結果アクションボタン */
+    .result-actions {
+      display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+    }
+    .btn-result {
+      padding: 12px 28px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.95em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .btn-result:hover { opacity: 0.85; transform: translateY(-2px); }
+    .btn-result.primary { background: #2c5282; color: #fff; }
+    .btn-result.secondary { background: #edf2f7; color: #4a5568; }
+    .btn-result.green { background: #276749; color: #fff; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.88em; }
+      .question-card { padding: 16px 14px; }
+      .exam-header { padding: 10px 14px; }
+      .cat-score-name { min-width: 110px; font-size: 0.78em; }
+      .result-actions { flex-direction: column; align-items: center; }
+      .btn-result { width: 100%; max-width: 300px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- スタート画面 -->
+<!-- ============================================================ -->
+<div id="start-screen">
+  <div class="start-logo">📝</div>
+  <div class="start-title">LPIC-201 模擬試験</div>
+  <div class="start-sub">本番試験形式で実力を確認しましょう</div>
+
+  <div class="start-info-grid">
+    <div class="start-info-card">
+      <div class="sic-icon">📋</div>
+      <div class="sic-val" id="total-q-display">60</div>
+      <div class="sic-label">問題数</div>
+    </div>
+    <div class="start-info-card">
+      <div class="sic-icon">⏱️</div>
+      <div class="sic-val" id="time-display">90</div>
+      <div class="sic-label">制限時間（分）</div>
+    </div>
+    <div class="start-info-card">
+      <div class="sic-icon">🎯</div>
+      <div class="sic-val">65%</div>
+      <div class="sic-label">合格ライン</div>
+    </div>
+    <div class="start-info-card">
+      <div class="sic-icon">🌐</div>
+      <div class="sic-val">日本語</div>
+      <div class="sic-label">言語</div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:16px; font-size:0.9em; font-weight:bold; color:#4a5568;">
+    試験モードを選択してください
+  </div>
+  <div class="mode-grid">
+    <div class="mode-card selected" data-mode="full" onclick="selectMode(this)">
+      <div class="mc-icon">📝</div>
+      <div class="mc-title">本番モード</div>
+      <div class="mc-desc">60問・90分<br>解答中は正誤非表示</div>
+    </div>
+    <div class="mode-card" data-mode="practice" onclick="selectMode(this)">
+      <div class="mc-icon">🎓</div>
+      <div class="mc-title">練習モード</div>
+      <div class="mc-desc">60問・時間無制限<br>解答後すぐに解説表示</div>
+    </div>
+    <div class="mode-card" data-mode="weak" onclick="selectMode(this)">
+      <div class="mc-icon">🎯</div>
+      <div class="mc-title">弱点集中モード</div>
+      <div class="mc-desc">過去の誤答から<br>30問を出題</div>
+    </div>
+    <div class="mode-card" data-mode="category" onclick="selectMode(this)">
+      <div class="mc-icon">📂</div>
+      <div class="mc-title">章別モード</div>
+      <div class="mc-desc">特定の章のみ<br>20問を出題</div>
+    </div>
+  </div>
+
+  <!-- 章選択（章別モード時のみ表示） -->
+  <div id="category-select" class="hidden" style="margin-bottom:20px;">
+    <select id="chapter-sel" style="border:2px solid #bee3f8; border-radius:8px; padding:8px 14px; font-size:0.95em; color:#2d3748; background:#fff; cursor:pointer;">
+      <option value="1">第1章：カーネル</option>
+      <option value="2">第2章：起動</option>
+      <option value="3">第3章：システムの起動</option>
+      <option value="4">第4章：デバイスとファイルシステム</option>
+      <option value="5">第5章：高度なストレージ管理</option>
+      <option value="6">第6章：ネットワーク</option>
+      <option value="7">第7章：システムメンテナンス</option>
+    </select>
+  </div>
+
+  <button class="btn-start" onclick="startExam()">試験を開始する →</button>
+
+  <div style="margin-top:20px;">
+    <a href="../index.html" style="color:#718096; font-size:0.85em; text-decoration:none;">
+      ← 学習トップへ戻る
+    </a>
+    &nbsp;|&nbsp;
+    <a href="../exam/dashboard.html" style="color:#2c5282; font-size:0.85em; text-decoration:none;">
+      📊 弱点分析ダッシュボード →
+    </a>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 試験画面 -->
+<!-- ============================================================ -->
+<div id="exam-screen" class="hidden">
+
+  <!-- ヘッダー -->
+  <div class="exam-header">
+    <div class="eh-left">
+      <div class="q-counter">
+        問題 <span id="cur-q-num">1</span> / <span id="total-q-num">60</span>
+      </div>
+      <button class="btn-flag" id="flag-btn" onclick="toggleFlag()">🚩 フラグ</button>
+      <button class="q-map-toggle" onclick="toggleQMap()">📋 一覧</button>
+    </div>
+    <div class="timer" id="timer">90:00</div>
+  </div>
+
+  <!-- 問題マップ -->
+  <div class="q-map" id="q-map">
+    <div class="q-map-title">問題一覧（青=解答済 / 黄=フラグ / 白=未解答）</div>
+    <div class="q-map-grid" id="q-map-grid"></div>
+  </div>
+
+  <!-- 進捗バー -->
+  <div class="exam-progress-wrap">
+    <div class="exam-progress-fill" id="exam-progress" style="width:0%;"></div>
+  </div>
+
+  <!-- 問題カード -->
+  <div class="question-card" id="question-card">
+    <div class="q-category" id="q-category"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="q-code-block hidden" id="q-code"></div>
+    <div class="choices" id="choices"></div>
+    <div class="explanation" id="explanation"></div>
+  </div>
+
+  <!-- ナビゲーション -->
+  <div class="exam-nav">
+    <button class="btn-nav prev" id="btn-prev" onclick="goQuestion(-1)">← 前へ</button>
+    <button class="btn-nav submit" id="btn-submit" onclick="confirmSubmit()">試験を終了して採点</button>
+    <button class="btn-nav next" id="btn-next" onclick="goQuestion(1)">次へ →</button>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 結果画面 -->
+<!-- ============================================================ -->
+<div id="result-screen" class="hidden">
+
+  <div class="result-hero">
+    <div class="result-score-circle">
+      <div class="result-score-num" id="result-score-num">--</div>
+      <div class="result-score-label">点</div>
+    </div>
+    <div class="result-verdict" id="result-verdict">--</div>
+    <div class="result-sub" id="result-sub">--</div>
+  </div>
+
+  <div class="result-stats-grid">
+    <div class="result-stat-card">
+      <div class="rsc-icon">✅</div>
+      <div class="rsc-val" id="res-correct">--</div>
+      <div class="rsc-label">正解数</div>
+    </div>
+    <div class="result-stat-card">
+      <div class="rsc-icon">❌</div>
+      <div class="rsc-val" id="res-wrong">--</div>
+      <div class="rsc-label">不正解数</div>
+    </div>
+    <div class="result-stat-card">
+      <div class="rsc-icon">⏭️</div>
+      <div class="rsc-val" id="res-skip">--</div>
+      <div class="rsc-label">未解答数</div>
+    </div>
+    <div class="result-stat-card">
+      <div class="rsc-icon">⏱️</div>
+      <div class="rsc-val" id="res-time">--</div>
+      <div class="rsc-label">所要時間</div>
+    </div>
+  </div>
+
+  <!-- カテゴリ別スコア -->
+  <div class="category-scores">
+    <h3>📊 カテゴリ別スコア</h3>
+    <div id="cat-score-list"></div>
+  </div>
+
+  <!-- 問題レビュー -->
+  <div class="review-section">
+    <h3>📋 問題レビュー（不正解・未解答のみ）</h3>
+    <div id="review-list"></div>
+  </div>
+
+  <div class="result-actions">
+    <button class="btn-result primary" onclick="retryExam()">🔄 もう一度挑戦</button>
+    <button class="btn-result green"   onclick="location.href='dashboard.html'">📊 弱点分析を見る</button>
+    <button class="btn-result secondary" onclick="location.href='../index.html'">🏠 学習トップへ</button>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 問題データベース -->
+<!-- ============================================================ -->
+<script>
+/* =====================================================
+   問題データ（全60問）
+   chapter: 章番号
+   category: カテゴリ名（表示用）
+   color: カテゴリカラー
+   q: 問題文
+   code: コードブロック（省略可）
+   choices: 選択肢配列
+   answer: 正解インデックス（0始まり）
+   explanation: 解説文
+===================================================== */
+const ALL_QUESTIONS = [
+
+  /* ===== 第1章：カーネル（8問）===== */
+  {
+    chapter:1, category:'第1章：カーネル', color:'#553c9a',
+    q:'カーネルモジュールの情報（依存関係・説明など）を表示するコマンドはどれですか？',
+    choices:['insmod','modinfo','modprobe','lsmod'],
+    answer:1,
+    explanation:'<strong>modinfo</strong> はカーネルモジュールの詳細情報（説明・依存関係・パラメータ・ライセンスなど）を表示します。<br>・insmod：モジュールを直接ロード<br>・modprobe：依存関係を解決してロード<br>・lsmod：ロード済みモジュールの一覧表示'
+  },
+  {
+    chapter:1, category:'第1章：カーネル', color:'#553c9a',
+    q:'現在ロードされているカーネルモジュールの一覧を表示するコマンドはどれですか？',
+    choices:['modinfo','insmod','lsmod','depmod'],
+    answer:2,
+    explanation:'<strong>lsmod</strong> は現在カーネルにロードされているモジュールの一覧を表示します。<br>/proc/modules の内容を整形して表示します。'
+  },
+  {
+    chapter:1, category:'第1章：カーネル', color:'#553c9a',
+    q:'カーネルモジュールを依存関係を解決しながらロードするコマンドはどれですか？',
+    choices:['insmod','modprobe','lsmod','rmmod'],
+    answer:1,
+    explanation:'<strong>modprobe</strong> は依存関係を自動解決してモジュールをロードします。<br>insmod は依存関係を解決せず直接ロードするため、依存するモジュールが未ロードの場合は失敗します。'
+  },
+  {
+    chapter:1, category:'第1章：カーネル', color:'#553c9a',
+    q:'カーネルのバージョンを表示するコマンドはどれですか？',
+    choices:['uname -v','uname -r','uname -a','kernel --version'],
+    answer:1,
+    explanation:'<strong>uname -r</strong> はカーネルのリリース番号（バージョン）を表示します。<br>・uname -v：カーネルのビルドバージョン<br>・uname -a：すべての情報を表示<br>・uname -m：アーキテクチャを表示'
+  },
+  {
+    chapter:1, category:'第1章：カーネル', color:'#553c9a',
+    q:'カーネルパラメータを実行時に変更するコマンドはどれですか？',
+    choices:['sysctl -w パラメータ=値','modprobe -c','uname -w','kernel -p'],
+    answer:0,
+    explanation:'<strong>sysctl -w パラメータ=値</strong> でカーネルパラメータを実行時に変更できます。<br>永続化するには /etc/sysctl.conf に記載して sysctl -p で反映します。'
+  },
+  {
+    chapter:1, category:'第1章：カーネル', color:'#553c9a',
+    q:'カーネルモジュールの依存関係データベースを更新するコマンドはどれですか？',
+    choices:['modprobe -u','depmod','insmod -d','lsmod -u'],
+    answer:1,
+    explanation:'<strong>depmod</strong> はカーネルモジュールの依存関係を解析して /lib/modules/バージョン/modules.dep を更新します。<br>新しいモジュールをインストールした後に実行します。'
+  },
+  {
+    chapter:1, category:'第1章：カーネル', color:'#553c9a',
+    q:'カーネルモジュールをアンロードするコマンドはどれですか？',
+    choices:['modprobe -r モジュール名','insmod -u モジュール名','lsmod -d モジュール名','modinfo -r モジュール名'],
+    answer:0,
+    explanation:'<strong>modprobe -r モジュール名</strong> でカーネルモジュールをアンロードします。<br>rmmod コマンドでも同様にアンロードできますが、modprobe -r は依存関係も考慮してアンロードします。'
+  },
+  {
+    chapter:1, category:'第1章：カーネル', color:'#553c9a',
+    q:'カーネルモジュールの設定ファイルが格納されるディレクトリはどれですか？',
+    choices:['/etc/modules.d/','/etc/modprobe.d/','/lib/modules/conf/','/proc/modules/'],
+    answer:1,
+    explanation:'<strong>/etc/modprobe.d/</strong> にカーネルモジュールの設定ファイル（.conf）を配置します。<br>モジュールのオプション・エイリアス・ブラックリストなどを設定できます。'
+  },
+
+  /* ===== 第2章：起動（8問）===== */
+  {
+    chapter:2, category:'第2章：起動', color:'#2b4c7e',
+    q:'systemd でサービスを起動時に自動起動するように設定するコマンドはどれですか？',
+    choices:['systemctl start nginx','systemctl enable nginx','systemctl activate nginx','systemctl autostart nginx'],
+    answer:1,
+    explanation:'<strong>systemctl enable サービス名</strong> でサービスを起動時に自動起動するように設定します。<br>・systemctl start：今すぐ起動（再起動後は無効）<br>・systemctl enable --now：有効化と同時に起動'
+  },
+  {
+    chapter:2, category:'第2章：起動', color:'#2b4c7e',
+    q:'systemd のデフォルトターゲットを確認するコマンドはどれですか？',
+    choices:['systemctl get-default','systemctl list-targets','systemctl show default','runlevel'],
+    answer:0,
+    explanation:'<strong>systemctl get-default</strong> で現在のデフォルトターゲットを確認できます。<br>変更するには systemctl set-default ターゲット名 を使用します。'
+  },
+  {
+    chapter:2, category:'第2章：起動', color:'#2b4c7e',
+    q:'SysVinit のランレベル 3 に相当する systemd のターゲットはどれですか？',
+    choices:['multi-user.target','graphical.target','rescue.target','network.target'],
+    answer:0,
+    explanation:'<strong>multi-user.target</strong> は SysVinit のランレベル 3（マルチユーザー・テキストモード）に相当します。<br>・graphical.target：ランレベル 5（GUI）<br>・rescue.target：ランレベル 1（シングルユーザー）'
+  },
+  {
+    chapter:2, category:'第2章：起動', color:'#2b4c7e',
+    q:'systemd でサービスのログを確認するコマンドはどれですか？',
+    choices:['systemctl log nginx','journalctl -u nginx','syslog nginx','dmesg -u nginx'],
+    answer:1,
+    explanation:'<strong>journalctl -u サービス名</strong> で特定サービスのログを確認できます。<br>・-f：リアルタイムで追跡<br>・-n 50：最新50行を表示<br>・--since "2026-01-01"：日時を指定'
+  },
+  {
+    chapter:2, category:'第2章：起動', color:'#2b4c7e',
+    q:'systemd のユニットファイルを配置する推奨ディレクトリはどれですか？',
+    choices:['/lib/systemd/system/','/etc/systemd/system/','/usr/systemd/units/','/run/systemd/'],
+    answer:1,
+    explanation:'管理者が作成・変更するユニットファイルは <strong>/etc/systemd/system/</strong> に配置します。<br>/lib/systemd/system/ はパッケージが提供するデフォルトのユニットファイルが格納されます。<br>/etc/systemd/system/ が優先されます。'
+  },
+  {
+    chapter:2, category:'第2章：起動', color:'#2b4c7e',
+    q:'systemctl daemon-reload コマンドの説明として正しいものはどれですか？',
+    choices:['すべてのサービスを再起動する','ユニットファイルの変更を反映する','systemd デーモン自体を再起動する','ブート設定を再読み込みする'],
+    answer:1,
+    explanation:'<strong>systemctl daemon-reload</strong> はユニットファイルを変更した後に実行して、変更内容を systemd に反映させます。<br>サービス自体は再起動されません。サービスを再起動するには systemctl restart が必要です。'
+  },
+  {
+    chapter:2, category:'第2章：起動', color:'#2b4c7e',
+    q:'システムを即座にシャットダウンするコマンドはどれですか？',
+    choices:['shutdown -h now','poweroff -t 0','halt --immediate','systemctl poweroff -f'],
+    answer:0,
+    explanation:'<strong>shutdown -h now</strong> でシステムを即座にシャットダウンします。<br>・shutdown -h +10：10分後にシャットダウン<br>・shutdown -r now：即座に再起動<br>・shutdown -c：予約したシャットダウンをキャンセル'
+  },
+  {
+    chapter:2, category:'第2章：起動', color:'#2b4c7e',
+    q:'/etc/inittab ファイルの主な役割はどれですか？',
+    choices:['カーネルモジュールの設定','SysVinit のデフォルトランレベルと起動プロセスの設定','ネットワークインターフェースの設定','ブートローダの設定'],
+    answer:1,
+    explanation:'<strong>/etc/inittab</strong> は SysVinit システムでデフォルトランレベルや起動プロセス（getty など）を設定するファイルです。<br>systemd 環境では使用されません（互換性のために存在する場合がある）。'
+  },
+
+  /* ===== 第3章：システムの起動（7問）===== */
+  {
+    chapter:3, category:'第3章：システムの起動', color:'#744210',
+    q:'GRUB 2 の設定ファイルを生成するコマンドはどれですか？',
+    choices:['grub-install','update-grub','grub-mkconfig -o /boot/grub/grub.cfg','grub2-setup'],
+    answer:2,
+    explanation:'<strong>grub-mkconfig -o /boot/grub/grub.cfg</strong> で GRUB 2 の設定ファイルを生成します。<br>Debian/Ubuntu では update-grub が grub-mkconfig のラッパーとして使用できます。'
+  },
+  {
+    chapter:3, category:'第3章：システムの起動', color:'#744210',
+    q:'GRUB 2 のメイン設定ファイルのパスはどれですか？',
+    choices:['/etc/grub.conf','/boot/grub/grub.cfg','/etc/grub2.cfg','/boot/grub2/menu.lst'],
+    answer:1,
+    explanation:'GRUB 2 のメイン設定ファイルは <strong>/boot/grub/grub.cfg</strong> です。<br>このファイルは自動生成されるため直接編集せず、/etc/default/grub や /etc/grub.d/ を編集して grub-mkconfig で再生成します。'
+  },
+  {
+    chapter:3, category:'第3章：システムの起動', color:'#744210',
+    q:'カーネルのブートパラメータを確認するファイルはどれですか？',
+    choices:['/proc/cmdline','/sys/kernel/boot','/etc/kernel/params','/boot/params'],
+    answer:0,
+    explanation:'<strong>/proc/cmdline</strong> には現在起動しているカーネルに渡されたブートパラメータが記録されています。<br>例：BOOT_IMAGE=/boot/vmlinuz-6.8.0 root=UUID=xxxx ro quiet splash'
+  },
+  {
+    chapter:3, category:'第3章：システムの起動', color:'#744210',
+    q:'GRUB 2 でデフォルトの起動エントリを変更する設定ファイルはどれですか？',
+    choices:['/boot/grub/grub.cfg','/etc/default/grub','/etc/grub.d/00-header','/boot/grub/menu.lst'],
+    answer:1,
+    explanation:'<strong>/etc/default/grub</strong> で GRUB 2 の動作を設定します。<br>GRUB_DEFAULT でデフォルトエントリ、GRUB_TIMEOUT でタイムアウト秒数を設定します。<br>変更後は grub-mkconfig で設定ファイルを再生成する必要があります。'
+  },
+  {
+    chapter:3, category:'第3章：システムの起動', color:'#744210',
+    q:'MBR（Master Boot Record）のサイズはどれですか？',
+    choices:['256バイト','512バイト','1024バイト','4096バイト'],
+    answer:1,
+    explanation:'MBR は <strong>512バイト</strong>で構成されています。<br>・先頭446バイト：ブートローダのコード<br>・次の64バイト：パーティションテーブル（4エントリ × 16バイト）<br>・最後の2バイト：ブートシグネチャ（0x55AA）'
+  },
+  {
+    chapter:3, category:'第3章：システムの起動', color:'#744210',
+    q:'initramfs（初期 RAM ファイルシステム）の主な役割はどれですか？',
+    choices:['カーネルをメモリにロードする','ルートファイルシステムをマウントするための一時的な環境を提供する','GRUB のブートメニューを表示する','カーネルモジュールの依存関係を解決する'],
+    answer:1,
+    explanation:'<strong>initramfs</strong> はカーネルが起動した直後に展開される一時的な RAM ファイルシステムです。<br>実際のルートファイルシステム（LVM・RAID・暗号化など）をマウントするために必要なドライバやツールを含みます。'
+  },
+  {
+    chapter:3, category:'第3章：システムの起動', color:'#744210',
+    q:'GRUB 2 をMBRにインストールするコマンドはどれですか？',
+    choices:['grub-setup /dev/sda','grub-install /dev/sda','grub-mkconfig /dev/sda','update-grub /dev/sda'],
+    answer:1,
+    explanation:'<strong>grub-install /dev/sda</strong> で GRUB 2 を指定したディスクの MBR にインストールします。<br>パーティションではなくディスク全体（/dev/sda）を指定します。'
+  },
+
+  /* ===== 第4章：デバイスとFS（9問）===== */
+  {
+    chapter:4, category:'第4章：デバイスとFS', color:'#b7791f',
+    q:'ファイルシステムの使用量を人間が読みやすい単位で表示するコマンドはどれですか？',
+    choices:['du -h','df -h','ls -lh','stat -h'],
+    answer:1,
+    explanation:'<strong>df -h</strong> でファイルシステムの使用量を人間が読みやすい単位（K/M/G）で表示します。<br>・du -h：ディレクトリ・ファイルの使用量<br>・df -i：inode の使用量<br>・df -T：FSタイプも表示'
+  },
+  {
+    chapter:4, category:'第4章：デバイスとFS', color:'#b7791f',
+    q:'/etc/fstab の pass フィールドでルートファイルシステムに設定する値はどれですか？',
+    choices:['0','1','2','3'],
+    answer:1,
+    explanation:'<strong>1</strong> はルートファイルシステム（/）に設定します。<br>・0：fsck をスキップ<br>・1：最初に fsck（ルートFS）<br>・2：2番目以降に fsck（その他のパーティション）'
+  },
+  {
+    chapter:4, category:'第4章：デバイスとFS', color:'#b7791f',
+    q:'ext4 ファイルシステムを作成するコマンドはどれですか？',
+    choices:['mkfs -t ext4 /dev/sdb1','format -ext4 /dev/sdb1','newfs -t ext4 /dev/sdb1','fdisk -t ext4 /dev/sdb1'],
+    answer:0,
+    explanation:'<strong>mkfs -t ext4 /dev/sdb1</strong>（または mkfs.ext4 /dev/sdb1）で ext4 ファイルシステムを作成します。<br>mke2fs -t ext4 /dev/sdb1 も同等です。'
+  },
+  {
+    chapter:4, category:'第4章：デバイスとFS', color:'#b7791f',
+    q:'ext2/3/4 ファイルシステムのスーパーブロック情報を表示するコマンドはどれですか？',
+    choices:['fsck -l /dev/sdb1','tune2fs -l /dev/sdb1','dumpe2fs -s /dev/sdb1','e2fsck -i /dev/sdb1'],
+    answer:1,
+    explanation:'<strong>tune2fs -l /dev/sdb1</strong> でスーパーブロック情報（UUID・ブロック数・マウント回数など）を表示します。<br>dumpe2fs はより詳細な情報（バックアップスーパーブロックの場所など）を表示します。'
+  },
+  {
+    chapter:4, category:'第4章：デバイスとFS', color:'#b7791f',
+    q:'LUKS 暗号化コンテナを作成するコマンドはどれですか？',
+    choices:['cryptsetup luksCreate /dev/sdb1','cryptsetup luksFormat /dev/sdb1','cryptsetup luksInit /dev/sdb1','cryptsetup luksNew /dev/sdb1'],
+    answer:1,
+    explanation:'<strong>cryptsetup luksFormat /dev/sdb1</strong> で LUKS 暗号化コンテナを作成します。<br>その後 cryptsetup luksOpen でコンテナを開き、mkfs でフォーマットして使用します。'
+  },
+  {
+    chapter:4, category:'第4章：デバイスとFS', color:'#b7791f',
+    q:'autofs のマスターマップファイルのパスはどれですか？',
+    choices:['/etc/auto.conf','/etc/autofs.conf','/etc/auto.master','/etc/automount.conf'],
+    answer:2,
+    explanation:'<strong>/etc/auto.master</strong> は autofs のマスターマップファイルです。<br>マウントポイントとマップファイルの対応を定義します。<br>例：/mnt /etc/auto.mnt --timeout=300'
+  },
+  {
+    chapter:4, category:'第4章：デバイスとFS', color:'#b7791f',
+    q:'SSD の TRIM を手動で実行するコマンドはどれですか？',
+    choices:['trim -a','fstrim -av','discard -all','ssdtrim -v'],
+    answer:1,
+    explanation:'<strong>fstrim -av</strong> でマウント済みのすべてのファイルシステムに TRIM を実行します。<br>・-a：すべてのマウント済み FS<br>・-v：詳細表示<br>定期的な自動 TRIM は systemctl enable fstrim.timer で設定できます。'
+  },
+  {
+    chapter:4, category:'第4章：デバイスとFS', color:'#b7791f',
+    q:'XFS ファイルシステムの検査・修復コマンドはどれですか？',
+    choices:['fsck.xfs /dev/sdb1','xfs_repair /dev/sdb1','xfs_check /dev/sdb1','e2fsck -t xfs /dev/sdb1'],
+    answer:1,
+    explanation:'<strong>xfs_repair /dev/sdb1</strong> で XFS ファイルシステムを検査・修復します。<br>アンマウント状態で実行する必要があります。<br>・xfs_info：XFS の情報表示<br>・xfs_growfs：オンラインで拡張'
+  },
+  {
+    chapter:4, category:'第4章：デバイスとFS', color:'#b7791f',
+    q:'カーネルのバッファキャッシュをディスクに書き込むコマンドはどれですか？',
+    choices:['flush','sync','fsync','cache-write'],
+    answer:1,
+    explanation:'<strong>sync</strong> コマンドはカーネルのバッファキャッシュをすべてディスクに書き込みます。<br>USB メモリのアンマウント前や緊急シャットダウン前に実行することでデータ損失を防ぎます。'
+  },
+
+  /* ===== 第5章：高度なストレージ（9問）===== */
+  {
+    chapter:5, category:'第5章：ストレージ管理', color:'#2c5282',
+    q:'RAID 5 で 2TB のディスクを 5 台使用した場合の使用可能容量はどれですか？',
+    choices:['10TB','8TB','6TB','4TB'],
+    answer:1,
+    explanation:'RAID 5 の使用可能容量 = ディスク容量 × (台数 - 1)<br>= 2TB × (5 - 1) = <strong>8TB</strong><br>1台分（2TB）がパリティとして消費されます。容量効率は 80%（4/5）です。'
+  },
+  {
+    chapter:5, category:'第5章：ストレージ管理', color:'#2c5282',
+    q:'Linux のソフトウェア RAID を管理するコマンドはどれですか？',
+    choices:['raidctl','mdadm','raidmanager','softraid'],
+    answer:1,
+    explanation:'<strong>mdadm</strong> は Linux のソフトウェア RAID を管理するコマンドです。<br>RAID の作成・監視・障害対応・拡張などを行います。<br>/proc/mdstat で RAID の状態を確認できます。'
+  },
+  {
+    chapter:5, category:'第5章：ストレージ管理', color:'#2c5282',
+    q:'RAID の状態をリアルタイムで確認できる仮想ファイルはどれですか？',
+    choices:['/sys/block/md0/stat','/proc/mdstat','/proc/raid/status','/dev/md/status'],
+    answer:1,
+    explanation:'<strong>/proc/mdstat</strong> で RAID の状態をリアルタイムで確認できます。<br>[UUUU] = 全ディスク正常、[_UUU] = 1台故障（デグレードモード）<br>[4/4] = 必要台数/正常台数'
+  },
+  {
+    chapter:5, category:'第5章：ストレージ管理', color:'#2c5282',
+    q:'LVM で物理ボリューム（PV）を初期化するコマンドはどれですか？',
+    choices:['vgcreate /dev/sdb1','pvcreate /dev/sdb1','lvcreate /dev/sdb1','pvmake /dev/sdb1'],
+    answer:1,
+    explanation:'<strong>pvcreate /dev/sdb1</strong> でパーティションを LVM の物理ボリューム（PV）として初期化します。<br>LVM の作成手順：pvcreate → vgcreate → lvcreate → mkfs → mount'
+  },
+  {
+    chapter:5, category:'第5章：ストレージ管理', color:'#2c5282',
+    q:'LVM の論理ボリューム（LV）を 10GB 拡張し、ファイルシステムも同時に拡張するコマンドはどれですか？',
+    choices:['lvextend -L +10G /dev/vg0/lv0','lvextend -L +10G -r /dev/vg0/lv0','lvresize -L +10G /dev/vg0/lv0','lvm extend -L +10G /dev/vg0/lv0'],
+    answer:1,
+    explanation:'<strong>lvextend -L +10G -r /dev/vg0/lv0</strong> で LV を拡張し、-r オプションでファイルシステムも同時に拡張します。<br>-r なしの場合は別途 resize2fs（ext4）または xfs_growfs（XFS）が必要です。'
+  },
+  {
+    chapter:5, category:'第5章：ストレージ管理', color:'#2c5282',
+    q:'LVM スナップショットを作成するコマンドはどれですか？',
+    choices:['lvcreate -s -L 5G -n snap /dev/vg0/lv0','lvcreate --snapshot -L 5G /dev/vg0/lv0','lvsnap -L 5G /dev/vg0/lv0','vgsnap -L 5G -n snap vg0'],
+    answer:0,
+    explanation:'<strong>lvcreate -s -L 5G -n snap /dev/vg0/lv0</strong> でスナップショット LV を作成します。<br>・-s：スナップショット<br>・-L 5G：差分データ保存領域のサイズ<br>・-n snap：スナップショット名<br>最後の引数がオリジン（元の LV）です。'
+  },
+  {
+    chapter:5, category:'第5章：ストレージ管理', color:'#2c5282',
+    q:'iSCSI ターゲットを検出するコマンドはどれですか？',
+    choices:['iscsiadm -m discovery -t st -p 192.168.1.100','iscsi-discover 192.168.1.100','iscsiadm --scan 192.168.1.100','iscsi -t sendtargets 192.168.1.100'],
+    answer:0,
+    explanation:'<strong>iscsiadm -m discovery -t st -p 192.168.1.100</strong> で iSCSI ターゲットを検出します。<br>・-m discovery：検出モード<br>・-t st（sendtargets）：SendTargets プロトコルを使用<br>・-p：ターゲットのIPアドレス'
+  },
+  {
+    chapter:5, category:'第5章：ストレージ管理', color:'#2c5282',
+    q:'ATA/SATA ディスクの読み取り速度をテストするコマンドはどれですか？',
+    choices:['hdparm -Tt /dev/sda','disktest -speed /dev/sda','iotest -r /dev/sda','sdparm -t /dev/sda'],
+    answer:0,
+    explanation:'<strong>hdparm -Tt /dev/sda</strong> でディスクの読み取り速度をテストします。<br>・-T：キャッシュ読み取り速度（CPU・メモリ速度）<br>・-t：バッファリングなしの実際のディスク読み取り速度'
+  },
+  {
+    chapter:5, category:'第5章：ストレージ管理', color:'#2c5282',
+    q:'RAID 1 の特徴として正しいものはどれですか？',
+    choices:['冗長性はないが読み書き速度が最も高速','同じデータを複数のディスクにミラーリングする','パリティを専用ディスクに保存する','パリティを全ディスクに分散する'],
+    answer:1,
+    explanation:'<strong>RAID 1（ミラーリング）</strong>は同じデータを複数のディスクに書き込みます。<br>・冗長性：高い（N-1台まで故障しても動作）<br>・容量効率：50%（2台の場合）<br>・読み取り：高速（複数ディスクから並列読み取り可能）'
+  },
+
+  /* ===== 第6章：ネットワーク（10問）===== */
+  {
+    chapter:6, category:'第6章：ネットワーク', color:'#553c9a',
+    q:'LISTEN 中の TCP ポートとプロセス名を表示するコマンドはどれですか？',
+    choices:['netstat -tlnp','ss -tlnp','lsof -tcp','portstat -l'],
+    answer:1,
+    explanation:'<strong>ss -tlnp</strong> で LISTEN 中の TCP ポートとプロセス名を表示します。<br>・-t：TCP のみ<br>・-l：LISTEN 状態のみ<br>・-n：名前解決なし<br>・-p：プロセス名・PID を表示<br>ss は netstat の後継コマンドです。'
+  },
+  {
+    chapter:6, category:'第6章：ネットワーク', color:'#553c9a',
+    q:'ARP テーブルを表示する推奨コマンドはどれですか？',
+    choices:['arp -n','ip neigh show','arptable -l','netstat -arp'],
+    answer:1,
+    explanation:'<strong>ip neigh show</strong> で ARP テーブルを表示します（推奨）。<br>arp -n も同様の機能を持ちますが、arp コマンドは非推奨です。<br>ip neigh add/del で静的 ARP エントリを追加・削除できます。'
+  },
+  {
+    chapter:6, category:'第6章：ネットワーク', color:'#553c9a',
+    q:'デフォルトゲートウェイを設定するコマンドはどれですか？',
+    choices:['route add default 192.168.1.1','ip route add default via 192.168.1.1','gateway set 192.168.1.1','ip gateway add 192.168.1.1'],
+    answer:1,
+    explanation:'<strong>ip route add default via 192.168.1.1</strong> でデフォルトゲートウェイを設定します。<br>route add default gw 192.168.1.1 でも同様ですが、route コマンドは非推奨です。<br>ip route show でルーティングテーブルを確認できます。'
+  },
+  {
+    chapter:6, category:'第6章：ネットワーク', color:'#553c9a',
+    q:'パケットの経路（ホップ）を表示するコマンドはどれですか？',
+    choices:['ping -r','traceroute','pathping','route -trace'],
+    answer:1,
+    explanation:'<strong>traceroute</strong> でパケットの経路（各ホップのIPアドレスと応答時間）を表示します。<br>デフォルトでは UDP を使用します。ICMP を使用する場合は -I オプションが必要です。<br>tracepath は root 不要の代替コマンドです。'
+  },
+  {
+    chapter:6, category:'第6章：ネットワーク', color:'#553c9a',
+    q:'名前解決の優先順位を設定するファイルはどれですか？',
+    choices:['/etc/resolv.conf','/etc/hosts','/etc/nsswitch.conf','/etc/dns.conf'],
+    answer:2,
+    explanation:'<strong>/etc/nsswitch.conf</strong> で名前解決の優先順位を設定します。<br>hosts 行の設定例：hosts: files dns<br>→ まず /etc/hosts を参照し、次に DNS サーバーに問い合わせます。'
+  },
+  {
+    chapter:6, category:'第6章：ネットワーク', color:'#553c9a',
+    q:'DNS サーバーを設定するファイルはどれですか？',
+    choices:['/etc/hosts','/etc/nsswitch.conf','/etc/resolv.conf','/etc/dns.conf'],
+    answer:2,
+    explanation:'<strong>/etc/resolv.conf</strong> に DNS サーバーを設定します。<br>・nameserver：DNS サーバーの IP（最大3つ）<br>・search：短縮名解決時に試みるドメインリスト<br>・domain：ローカルドメイン名'
+  },
+  {
+    chapter:6, category:'第6章：ネットワーク', color:'#553c9a',
+    q:'ネットワークパケットをキャプチャするコマンドはどれですか？',
+    choices:['wireshark -i enp3s0','tcpdump -i enp3s0','netcap -i enp3s0','pcap -i enp3s0'],
+    answer:1,
+    explanation:'<strong>tcpdump -i enp3s0</strong> でネットワークパケットをキャプチャします。<br>・-n：名前解決なし<br>・port 80：ポートでフィルタ<br>・host 192.168.1.1：ホストでフィルタ<br>・-w file.pcap：ファイルに保存'
+  },
+  {
+    chapter:6, category:'第6章：ネットワーク', color:'#553c9a',
+    q:'TCP ポートへの接続テストに使用するコマンドはどれですか？',
+    choices:['telnet ホスト ポート','nc -zv ホスト ポート','ping -p ポート ホスト','curl -port ポート ホスト'],
+    answer:1,
+    explanation:'<strong>nc -zv ホスト ポート</strong>（netcat）で TCP ポートへの接続テストを行います。<br>・-z：接続テストのみ（データ送受信なし）<br>・-v：詳細表示<br>telnet でも接続テストできますが、nc の方が推奨されます。'
+  },
+  {
+    chapter:6, category:'第6章：ネットワーク', color:'#553c9a',
+    q:'traceroute コマンドがデフォルトで使用するプロトコルはどれですか？',
+    choices:['ICMP','TCP','UDP','ARP'],
+    answer:2,
+    explanation:'<strong>traceroute</strong> はデフォルトで <strong>UDP</strong> を使用します。<br>・ICMP を使用するには -I オプション<br>・TCP を使用するには -T オプション<br>なお、Windows の tracert はデフォルトで ICMP を使用します。'
+  },
+  {
+    chapter:6, category:'第6章：ネットワーク', color:'#553c9a',
+    q:'Debian/Ubuntu 系のネットワークインターフェース設定ファイルはどれですか？',
+    choices:['/etc/sysconfig/network-scripts/ifcfg-enp3s0','/etc/network/interfaces','/etc/netplan/network.yaml','/etc/systemd/network/enp3s0.conf'],
+    answer:1,
+    explanation:'Debian/Ubuntu 系のインターフェース設定ファイルは <strong>/etc/network/interfaces</strong> です。<br>・RHEL/CentOS：/etc/sysconfig/network-scripts/ifcfg-*<br>・Ubuntu 18.04以降：/etc/netplan/*.yaml（Netplan）'
+  },
+
+  /* ===== 第7章：システムメンテナンス（9問）===== */
+  {
+    chapter:7, category:'第7章：システムメンテナンス', color:'#276749',
+    q:'ソースコードからソフトウェアをビルドする正しい手順はどれですか？',
+    choices:['make → ./configure → make install','./configure → make → make install','make install → ./configure → make','./configure → make install → make'],
+    answer:1,
+    explanation:'ソースからのビルド手順：<br>① <strong>./configure</strong>：環境確認・Makefile 生成<br>② <strong>make</strong>：コンパイル<br>③ <strong>sudo make install</strong>：インストール<br>事前に tar でアーカイブを展開する必要があります。'
+  },
+  {
+    chapter:7, category:'第7章：システムメンテナンス', color:'#276749',
+    q:'Makefile のコマンド行（レシピ）の先頭に必要な文字はどれですか？',
+    choices:['スペース4つ','タブ文字','シャープ（#）','コロン（:）'],
+    answer:1,
+    explanation:'Makefile のコマンド行は必ず<strong>タブ文字</strong>で始める必要があります。<br>スペースで始めると "missing separator" エラーが発生します。<br>これは make の歴史的な仕様で、1977年の最初の実装から変わっていません。'
+  },
+  {
+    chapter:7, category:'第7章：システムメンテナンス', color:'#276749',
+    q:'configure スクリプトでインストール先を /opt/myapp に指定するオプションはどれですか？',
+    choices:['--install=/opt/myapp','--prefix=/opt/myapp','--dest=/opt/myapp','--dir=/opt/myapp'],
+    answer:1,
+    explanation:'<strong>./configure --prefix=/opt/myapp</strong> でインストール先を指定します。<br>デフォルトは /usr/local です。<br>./configure --help で利用可能なオプションを確認できます。'
+  },
+  {
+    chapter:7, category:'第7章：システムメンテナンス', color:'#276749',
+    q:'差分バックアップの説明として正しいものはどれですか？',
+    choices:['前回の増分バックアップ以降の変更をバックアップする','前回の完全バックアップ以降の変更をバックアップする','すべてのデータをバックアップする','前回のバックアップ以降の変更をバックアップする'],
+    answer:1,
+    explanation:'<strong>差分バックアップ</strong>は前回の<strong>完全バックアップ以降</strong>の変更をバックアップします。<br>リストアは「完全 + 最新の差分」の2ステップです。<br>増分バックアップは「前回のバックアップ（完全または増分）以降」の変更です。'
+  },
+  {
+    chapter:7, category:'第7章：システムメンテナンス', color:'#276749',
+    q:'dump コマンドで完全バックアップを実行する際のレベル指定はどれですか？',
+    choices:['dump -9','dump -1','dump -0','dump -f'],
+    answer:2,
+    explanation:'<strong>dump -0</strong> でレベル0（完全バックアップ）を実行します。<br>・レベル0：完全バックアップ<br>・レベル1：レベル0以降の変更（差分）<br>・レベル2〜9：前のレベル以降の変更（増分）<br>-u オプションで /etc/dumpdates を更新します。'
+  },
+  {
+    chapter:7, category:'第7章：システムメンテナンス', color:'#276749',
+    q:'磁気テープを先頭に巻き戻すコマンドはどれですか？',
+    choices:['mt -f /dev/st0 rewind','mt -f /dev/st0 reset','mt -f /dev/st0 start','mt -f /dev/st0 begin'],
+    answer:0,
+    explanation:'<strong>mt -f /dev/st0 rewind</strong> で磁気テープを先頭に巻き戻します。<br>・/dev/st0：操作後に自動巻き戻し<br>・/dev/nst0：巻き戻しなし（Non-rewind）<br>・mt eject：テープを取り出す<br>・mt fsf 1：次のファイルマークに移動'
+  },
+  {
+    chapter:7, category:'第7章：システムメンテナンス', color:'#276749',
+    q:'ローカルコンソールのログイン前に表示されるメッセージファイルはどれですか？',
+    choices:['/etc/motd','/etc/issue','/etc/issue.net','/etc/login.msg'],
+    answer:1,
+    explanation:'<strong>/etc/issue</strong> はローカルコンソールのログイン前（認証前）に表示されます。<br>・/etc/motd：ログイン後（Message of the Day）<br>・/etc/issue.net：SSH 接続時のバナー（sshd_config の Banner 設定が必要）'
+  },
+  {
+    chapter:7, category:'第7章：システムメンテナンス', color:'#276749',
+    q:'すべてのログインユーザーにメッセージをブロードキャストするコマンドはどれですか？',
+    choices:['write all "メッセージ"','broadcast "メッセージ"','wall "メッセージ"','msg * "メッセージ"'],
+    answer:2,
+    explanation:'<strong>wall "メッセージ"</strong> ですべてのログインユーザーにメッセージをブロードキャストします。<br>・write ユーザー名：特定のユーザーにメッセージを送信<br>・mesg n：write/wall メッセージの受信を拒否<br>・mesg y：受信を許可'
+  },
+  {
+    chapter:7, category:'第7章：システムメンテナンス', color:'#276749',
+    q:'rsync でファイルを SSH 経由でバックアップするオプションの組み合わせはどれですか？',
+    choices:['rsync -avz /home/ server:/backup/','rsync -avz -e ssh /home/ user@server:/backup/','rsync -avz --ssh /home/ user@server:/backup/','rsync -avz --protocol=ssh /home/ user@server:/backup/'],
+    answer:1,
+    explanation:'<strong>rsync -avz -e ssh /home/ user@server:/backup/</strong> で SSH 経由のバックアップを行います。<br>・-a：アーカイブモード（パーミッション・タイムスタンプ等を保持）<br>・-v：詳細表示<br>・-z：転送時に圧縮<br>・-e ssh：SSH を使用'
+  },
+];
+
+/* =====================================================
+   試験エンジン
+===================================================== */
+let examMode     = 'full';
+let examQuestions = [];
+let currentIdx   = 0;
+let userAnswers  = [];   // null=未解答, 数値=選択したインデックス
+let flagged      = [];   // boolean[]
+let timerInterval= null;
+let remainSec    = 90 * 60;
+let startTime    = null;
+let practiceMode = false;
+
+/* モード選択 */
+function selectMode(el) {
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  examMode = el.dataset.mode;
+  document.getElementById('category-select').classList.toggle('hidden', examMode !== 'category');
+}
+
+/* 試験開始 */
+function startExam() {
+  let pool = [...ALL_QUESTIONS];
+
+  if (examMode === 'weak') {
+    // 過去の誤答から優先的に出題
+    const history = getHistory();
+    const weakIds = Object.keys(history)
+      .filter(k => history[k].wrong > 0)
+      .sort((a,b) => (history[b].wrong / (history[b].total||1)) - (history[a].wrong / (history[a].total||1)));
+    if (weakIds.length >= 10) {
+      const weakPool = weakIds.slice(0,30).map(id => ALL_QUESTIONS.find(q => getQId(q) === id)).filter(Boolean);
+      pool = weakPool.length >= 10 ? weakPool : pool;
+    }
+    pool = shuffle(pool).slice(0, 30);
+    remainSec = 45 * 60;
+    practiceMode = false;
+  } else if (examMode === 'category') {
+    const ch = parseInt(document.getElementById('chapter-sel').value);
+    pool = ALL_QUESTIONS.filter(q => q.chapter === ch);
+    pool = shuffle(pool).slice(0, Math.min(20, pool.length));
+    remainSec = 30 * 60;
+    practiceMode = false;
+  } else if (examMode === 'practice') {
+    pool = shuffle(pool).slice(0, 60);
+    remainSec = 999 * 60;
+    practiceMode = true;
+  } else {
+    pool = shuffle(pool).slice(0, 60);
+    remainSec = 90 * 60;
+    practiceMode = false;
+  }
+
+  examQuestions = pool;
+  userAnswers   = new Array(pool.length).fill(null);
+  flagged       = new Array(pool.length).fill(false);
+  currentIdx    = 0;
+  startTime     = Date.now();
+
+  document.getElementById('total-q-num').textContent = pool.length;
+  document.getElementById('start-screen').classList.add('hidden');
+  document.getElementById('exam-screen').classList.remove('hidden');
+
+  buildQMap();
+  renderQuestion();
+  if (!practiceMode) startTimer();
+  else document.getElementById('timer').textContent = '∞';
+}
+
+/* タイマー */
+function startTimer() {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    remainSec--;
+    const m = Math.floor(remainSec / 60);
+    const s = remainSec % 60;
+    const el = document.getElementById('timer');
+    el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    el.className = 'timer' + (remainSec <= 300 ? ' danger' : remainSec <= 600 ? ' warn' : '');
+    if (remainSec <= 0) { clearInterval(timerInterval); submitExam(); }
+  }, 1000);
+}
+
+/* 問題描画 */
+function renderQuestion() {
+  const q   = examQuestions[currentIdx];
+  const ans = userAnswers[currentIdx];
+
+  document.getElementById('cur-q-num').textContent = currentIdx + 1;
+  document.getElementById('q-category').textContent = q.category;
+  document.getElementById('q-category').style.cssText =
+    `background:${q.color}22; color:${q.color}; border:1px solid ${q.color}55;`;
+  document.getElementById('q-text').textContent = q.q;
+
+  const codeEl = document.getElementById('q-code');
+  if (q.code) { codeEl.textContent = q.code; codeEl.classList.remove('hidden'); }
+  else          { codeEl.classList.add('hidden'); }
+
+  // 選択肢
+  const choicesEl = document.getElementById('choices');
+  choicesEl.innerHTML = '';
+  const labels = ['A','B','C','D'];
+  q.choices.forEach((c, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    if (ans === i) btn.classList.add('selected');
+
+    // 練習モード or 解答済みで正誤表示
+    if (practiceMode && ans !== null) {
+      if (i === q.answer)  btn.classList.add('correct');
+      if (i === ans && ans !== q.answer) btn.classList.add('wrong');
+      btn.disabled = true;
+    }
+
+    btn.innerHTML = `<span class="choice-label">${labels[i]}</span><span>${c}</span>`;
+    btn.onclick = () => selectAnswer(i);
+    choicesEl.appendChild(btn);
+  });
+
+  // 解説（練習モード）
+  const expEl = document.getElementById('explanation');
+  if (practiceMode && ans !== null) {
+    expEl.innerHTML = q.explanation;
+    expEl.classList.add('show');
+  } else {
+    expEl.classList.remove('show');
+  }
+
+  // フラグ
+  document.getElementById('flag-btn').className =
+    'btn-flag' + (flagged[currentIdx] ? ' flagged' : '');
+
+  // 進捗バー
+  const answered = userAnswers.filter(a => a !== null).length;
+  document.getElementById('exam-progress').style.width =
+    (answered / examQuestions.length * 100) + '%';
+
+  // ナビ
+  document.getElementById('btn-prev').disabled = currentIdx === 0;
+  document.getElementById('btn-next').disabled = currentIdx === examQuestions.length - 1;
+
+  updateQMap();
+}
+
+/* 解答選択 */
+function selectAnswer(idx) {
+  if (practiceMode && userAnswers[currentIdx] !== null) return;
+  userAnswers[currentIdx] = idx;
+  renderQuestion();
+}
+
+/* 問題移動 */
+function goQuestion(dir) {
+  currentIdx = Math.max(0, Math.min(examQuestions.length - 1, currentIdx + dir));
+  renderQuestion();
+}
+
+/* フラグ */
+function toggleFlag() {
+  flagged[currentIdx] = !flagged[currentIdx];
+  document.getElementById('flag-btn').className =
+    'btn-flag' + (flagged[currentIdx] ? ' flagged' : '');
+  updateQMap();
+}
+
+/* 問題マップ */
+function buildQMap() {
+  const grid = document.getElementById('q-map-grid');
+  grid.innerHTML = '';
+  examQuestions.forEach((_, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'q-map-btn';
+    btn.textContent = i + 1;
+    btn.onclick = () => { currentIdx = i; renderQuestion(); };
+    grid.appendChild(btn);
+  });
+}
+function updateQMap() {
+  const btns = document.querySelectorAll('.q-map-btn');
+  btns.forEach((btn, i) => {
+    btn.className = 'q-map-btn';
+    if (i === currentIdx)          btn.classList.add('current');
+    else if (flagged[i])           btn.classList.add('flagged');
+    else if (userAnswers[i] !== null) btn.classList.add('answered');
+  });
+}
+function toggleQMap() {
+  document.getElementById('q-map').classList.toggle('show');
+}
+
+/* 試験終了確認 */
+function confirmSubmit() {
+  const unanswered = userAnswers.filter(a => a === null).length;
+  if (unanswered > 0) {
+    if (!confirm(`未解答の問題が ${unanswered} 問あります。このまま終了しますか？`)) return;
+  }
+  submitExam();
+}
+
+/* 採点・結果表示 */
+function submitExam() {
+  clearInterval(timerInterval);
+  const elapsed = Math.floor((Date.now() - startTime) / 1000);
+  const em = Math.floor(elapsed / 60);
+  const es = elapsed % 60;
+
+  let correct = 0;
+  const catMap = {};
+
+  examQuestions.forEach((q, i) => {
+    const cat = q.category;
+    if (!catMap[cat]) catMap[cat] = { correct:0, total:0, color: q.color };
+    catMap[cat].total++;
+    if (userAnswers[i] === q.answer) {
+      correct++;
+      catMap[cat].correct++;
+    }
+  });
+
+  const total   = examQuestions.length;
+  const wrong   = userAnswers.filter((a,i) => a !== null && a !== examQuestions[i].answer).length;
+  const skip    = userAnswers.filter(a => a === null).length;
+  const score   = Math.round(correct / total * 100);
+  const pass    = score >= 65;
+
+  // 履歴を保存
+  saveHistory(examQuestions, userAnswers);
+
+  // 結果画面
+  document.getElementById('exam-screen').classList.add('hidden');
+  document.getElementById('result-screen').classList.remove('hidden');
+
+  document.getElementById('result-score-num').textContent = score;
+  const verdict = document.getElementById('result-verdict');
+  verdict.textContent = pass ? '🎉 合格！' : '😢 不合格';
+  verdict.className   = 'result-verdict ' + (pass ? 'pass' : 'fail');
+  document.getElementById('result-sub').textContent =
+    `${correct}問正解 / ${total}問中（合格ライン：65%）`;
+
+  document.getElementById('res-correct').textContent = correct;
+  document.getElementById('res-wrong').textContent   = wrong;
+  document.getElementById('res-skip').textContent    = skip;
+  document.getElementById('res-time').textContent    = `${em}分${es}秒`;
+
+  // カテゴリ別スコア
+  const catList = document.getElementById('cat-score-list');
+  catList.innerHTML = '';
+  Object.entries(catMap).forEach(([name, data]) => {
+    const pct = Math.round(data.correct / data.total * 100);
+    const fillColor = pct >= 80 ? '#48bb78' : pct >= 60 ? '#f6ad55' : '#fc8181';
+    catList.innerHTML += `
+      <div class="cat-score-row">
+        <div class="cat-score-name">${name}</div>
+        <div class="cat-score-bar-bg">
+          <div class="cat-score-bar-fill" style="width:${pct}%; background:${fillColor};"></div>
+        </div>
+        <div class="cat-score-pct" style="color:${fillColor};">${pct}%</div>
+      </div>`;
+  });
+
+  // 問題レビュー（不正解・未解答）
+  const reviewList = document.getElementById('review-list');
+  reviewList.innerHTML = '';
+  examQuestions.forEach((q, i) => {
+    const ua = userAnswers[i];
+    if (ua === q.answer) return;
+    const isSkip = ua === null;
+    const labels = ['A','B','C','D'];
+    reviewList.innerHTML += `
+      <div class="review-item ${isSkip ? 'wrong-item' : 'wrong-item'}">
+        <div class="ri-header">
+          <span class="ri-badge ${isSkip ? 'ng' : 'ng'}">${isSkip ? '未解答' : '不正解'}</span>
+          <span class="ri-badge cat">${q.category}</span>
+          <span style="font-size:0.82em; color:#4a5568;">問題 ${i+1}</span>
+        </div>
+        <div style="margin-bottom:6px; color:#2d3748;">${q.q}</div>
+        ${!isSkip ? `<div style="color:#e53e3e; font-size:0.85em;">あなたの解答：${labels[ua]}. ${q.choices[ua]}</div>` : ''}
+        <div style="color:#38a169; font-size:0.85em;">正解：${labels[q.answer]}. ${q.choices[q.answer]}</div>
+        <div style="margin-top:8px; padding:8px 12px; background:#fffaf0; border-radius:6px; font-size:0.82em; color:#4a5568; line-height:1.6;">${q.explanation}</div>
+      </div>`;
+  });
+  if (reviewList.innerHTML === '') {
+    reviewList.innerHTML = '<div style="text-align:center; color:#276749; padding:20px; font-weight:bold;">🎉 全問正解！素晴らしい！</div>';
+  }
+}
+
+/* 再挑戦 */
+function retryExam() {
+  document.getElementById('result-screen').classList.add('hidden');
+  document.getElementById('start-screen').classList.remove('hidden');
+}
+
+/* =====================================================
+   履歴管理（弱点分析ダッシュボード連携）
+===================================================== */
+function getQId(q) {
+  return `ch${q.chapter}_${q.q.slice(0,20).replace(/\s/g,'_')}`;
+}
+function getHistory() {
+  return JSON.parse(localStorage.getItem('lpic201_exam_history') || '{}');
+}
+function saveHistory(questions, answers) {
+  const history = getHistory();
+  questions.forEach((q, i) => {
+    const id = getQId(q);
+    if (!history[id]) history[id] = { total:0, correct:0, wrong:0, chapter:q.chapter, category:q.category };
+    if (answers[i] !== null) {
+      history[id].total++;
+      if (answers[i] === q.answer) history[id].correct++;
+      else history[id].wrong++;
+    }
+  });
+  localStorage.setItem('lpic201_exam_history', JSON.stringify(history));
+
+  // 章別スコアも保存（ダッシュボード用）
+  const chapterScores = JSON.parse(localStorage.getItem('lpic201_chapter_scores') || '{}');
+  const catMap = {};
+  questions.forEach((q, i) => {
+    const ch = `ch${q.chapter}`;
+    if (!catMap[ch]) catMap[ch] = { correct:0, total:0 };
+    if (answers[i] !== null) {
+      catMap[ch].total++;
+      if (answers[i] === q.answer) catMap[ch].correct++;
+    }
+  });
+  Object.entries(catMap).forEach(([ch, data]) => {
+    if (!chapterScores[ch]) chapterScores[ch] = { correct:0, total:0 };
+    chapterScores[ch].correct += data.correct;
+    chapterScores[ch].total   += data.total;
+  });
+  localStorage.setItem('lpic201_chapter_scores', JSON.stringify(chapterScores));
+}
+
+/* =====================================================
+   ユーティリティ
+===================================================== */
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+</script>
+
+</body>
+</html>
