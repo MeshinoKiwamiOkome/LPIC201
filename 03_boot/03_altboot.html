@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>その他のブートローダ ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em; color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #2f855a; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #1a4731, #2f855a);
+      border-radius: 12px; padding: 32px 32px 24px;
+      margin-bottom: 32px; color: #fff;
+      box-shadow: 0 4px 18px rgba(47,133,90,0.3);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em; font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85; letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .chapter-header h1 { margin: 0 0 10px; font-size: 1.6em; color: #fff; border: none; padding: 0; }
+    .chapter-header p  { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px; padding: 3px 12px;
+      font-size: 0.76em; font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 { color: #1a4731; margin-top: 48px; border-left: 5px solid #2f855a; padding-left: 12px; }
+    h3 { color: #276749; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7; padding: 2px 6px;
+      border-radius: 4px; font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c; color: #e2e8f0;
+      padding: 18px 20px; border-radius: 8px;
+      overflow-x: auto; font-size: 0.88em;
+      line-height: 1.7; font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+    pre .err     { color: #fc8181; }
+    pre .cfg     { color: #68d391; font-weight: bold; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #4a5568; color: #e2e8f0;
+      border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 0.75em;
+      cursor: pointer; font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s; z-index: 1;
+    }
+    .copy-btn:hover { background: #2f855a; }
+
+    /* ボックス */
+    .note {
+      background: #fff; border: 1px dashed #9ae6b4;
+      border-radius: 6px; padding: 14px 18px;
+      font-size: 0.93em; color: #4a5568; margin: 14px 0;
+    }
+    .note strong { color: #1a4731; }
+    .warn {
+      background: #fffaf0; border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #744210; margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4; border: 1px solid #68d391;
+      border-left: 5px solid #48bb78; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #276749; margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff; border: 1px solid #9ae6b4;
+      border-radius: 8px; padding: 20px 24px;
+      margin: 12px 0 28px; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff; border: 1px solid #9ae6b4;
+      border-radius: 10px; padding: 18px 22px;
+      margin-bottom: 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 { margin: 0 0 12px; font-size: 0.92em; color: #1a4731; border: none; padding: 0; }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #2f855a; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #1a4731; font-weight: bold; }
+
+    /* SYSLINUX ファミリーカード */
+    .family-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px; margin: 14px 0;
+    }
+    .family-card {
+      border-radius: 8px; padding: 16px;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+      text-align: center;
+    }
+    .family-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+    }
+    .family-card .fc-name {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 1.05em; font-weight: bold; margin-bottom: 6px;
+    }
+    .family-card .fc-media {
+      font-size: 0.78em; font-weight: bold;
+      border-radius: 10px; padding: 2px 10px;
+      display: inline-block; margin-bottom: 8px;
+    }
+    .family-card .fc-desc {
+      font-size: 0.82em; line-height: 1.6;
+    }
+
+    /* PXE フロー */
+    .pxe-flow {
+      display: flex; flex-direction: column; gap: 0; margin: 16px 0;
+    }
+    .pxe-step {
+      display: flex; gap: 0; align-items: stretch;
+    }
+    .pxe-num {
+      flex-shrink: 0; width: 44px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .pxe-circle {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 0.9em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      flex-shrink: 0; z-index: 1; margin-top: 6px;
+    }
+    .pxe-line {
+      width: 2px; flex: 1; margin: 0 auto; min-height: 16px;
+    }
+    .pxe-step:last-child .pxe-line { display: none; }
+    .pxe-body {
+      flex: 1; border-radius: 8px;
+      padding: 12px 16px; margin-bottom: 8px;
+      border: 2px solid transparent;
+      cursor: pointer; transition: transform 0.15s;
+    }
+    .pxe-body:hover { transform: translateX(4px); }
+    .pxe-body h4 { margin: 0 0 4px; font-size: 0.95em; }
+    .pxe-body p  { margin: 0; font-size: 0.82em; opacity: 0.88; }
+
+    /* ネットワーク図 */
+    .net-diagram {
+      display: flex; align-items: center;
+      justify-content: center; gap: 8px;
+      flex-wrap: wrap; margin: 16px 0;
+    }
+    .net-box {
+      border-radius: 8px; padding: 12px 16px;
+      text-align: center; font-size: 0.85em;
+      font-weight: bold; min-width: 110px;
+    }
+    .net-box.client  { background: #ebf8ff; border: 2px solid #90cdf4; color: #2b4c7e; }
+    .net-box.dhcp    { background: #faf5ff; border: 2px solid #b794f4; color: #553c9a; }
+    .net-box.tftp    { background: #f0fff4; border: 2px solid #68d391; color: #1a4731; }
+    .net-box.nfs     { background: #fffaf0; border: 2px solid #f6ad55; color: #744210; }
+    .net-box.http    { background: #fff5f5; border: 2px solid #fc8181; color: #9b2335; }
+    .net-arrow { font-size: 1.2em; color: #718096; }
+    .net-label { font-size: 0.72em; color: #718096; text-align: center; margin-top: 4px; }
+
+    /* インタラクティブデモ */
+    .interactive-demo {
+      background: #f7fafc; border: 1px solid #9ae6b4;
+      border-radius: 8px; padding: 16px 20px; margin: 14px 0;
+    }
+    .slider-row {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em; font-weight: bold;
+      min-width: 180px; color: #1a4731;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row select {
+      border: 2px solid #9ae6b4; border-radius: 6px;
+      padding: 6px 10px; font-size: 0.88em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #2d3748; background: #fff;
+      cursor: pointer; flex: 1;
+    }
+    .slider-row select:focus { border-color: #2f855a; outline: none; }
+    .output-display {
+      background: #1a202c; color: #68d391;
+      border-radius: 6px; padding: 12px 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em; margin-top: 10px;
+      white-space: pre; overflow-x: auto; line-height: 1.7;
+    }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse; width: 100%;
+      background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0; font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #9ae6b4; padding: 10px 14px; text-align: left;
+    }
+    table.ref-table thead tr { background: #1a4731; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #f0fff4; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0; border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0; padding: 24px 28px; margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 18px 22px; margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 8px 12px; font-size: 0.95em;
+      width: 100%; max-width: 440px; margin: 6px 0;
+      outline: none; font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus { border-color: #f6ad55; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block; padding: 9px 20px;
+      border-radius: 6px; border: none; cursor: pointer;
+      font-size: 0.95em; font-weight: bold;
+      transition: opacity 0.2s; margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-green { background: #2f855a; color: #fff; }
+    .btn-done  { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px; padding: 10px 14px;
+      border-radius: 6px; font-weight: bold; display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #c6f6d5; color: #1a4731; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 48px;
+      padding-top: 20px; border-top: 2px solid #9ae6b4;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block; padding: 10px 20px;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.9em; transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #2f855a; color: #fff; }
+    .page-nav .home { background: #fff; color: #2f855a; border: 2px solid #2f855a; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4; border: 2px solid #48bb78;
+      border-radius: 10px; padding: 20px 24px;
+      margin-top: 40px; text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 2px solid #9ae6b4;
+      font-size: 0.82em; color: #a0aec0; text-align: center;
+    }
+    footer a { color: #2f855a; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .family-grid { grid-template-columns: repeat(2, 1fr); }
+      .net-diagram { gap: 4px; }
+      .net-box { min-width: 80px; font-size: 0.78em; padding: 8px 10px; }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  <a href="index.html">第3章：システムの起動</a> ›
+  その他のブートローダ
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 03 › SECTION 03</div>
+  <h1>🌐 その他のブートローダ</h1>
+  <p>SYSLINUX ファミリーの各ブートローダの特徴と設定方法、
+  そしてネットワーク経由でOSを起動する PXE ブートの仕組みと構築手順を学びます。</p>
+  <div class="badge-row">
+    <span class="badge">SYSLINUX</span>
+    <span class="badge">ISOLINUX</span>
+    <span class="badge">PXELINUX</span>
+    <span class="badge">EXTLINUX</span>
+    <span class="badge">PXEブート</span>
+    <span class="badge">DHCP</span>
+    <span class="badge">TFTP</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第3章のセクション</h2>
+  <ol>
+    <li><a href="index.html">システム起動プロセス</a></li>
+    <li><a href="02_bootloader.html">ブートローダ</a></li>
+    <li class="current"><a href="03_altboot.html">その他のブートローダ</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：SYSLINUX ファミリーの概要 -->
+<!-- ============================================================ -->
+<h2 id="syslinux-overview">① SYSLINUX ファミリーの概要</h2>
+
+<div class="note">
+  <strong>重要ポイント①：SYSLINUX は軽量なブートローダのファミリーで、使用するメディアに応じて SYSLINUX・ISOLINUX・PXELINUX・EXTLINUX の4種類がある</strong><br>
+  すべて共通の設定ファイル書式（<code>syslinux.cfg</code>）を使用しますが、
+  用途とインストール先が異なります。
+</div>
+
+<div class="demo-box">
+  <h3>SYSLINUX ファミリー（クリックで詳細）</h3>
+  <div class="family-grid">
+
+    <div class="family-card" style="background:#ebf8ff; border:2px solid #90cdf4;"
+         onclick="showFamily('syslinux')">
+      <div class="fc-name" style="color:#2b4c7e;">SYSLINUX</div>
+      <div class="fc-media" style="background:#2b4c7e; color:#fff;">FAT ファイルシステム</div>
+      <div class="fc-desc" style="color:#4a5568;">USBメモリ・フロッピーなどの FAT パーティションから起動</div>
+    </div>
+
+    <div class="family-card" style="background:#faf5ff; border:2px solid #b794f4;"
+         onclick="showFamily('isolinux')">
+      <div class="fc-name" style="color:#553c9a;">ISOLINUX</div>
+      <div class="fc-media" style="background:#553c9a; color:#fff;">ISO 9660（CD/DVD）</div>
+      <div class="fc-desc" style="color:#4a5568;">CD/DVD/ISO イメージから起動。Live CD に広く使用</div>
+    </div>
+
+    <div class="family-card" style="background:#f0fff4; border:2px solid #68d391;"
+         onclick="showFamily('pxelinux')">
+      <div class="fc-name" style="color:#1a4731;">PXELINUX</div>
+      <div class="fc-media" style="background:#1a4731; color:#fff;">ネットワーク（PXE）</div>
+      <div class="fc-desc" style="color:#4a5568;">ネットワーク経由でカーネルを取得して起動（PXEブート）</div>
+    </div>
+
+    <div class="family-card" style="background:#fffaf0; border:2px solid #f6ad55;"
+         onclick="showFamily('extlinux')">
+      <div class="fc-name" style="color:#744210;">EXTLINUX</div>
+      <div class="fc-media" style="background:#744210; color:#fff;">ext2/3/4・Btrfs</div>
+      <div class="fc-desc" style="color:#4a5568;">Linux ネイティブファイルシステムのパーティションから起動</div>
+    </div>
+
+  </div>
+
+  <!-- ファミリー詳細表示エリア -->
+  <div id="family-detail" style="display:none; margin-top:14px; background:#fff; border:1px solid #9ae6b4; border-left:5px solid #2f855a; border-radius:0 8px 8px 0; padding:16px 20px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const familyData = {
+      syslinux: {
+        title: 'SYSLINUX',
+        color: '#2b4c7e',
+        body: `FAT ファイルシステム（FAT12/FAT16/FAT32）上で動作するブートローダです。<br><br>
+          <strong>主な用途：</strong><br>
+          ・USB メモリからの起動（ライブ環境・インストールメディア）<br>
+          ・フロッピーディスクからの起動（レガシー）<br>
+          ・DOS/Windows パーティションからの Linux 起動<br><br>
+          <strong>インストール：</strong><br>
+          <code>sudo apt install syslinux</code><br>
+          <code>sudo syslinux /dev/sdb1</code>（FAT パーティションに MBR を書き込む）<br><br>
+          <strong>設定ファイル：</strong><br>
+          <code>/boot/syslinux/syslinux.cfg</code> または <code>/syslinux.cfg</code>`
+      },
+      isolinux: {
+        title: 'ISOLINUX',
+        color: '#553c9a',
+        body: `ISO 9660 ファイルシステム（CD/DVD/ISO イメージ）上で動作するブートローダです。<br><br>
+          <strong>主な用途：</strong><br>
+          ・Linux の Live CD/DVD の起動<br>
+          ・インストール CD/DVD（Ubuntu・CentOS など）<br>
+          ・ISO イメージのブート<br><br>
+          <strong>設定ファイル：</strong><br>
+          <code>/isolinux/isolinux.cfg</code>（ISO イメージ内）<br><br>
+          <strong>ISO イメージ作成例：</strong><br>
+          <code>mkisofs -b isolinux/isolinux.bin -c isolinux/boot.cat \\<br>
+          &nbsp;&nbsp;-no-emul-boot -boot-load-size 4 -boot-info-table \\<br>
+          &nbsp;&nbsp;-o output.iso /path/to/source/</code>`
+      },
+      pxelinux: {
+        title: 'PXELINUX',
+        color: '#1a4731',
+        body: `PXE（Preboot eXecution Environment）を使ってネットワーク経由でカーネルを取得して起動するブートローダです。<br><br>
+          <strong>主な用途：</strong><br>
+          ・ディスクレスクライアントの起動<br>
+          ・大規模環境でのOS一括インストール<br>
+          ・ネットワークブートによるシステム管理<br><br>
+          <strong>必要なサービス：</strong><br>
+          ・DHCP サーバー（IPアドレスと TFTP サーバーアドレスを配布）<br>
+          ・TFTP サーバー（pxelinux.0 とカーネルを配布）<br><br>
+          <strong>設定ファイル：</strong><br>
+          <code>/tftpboot/pxelinux.cfg/default</code>（TFTP サーバー上）`
+      },
+      extlinux: {
+        title: 'EXTLINUX',
+        color: '#744210',
+        body: `ext2/ext3/ext4・Btrfs・XFS などの Linux ネイティブファイルシステム上で動作するブートローダです。<br><br>
+          <strong>主な用途：</strong><br>
+          ・Linux パーティションへの直接インストール<br>
+          ・GRUB の代替として使用<br>
+          ・組み込みシステム・シンクライアント<br><br>
+          <strong>インストール：</strong><br>
+          <code>sudo apt install syslinux-common extlinux</code><br>
+          <code>sudo extlinux --install /boot</code>（/boot パーティションにインストール）<br>
+          <code>sudo dd if=/usr/lib/syslinux/mbr/mbr.bin of=/dev/sda bs=440 count=1</code>（MBR を書き込む）<br><br>
+          <strong>設定ファイル：</strong><br>
+          <code>/boot/extlinux/extlinux.conf</code> または <code>/boot/syslinux.cfg</code>`
+      }
+    };
+
+    function showFamily(key) {
+      const d = familyData[key];
+      const el = document.getElementById('family-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display='none'; el.dataset.current=''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-family:'Consolas','Monaco',monospace; font-size:0.95em;">${d.title}</strong><br><br>${d.body}`;
+      el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+  </script>
+
+  <h3>SYSLINUX ファミリー比較表</h3>
+  <table class="ref-table">
+    <thead>
+      <tr><th>名前</th><th>対応メディア</th><th>主な用途</th><th>設定ファイル</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>SYSLINUX</strong></td>
+        <td>FAT（USB・フロッピー）</td>
+        <td>USB 起動メディア</td>
+        <td><code>syslinux.cfg</code></td>
+      </tr>
+      <tr>
+        <td><strong>ISOLINUX</strong></td>
+        <td>ISO 9660（CD/DVD）</td>
+        <td>Live CD・インストール CD</td>
+        <td><code>isolinux.cfg</code></td>
+      </tr>
+      <tr>
+        <td><strong>PXELINUX</strong></td>
+        <td>ネットワーク（PXE/TFTP）</td>
+        <td>ネットワークブート</td>
+        <td><code>pxelinux.cfg/default</code></td>
+      </tr>
+      <tr>
+        <td><strong>EXTLINUX</strong></td>
+        <td>ext2/3/4・Btrfs・XFS</td>
+        <td>Linux パーティション起動</td>
+        <td><code>extlinux.conf</code></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：SYSLINUX の設定ファイル -->
+<!-- ============================================================ -->
+<h2 id="syslinux-config">② SYSLINUX の設定ファイル</h2>
+
+<div class="note">
+  <strong>重要ポイント②：SYSLINUX ファミリーはすべて共通の設定ファイル書式を使用する</strong><br>
+  GRUB の設定ファイルより単純で読みやすい書式です。
+</div>
+
+<div class="demo-box">
+  <h3>syslinux.cfg / isolinux.cfg の基本書式</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># syslinux.cfg / isolinux.cfg の基本構造</span>
+
+<span class="comment"># グローバル設定</span>
+<span class="cfg">DEFAULT</span>  <span class="val">linux</span>              <span class="comment"># デフォルトで起動するラベル</span>
+<span class="cfg">TIMEOUT</span>  <span class="val">50</span>                 <span class="comment"># タイムアウト（1/10秒単位、50=5秒）</span>
+<span class="cfg">PROMPT</span>   <span class="val">1</span>                  <span class="comment"># 1=ブートプロンプトを表示</span>
+<span class="cfg">MENU TITLE</span> <span class="val">Boot Menu</span>       <span class="comment"># メニュータイトル</span>
+
+<span class="comment"># 起動エントリ 1</span>
+<span class="cfg">LABEL</span>    <span class="val">linux</span>
+  <span class="cfg">MENU LABEL</span> <span class="val">^Boot Linux</span>
+  <span class="cfg">KERNEL</span>   <span class="val">/vmlinuz</span>
+  <span class="cfg">APPEND</span>   <span class="val">initrd=/initrd.img root=/dev/sda1 ro quiet splash</span>
+
+<span class="comment"># 起動エントリ 2（回復モード）</span>
+<span class="cfg">LABEL</span>    <span class="val">recovery</span>
+  <span class="cfg">MENU LABEL</span> <span class="val">Recovery Mode</span>
+  <span class="cfg">KERNEL</span>   <span class="val">/vmlinuz</span>
+  <span class="cfg">APPEND</span>   <span class="val">initrd=/initrd.img root=/dev/sda1 ro single</span>
+
+<span class="comment"># 起動エントリ 3（メモリテスト）</span>
+<span class="cfg">LABEL</span>    <span class="val">memtest</span>
+  <span class="cfg">MENU LABEL</span> <span class="val">Memory Test (memtest86+)</span>
+  <span class="cfg">KERNEL</span>   <span class="val">/memtest86+</span>
+
+<span class="comment"># ローカルディスクから起動</span>
+<span class="cfg">LABEL</span>    <span class="val">local</span>
+  <span class="cfg">MENU LABEL</span> <span class="val">Boot from local disk</span>
+  <span class="cfg">LOCALBOOT</span> <span class="val">0</span>
+</pre>
+  </div>
+
+  <h3>主要ディレクティブ一覧</h3>
+  <table class="ref-table">
+    <thead><tr><th>ディレクティブ</th><th>説明</th><th>例</th></tr></thead>
+    <tbody>
+      <tr><td><code>DEFAULT</code></td><td>デフォルトで起動するラベル名</td><td><code>DEFAULT linux</code></td></tr>
+      <tr><td><code>TIMEOUT</code></td><td>自動起動までの時間（1/10秒単位）</td><td><code>TIMEOUT 50</code>（5秒）</td></tr>
+      <tr><td><code>PROMPT</code></td><td>1=ブートプロンプト表示、0=非表示</td><td><code>PROMPT 1</code></td></tr>
+      <tr><td><code>LABEL</code></td><td>起動エントリのラベル名</td><td><code>LABEL linux</code></td></tr>
+      <tr><td><code>MENU LABEL</code></td><td>メニューに表示する文字列（^ でショートカット）</td><td><code>MENU LABEL ^Boot Linux</code></td></tr>
+      <tr><td><code>KERNEL</code></td><td>起動するカーネルファイルのパス</td><td><code>KERNEL /vmlinuz</code></td></tr>
+      <tr><td><code>APPEND</code></td><td>カーネルに渡すパラメータ（initrd 含む）</td><td><code>APPEND initrd=/initrd.img root=/dev/sda1 ro</code></td></tr>
+      <tr><td><code>INITRD</code></td><td>initrd ファイルのパス（APPEND の代替）</td><td><code>INITRD /initrd.img</code></td></tr>
+      <tr><td><code>LOCALBOOT</code></td><td>ローカルディスクから起動</td><td><code>LOCALBOOT 0</code></td></tr>
+      <tr><td><code>MENU DEFAULT</code></td><td>このエントリをデフォルトに設定</td><td>LABEL ブロック内に記述</td></tr>
+      <tr><td><code>MENU HIDE</code></td><td>このエントリをメニューから非表示</td><td>LABEL ブロック内に記述</td></tr>
+    </tbody>
+  </table>
+
+  <h3>ISOLINUX の設定例（Live CD）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /isolinux/isolinux.cfg（Live CD 用の設定例）</span>
+
+<span class="cfg">UI</span>       <span class="val">vesamenu.c32</span>       <span class="comment"># グラフィカルメニューモジュール</span>
+<span class="cfg">DEFAULT</span>  <span class="val">live</span>
+<span class="cfg">TIMEOUT</span>  <span class="val">300</span>                <span class="comment"># 30秒</span>
+<span class="cfg">MENU TITLE</span> <span class="val">Ubuntu Live CD</span>
+
+<span class="cfg">LABEL</span>    <span class="val">live</span>
+  <span class="cfg">MENU LABEL</span> <span class="val">^Start Ubuntu</span>
+  <span class="cfg">KERNEL</span>   <span class="val">/casper/vmlinuz</span>
+  <span class="cfg">APPEND</span>   <span class="val">initrd=/casper/initrd boot=casper quiet splash ---</span>
+
+<span class="cfg">LABEL</span>    <span class="val">install</span>
+  <span class="cfg">MENU LABEL</span> <span class="val">^Install Ubuntu</span>
+  <span class="cfg">KERNEL</span>   <span class="val">/casper/vmlinuz</span>
+  <span class="cfg">APPEND</span>   <span class="val">initrd=/casper/initrd boot=casper only-ubiquity quiet splash ---</span>
+
+<span class="cfg">LABEL</span>    <span class="val">check</span>
+  <span class="cfg">MENU LABEL</span> <span class="val">Check disc for defects</span>
+  <span class="cfg">KERNEL</span>   <span class="val">/casper/vmlinuz</span>
+  <span class="cfg">APPEND</span>   <span class="val">initrd=/casper/initrd boot=casper integrity-check quiet splash ---</span>
+</pre>
+  </div>
+
+  <h3>EXTLINUX のインストールと設定</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># extlinux のインストール</span>
+$ <span class="cmd">sudo apt install</span> syslinux-common extlinux
+
+<span class="comment"># /boot パーティションに extlinux をインストール</span>
+$ <span class="cmd">sudo extlinux</span> <span class="opt">--install</span> /boot
+<span class="out">/boot is device /dev/sda1</span>
+
+<span class="comment"># MBR に syslinux の MBR コードを書き込む</span>
+$ <span class="cmd">sudo dd</span> <span class="opt">if</span>=/usr/lib/syslinux/mbr/mbr.bin \
+         <span class="opt">of</span>=/dev/sda <span class="opt">bs</span>=440 <span class="opt">count</span>=1
+
+<span class="comment"># /boot/extlinux.conf を作成</span>
+$ <span class="cmd">sudo vi</span> /boot/extlinux.conf
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：PXE ブートの概要 -->
+<!-- ============================================================ -->
+<h2 id="pxe-overview">③ PXE ブートの概要</h2>
+
+<div class="note">
+  <strong>重要ポイント③：PXE（Preboot eXecution Environment）はネットワーク経由でOSを起動する仕組みで、DHCP・TFTP・ブートローダ（PXELINUX）が連携して動作する</strong><br>
+  ディスクレスクライアントや大規模環境でのOS一括インストールに使用されます。
+</div>
+
+<div class="demo-box">
+  <h3>PXE ブートのネットワーク構成</h3>
+  <div class="net-diagram">
+    <div>
+      <div class="net-box client">💻 PXEクライアント<br><span style="font-size:0.8em; font-weight:normal;">NICにPXE対応ROM</span></div>
+    </div>
+    <div class="net-arrow">⇄</div>
+    <div>
+      <div class="net-box dhcp">🔵 DHCP サーバー<br><span style="font-size:0.8em; font-weight:normal;">IPアドレス配布<br>next-server指定</span></div>
+      <div class="net-label">ポート 67/68</div>
+    </div>
+    <div class="net-arrow">⇄</div>
+    <div>
+      <div class="net-box tftp">📁 TFTP サーバー<br><span style="font-size:0.8em; font-weight:normal;">pxelinux.0<br>カーネル配布</span></div>
+      <div class="net-label">ポート 69（UDP）</div>
+    </div>
+    <div class="net-arrow">⇄</div>
+    <div>
+      <div class="net-box nfs">💾 NFS / HTTP<br><span style="font-size:0.8em; font-weight:normal;">ルートFS<br>インストールイメージ</span></div>
+      <div class="net-label">NFS:2049 / HTTP:80</div>
+    </div>
+  </div>
+
+  <h3>PXE ブートのフロー（クリックで詳細）</h3>
+  <div class="pxe-flow">
+
+    <div class="pxe-step">
+      <div class="pxe-num">
+        <div class="pxe-circle" style="background:#2d3748; color:#e2e8f0;">1</div>
+        <div class="pxe-line" style="background:#9ae6b4;"></div>
+      </div>
+      <div class="pxe-body" style="background:#2d3748; color:#e2e8f0; border-color:#4a5568;"
+           onclick="showPxeStep('dhcp')">
+        <h4>🔵 DHCP ディスカバリ</h4>
+        <p>クライアントが DHCP サーバーに IP アドレスと TFTP サーバー情報を要求</p>
+      </div>
+    </div>
+
+    <div class="pxe-step">
+      <div class="pxe-num">
+        <div class="pxe-circle" style="background:#553c9a; color:#fff;">2</div>
+        <div class="pxe-line" style="background:#9ae6b4;"></div>
+      </div>
+      <div class="pxe-body" style="background:#553c9a; color:#fff; border-color:#9f7aea;"
+           onclick="showPxeStep('tftp-boot')">
+        <h4>📁 TFTP でブートローダを取得</h4>
+        <p>TFTP サーバーから pxelinux.0 をダウンロードして実行</p>
+      </div>
+    </div>
+
+    <div class="pxe-step">
+      <div class="pxe-num">
+        <div class="pxe-circle" style="background:#1a4731; color:#fff;">3</div>
+        <div class="pxe-line" style="background:#9ae6b4;"></div>
+      </div>
+      <div class="pxe-body" style="background:#1a4731; color:#fff; border-color:#2f855a;"
+           onclick="showPxeStep('pxelinux-cfg')">
+        <h4>📋 PXELINUX 設定ファイルの取得</h4>
+        <p>MAC アドレス・IP アドレスに基づいた設定ファイルを TFTP から取得</p>
+      </div>
+    </div>
+
+    <div class="pxe-step">
+      <div class="pxe-num">
+        <div class="pxe-circle" style="background:#2b4c7e; color:#fff;">4</div>
+        <div class="pxe-line" style="background:#9ae6b4;"></div>
+      </div>
+      <div class="pxe-body" style="background:#2b4c7e; color:#fff; border-color:#567ebb;"
+           onclick="showPxeStep('kernel')">
+        <h4>⚙️ カーネルと initrd の取得</h4>
+        <p>TFTP サーバーからカーネルと initrd をダウンロード</p>
+      </div>
+    </div>
+
+    <div class="pxe-step">
+      <div class="pxe-num">
+        <div class="pxe-circle" style="background:#744210; color:#fff;">5</div>
+        <div class="pxe-line" style="background:#9ae6b4;"></div>
+      </div>
+      <div class="pxe-body" style="background:#744210; color:#fff; border-color:#f6ad55;"
+           onclick="showPxeStep('rootfs')">
+        <h4>💾 ルートファイルシステムのマウント</h4>
+        <p>NFS・HTTP・iSCSI などでルートFS をマウントしてシステム起動完了</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PXE フロー詳細 -->
+  <div id="pxe-step-detail" style="display:none; margin-top:14px; background:#fff; border:1px solid #9ae6b4; border-left:5px solid #2f855a; border-radius:0 8px 8px 0; padding:16px 20px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const pxeSteps = {
+      dhcp: {
+        title: '🔵 DHCP ディスカバリ',
+        color: '#2d3748',
+        body: `クライアントの NIC（PXE 対応 ROM）が DHCP ブロードキャストを送信します。<br><br>
+          <strong>DHCP レスポンスに含まれる情報：</strong><br>
+          ・クライアントの IP アドレス<br>
+          ・サブネットマスク・デフォルトゲートウェイ<br>
+          ・<code>next-server</code>（TFTP サーバーの IP アドレス）<br>
+          ・<code>filename</code>（ブートファイル名：<code>pxelinux.0</code>）<br><br>
+          <strong>DHCP サーバー設定例（/etc/dhcp/dhcpd.conf）：</strong><br>
+          <div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; margin:8px 0; line-height:1.7;">
+            <div style="color:#68d391;">subnet 192.168.1.0 netmask 255.255.255.0 {</div>
+            <div>&nbsp;&nbsp;range 192.168.1.100 192.168.1.200;</div>
+            <div>&nbsp;&nbsp;option routers 192.168.1.1;</div>
+            <div style="color:#f6ad55;">&nbsp;&nbsp;next-server 192.168.1.10;  # TFTP サーバー</div>
+            <div style="color:#f6ad55;">&nbsp;&nbsp;filename "pxelinux.0";     # ブートファイル</div>
+            <div style="color:#68d391;">}</div>
+          </div>`
+      },
+      'tftp-boot': {
+        title: '📁 TFTP でブートローダを取得',
+        color: '#553c9a',
+        body: `クライアントが TFTP サーバーから <code>pxelinux.0</code> をダウンロードして実行します。<br><br>
+          <strong>TFTP サーバーのセットアップ：</strong><br>
+          <div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; margin:8px 0; line-height:1.7;">
+            <div style="color:#68d391;"># TFTP サーバーのインストール</div>
+            <div>$ sudo apt install tftpd-hpa</div>
+            <div style="color:#68d391;"># /etc/default/tftpd-hpa の設定</div>
+            <div>TFTP_USERNAME="tftp"</div>
+            <div>TFTP_DIRECTORY="/tftpboot"</div>
+            <div>TFTP_ADDRESS=":69"</div>
+            <div>TFTP_OPTIONS="--secure"</div>
+            <div style="color:#68d391;"># pxelinux.0 を TFTP ディレクトリにコピー</div>
+            <div>$ sudo cp /usr/lib/syslinux/pxelinux.0 /tftpboot/</div>
+            <div>$ sudo cp /usr/lib/syslinux/modules/bios/*.c32 /tftpboot/</div>
+          </div>
+          <strong>TFTP の特徴：</strong><br>
+          ・UDP ポート 69 を使用<br>
+          ・認証なし・シンプルなプロトコル<br>
+          ・ルートディレクトリ：<code>/tftpboot/</code> または <code>/var/lib/tftpboot/</code>`
+      },
+      'pxelinux-cfg': {
+        title: '📋 PXELINUX 設定ファイルの取得',
+        color: '#1a4731',
+        body: `PXELINUX は以下の順序で設定ファイルを検索します（特定のクライアント向けの設定を優先）。<br><br>
+          <strong>設定ファイルの検索順序：</strong><br>
+          <div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; margin:8px 0; line-height:1.7;">
+            <div style="color:#68d391;"># 1. UUID ベース（UEFI）</div>
+            <div>pxelinux.cfg/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</div>
+            <div style="color:#68d391;"># 2. MAC アドレスベース（01-xx-xx-xx-xx-xx-xx）</div>
+            <div style="color:#f6ad55;">pxelinux.cfg/01-aa-bb-cc-dd-ee-ff</div>
+            <div style="color:#68d391;"># 3. IP アドレスの16進数（上位ビットから順に短縮）</div>
+            <div>pxelinux.cfg/C0A8010A  # 192.168.1.10</div>
+            <div>pxelinux.cfg/C0A8010</div>
+            <div>pxelinux.cfg/C0A801</div>
+            <div>pxelinux.cfg/C0A80</div>
+            <div>pxelinux.cfg/C0A8</div>
+            <div>pxelinux.cfg/C0A</div>
+            <div>pxelinux.cfg/C0</div>
+            <div>pxelinux.cfg/C</div>
+            <div style="color:#f6ad55;">pxelinux.cfg/default  # ← 最終的なデフォルト</div>
+          </div>`
+      },
+      kernel: {
+        title: '⚙️ カーネルと initrd の取得',
+        color: '#2b4c7e',
+        body: `PXELINUX の設定ファイルに従って、TFTP サーバーからカーネルと initrd をダウンロードします。<br><br>
+          <strong>TFTP サーバーのディレクトリ構成例：</strong><br>
+          <div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; margin:8px 0; line-height:1.7;">
+            <div>/tftpboot/</div>
+            <div>├── pxelinux.0          <span style="color:#68d391;"># ブートローダ本体</span></div>
+            <div>├── ldlinux.c32         <span style="color:#68d391;"># 必須モジュール</span></div>
+            <div>├── pxelinux.cfg/</div>
+            <div>│   └── default         <span style="color:#68d391;"># 設定ファイル</span></div>
+            <div>├── ubuntu/</div>
+            <div>│   ├── vmlinuz         <span style="color:#f6ad55;"># カーネル</span></div>
+            <div>│   └── initrd.img      <span style="color:#f6ad55;"># initrd</span></div>
+            <div>└── centos/</div>
+            <div>&nbsp;&nbsp;&nbsp;&nbsp;├── vmlinuz</div>
+            <div>&nbsp;&nbsp;&nbsp;&nbsp;└── initrd.img</div>
+          </div>`
+      },
+      rootfs: {
+        title: '💾 ルートファイルシステムのマウント',
+        color: '#744210',
+        body: `カーネルが起動した後、ルートファイルシステムをネットワーク経由でマウントします。<br><br>
+          <strong>ルートFS の提供方法：</strong><br>
+          ・<strong>NFS</strong>：最も一般的。<code>root=/dev/nfs nfsroot=192.168.1.10:/exports/ubuntu</code><br>
+          ・<strong>HTTP</strong>：インストールイメージの配布に使用<br>
+          ・<strong>iSCSI</strong>：ブロックデバイスをネットワーク越しに提供<br>
+          ・<strong>NBD</strong>（Network Block Device）：ネットワークブロックデバイス<br><br>
+          <strong>NFS ルートの設定例（カーネルパラメータ）：</strong><br>
+          <div style="background:#1a202c; border-radius:6px; padding:10px 14px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; margin:8px 0; line-height:1.7;">
+            <div style="color:#f6ad55;">APPEND initrd=ubuntu/initrd.img \</div>
+            <div style="color:#f6ad55;">&nbsp;&nbsp;root=/dev/nfs \</div>
+            <div style="color:#f6ad55;">&nbsp;&nbsp;nfsroot=192.168.1.10:/exports/ubuntu \</div>
+            <div style="color:#f6ad55;">&nbsp;&nbsp;ip=dhcp rw</div>
+          </div>`
+      }
+    };
+
+    function showPxeStep(key) {
+      const d = pxeSteps[key];
+      const el = document.getElementById('pxe-step-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display='none'; el.dataset.current=''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-size:0.95em;">${d.title}</strong><br><br>${d.body}`;
+      el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 4：PXE ブートの構築 -->
+<!-- ============================================================ -->
+<h2 id="pxe-setup">④ PXE ブート環境の構築</h2>
+
+<div class="demo-box">
+  <h3>PXE サーバーのセットアップ手順</h3>
+
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#1a4731; margin:0 0 12px;">
+      設定するコンポーネントを選択して手順を確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>コンポーネント</label>
+      <select id="pxe-comp" onchange="showPxeComp()">
+        <option value="">-- 選択してください --</option>
+        <option value="dhcp">DHCP サーバーの設定</option>
+        <option value="tftp">TFTP サーバーの設定</option>
+        <option value="pxelinux-setup">PXELINUX の配置</option>
+        <option value="pxecfg">pxelinux.cfg/default の設定</option>
+        <option value="nfs">NFS サーバーの設定</option>
+      </select>
+    </div>
+    <div class="output-display" id="pxe-comp-output" style="display:none;"></div>
+  </div>
+
+  <script>
+    const pxeComps = {
+      dhcp: {
+        color: '#90cdf4',
+        text:
+`# DHCP サーバーのインストールと設定（ISC DHCP）
+
+$ sudo apt install isc-dhcp-server
+
+# /etc/dhcp/dhcpd.conf を編集
+$ sudo vi /etc/dhcp/dhcpd.conf
+
+# 設定内容
+default-lease-time 600;
+max-lease-time 7200;
+
+subnet 192.168.1.0 netmask 255.255.255.0 {
+  range 192.168.1.100 192.168.1.200;
+  option subnet-mask 255.255.255.0;
+  option routers 192.168.1.1;
+  option domain-name-servers 8.8.8.8;
+
+  # PXE ブート用設定
+  next-server 192.168.1.10;   # TFTP サーバーのIP
+  filename "pxelinux.0";      # ブートファイル名
+}
+
+# UEFI クライアント向け（grubx64.efi を使用する場合）
+# if option client-architecture = 00:07 {
+#   filename "grubx64.efi";
+# } else {
+#   filename "pxelinux.0";
+# }
+
+# DHCP サーバーを起動
+$ sudo systemctl enable --now isc-dhcp-server`
+      },
+      tftp: {
+        color: '#68d391',
+        text:
+`# TFTP サーバーのインストールと設定
+
+$ sudo apt install tftpd-hpa
+
+# /etc/default/tftpd-hpa を編集
+$ sudo vi /etc/default/tftpd-hpa
+
+# 設定内容
+TFTP_USERNAME="tftp"
+TFTP_DIRECTORY="/tftpboot"    # TFTP ルートディレクトリ
+TFTP_ADDRESS=":69"            # UDP ポート 69
+TFTP_OPTIONS="--secure --create"
+
+# TFTP ディレクトリを作成
+$ sudo mkdir -p /tftpboot
+$ sudo chmod 777 /tftpboot
+
+# TFTP サーバーを起動
+$ sudo systemctl enable --now tftpd-hpa
+
+# 動作確認（別端末から）
+$ tftp 192.168.1.10
+tftp> get pxelinux.0
+tftp> quit`
+      },
+      'pxelinux-setup': {
+        color: '#b794f4',
+        text:
+`# PXELINUX のインストールと配置
+
+$ sudo apt install pxelinux syslinux-common
+
+# 必要なファイルを TFTP ディレクトリにコピー
+$ sudo cp /usr/lib/PXELINUX/pxelinux.0 /tftpboot/
+$ sudo cp /usr/lib/syslinux/modules/bios/ldlinux.c32 /tftpboot/
+$ sudo cp /usr/lib/syslinux/modules/bios/libcom32.c32 /tftpboot/
+$ sudo cp /usr/lib/syslinux/modules/bios/libutil.c32 /tftpboot/
+$ sudo cp /usr/lib/syslinux/modules/bios/vesamenu.c32 /tftpboot/
+
+# 設定ディレクトリを作成
+$ sudo mkdir -p /tftpboot/pxelinux.cfg
+
+# カーネルと initrd を配置
+$ sudo mkdir -p /tftpboot/ubuntu
+$ sudo cp /path/to/vmlinuz /tftpboot/ubuntu/
+$ sudo cp /path/to/initrd.img /tftpboot/ubuntu/
+
+# ディレクトリ構成確認
+$ ls -la /tftpboot/
+pxelinux.0  ldlinux.c32  vesamenu.c32  pxelinux.cfg/  ubuntu/`
+      },
+      pxecfg: {
+        color: '#f6ad55',
+        text:
+`# /tftpboot/pxelinux.cfg/default の設定
+
+$ sudo vi /tftpboot/pxelinux.cfg/default
+
+# 設定内容
+UI vesamenu.c32
+DEFAULT ubuntu-install
+TIMEOUT 100           # 10秒
+MENU TITLE PXE Boot Menu
+
+LABEL ubuntu-install
+  MENU LABEL ^Install Ubuntu 24.04
+  KERNEL ubuntu/vmlinuz
+  APPEND initrd=ubuntu/initrd.img \\
+    url=http://192.168.1.10/ubuntu.iso \\
+    auto=true priority=critical
+
+LABEL ubuntu-live
+  MENU LABEL ^Boot Ubuntu Live
+  KERNEL ubuntu/vmlinuz
+  APPEND initrd=ubuntu/initrd.img \\
+    root=/dev/nfs \\
+    nfsroot=192.168.1.10:/exports/ubuntu \\
+    ip=dhcp rw
+
+LABEL local
+  MENU LABEL Boot from ^Local Disk
+  LOCALBOOT 0
+
+# MAC アドレス固有の設定ファイルを作成する場合
+# ファイル名：01-aa-bb-cc-dd-ee-ff（MACアドレスをハイフン区切り）
+$ sudo vi /tftpboot/pxelinux.cfg/01-aa-bb-cc-dd-ee-ff`
+      },
+      nfs: {
+        color: '#fc8181',
+        text:
+`# NFS サーバーの設定（ルートFS 提供用）
+
+$ sudo apt install nfs-kernel-server
+
+# /etc/exports を編集
+$ sudo vi /etc/exports
+
+# 設定内容
+/exports/ubuntu  192.168.1.0/24(ro,sync,no_subtree_check,no_root_squash)
+
+# エクスポートディレクトリを作成してルートFSを展開
+$ sudo mkdir -p /exports/ubuntu
+$ sudo tar -xzf ubuntu-rootfs.tar.gz -C /exports/ubuntu/
+
+# NFS エクスポートを反映
+$ sudo exportfs -ra
+
+# NFS サーバーを起動
+$ sudo systemctl enable --now nfs-kernel-server
+
+# エクスポート状態の確認
+$ showmount -e localhost
+Export list for localhost:
+/exports/ubuntu 192.168.1.0/24`
+      }
+    };
+
+    function showPxeComp() {
+      const key = document.getElementById('pxe-comp').value;
+      const el  = document.getElementById('pxe-comp-output');
+      if (!key) { el.style.display='none'; return; }
+      const d = pxeComps[key];
+      el.style.display = 'block';
+      el.style.color   = d.color;
+      el.textContent   = d.text;
+    }
+  </script>
+
+  <h3>PXE ブートに使用するポート・プロトコル</h3>
+  <table class="ref-table">
+    <thead><tr><th>プロトコル</th><th>ポート</th><th>役割</th></tr></thead>
+    <tbody>
+      <tr><td><strong>DHCP</strong></td><td>UDP 67（サーバー）/ 68（クライアント）</td><td>IP アドレス・TFTP サーバー情報の配布</td></tr>
+      <tr><td><strong>TFTP</strong></td><td>UDP 69</td><td>ブートローダ・カーネル・initrd の転送</td></tr>
+      <tr><td><strong>NFS</strong></td><td>TCP/UDP 2049</td><td>ルートファイルシステムのマウント</td></tr>
+      <tr><td><strong>HTTP</strong></td><td>TCP 80</td><td>インストールイメージ・パッケージの配布</td></tr>
+      <tr><td><strong>iSCSI</strong></td><td>TCP 3260</td><td>ブロックデバイスのネットワーク提供</td></tr>
+    </tbody>
+  </table>
+
+  <div class="good">
+    ✅ <strong>PXE ブートの主な用途</strong><br>
+    ・<strong>ディスクレスクライアント</strong>：ハードディスクを持たない端末の起動<br>
+    ・<strong>OS 一括インストール</strong>：多数のサーバーへの自動インストール（Kickstart/Preseed と組み合わせ）<br>
+    ・<strong>ネットワークブート</strong>：メンテナンス・診断ツールのネットワーク配布<br>
+    ・<strong>シンクライアント</strong>：中央管理されたデスクトップ環境の提供
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 5：まとめ -->
+<!-- ============================================================ -->
+<h2>📌 まとめ一覧</h2>
+<div class="demo-box">
+  <table class="ref-table">
+    <thead><tr><th>カテゴリ</th><th>項目</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr>
+        <td colspan="3" style="background:#dcfce7; color:#1a4731; font-weight:bold; font-size:0.88em;">
+          ▼ SYSLINUX ファミリー
+        </td>
+      </tr>
+      <tr><td>SYSLINUX</td><td>FAT ファイルシステム用</td><td>USB メモリ・フロッピーからの起動</td></tr>
+      <tr><td>ISOLINUX</td><td>ISO 9660 用</td><td>CD/DVD・ISO イメージからの起動</td></tr>
+      <tr><td>PXELINUX</td><td>ネットワーク（PXE）用</td><td>ネットワーク経由での起動</td></tr>
+      <tr><td>EXTLINUX</td><td>ext2/3/4・Btrfs 用</td><td>Linux パーティションからの起動</td></tr>
+      <tr><td>設定書式</td><td>共通フォーマット</td><td>DEFAULT・TIMEOUT・LABEL・KERNEL・APPEND</td></tr>
+      <tr>
+        <td colspan="3" style="background:#dcfce7; color:#1a4731; font-weight:bold; font-size:0.88em;">
+          ▼ PXE ブート
+        </td>
+      </tr>
+      <tr><td>DHCP</td><td>UDP 67/68</td><td>IP アドレスと next-server（TFTP）情報を配布</td></tr>
+      <tr><td>TFTP</td><td>UDP 69</td><td>pxelinux.0・カーネル・initrd を配布</td></tr>
+      <tr><td>設定ファイル</td><td><code>/tftpboot/pxelinux.cfg/default</code></td><td>デフォルトの起動設定</td></tr>
+      <tr><td>MAC 固有設定</td><td><code>pxelinux.cfg/01-aa-bb-cc-dd-ee-ff</code></td><td>特定クライアント向けの設定</td></tr>
+      <tr><td>NFS</td><td>TCP/UDP 2049</td><td>ルートファイルシステムをネットワーク提供</td></tr>
+      <tr><td>検索順序</td><td>UUID → MAC → IP（上位ビット順）→ default</td><td>特定のクライアント設定を優先</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 穴埋め問題</h3>
+    <p>以下の説明に合うコマンド・ファイル・値を入力してください。</p>
+    <label>① CD/DVD・ISO イメージからの起動に使用する SYSLINUX ファミリーのブートローダ：</label>
+    <input type="text" id="q1a" placeholder="XXXlinux">
+    <label>② PXE ブートでブートローダ・カーネルを転送するプロトコル：</label>
+    <input type="text" id="q1b" placeholder="プロトコル名">
+    <label>③ PXELINUX のデフォルト設定ファイルのパス（TFTP ルートからの相対パス）：</label>
+    <input type="text" id="q1c" placeholder="pxelinux.cfg/...">
+    <label>④ SYSLINUX 設定ファイルでカーネルに渡すパラメータを指定するディレクティブ：</label>
+    <input type="text" id="q1d" placeholder="ディレクティブ名">
+    <label>⑤ TFTP が使用する UDP ポート番号：</label>
+    <input type="text" id="q1e" placeholder="数字">
+    <br>
+    <button class="btn btn-green" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const a = document.getElementById('q1a').value.trim().toLowerCase().replace(/\s/g,'');
+        const b = document.getElementById('q1b').value.trim().toLowerCase().replace(/\s/g,'');
+        const c = document.getElementById('q1c').value.trim().toLowerCase().replace(/\s/g,'');
+        const d = document.getElementById('q1d').value.trim().toUpperCase().replace(/\s/g,'');
+        const e = document.getElementById('q1e').value.trim();
+        const r = document.getElementById('q1-result');
+        const ca = a === 'isolinux';
+        const cb = b === 'tftp';
+        const cc = c === 'pxelinux.cfg/default';
+        const cd = d === 'APPEND';
+        const ce = e === '69';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ ISOLINUX'}　` +
+            `② ${cb?'✅':'❌ TFTP'}　` +
+            `③ ${cc?'✅':'❌ pxelinux.cfg/default'}　` +
+            `④ ${cd?'✅':'❌ APPEND'}　` +
+            `⑤ ${ce?'✅':'❌ 69'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 選択問題</h3>
+    <p>
+      PXE ブートで DHCP サーバーが配布する情報のうち、
+      <strong>TFTP サーバーのアドレスを指定するオプション名</strong>として正しいものはどれですか？
+    </p>
+    <select id="q2">
+      <option value="">-- 選択してください --</option>
+      <option value="a">boot-server</option>
+      <option value="b">next-server</option>
+      <option value="c">tftp-server</option>
+      <option value="d">pxe-server</option>
+    </select>
+    <br>
+    <button class="btn btn-green" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const v = document.getElementById('q2').value;
+        const r = document.getElementById('q2-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>DHCP の PXE 関連オプション：</strong><br>' +
+            '・<code>next-server</code>：TFTP サーバーの IP アドレスを指定<br>' +
+            '・<code>filename</code>：ブートファイル名（<code>pxelinux.0</code>）を指定<br><br>' +
+            '<strong>dhcpd.conf の設定例：</strong><br>' +
+            '<code>next-server 192.168.1.10;</code><br>' +
+            '<code>filename "pxelinux.0";</code>';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            'DHCP で TFTP サーバーのアドレスを指定するオプションは <code>next-server</code> です。<br>' +
+            '<code>filename</code> オプションと組み合わせてブートファイル名（pxelinux.0）を指定します。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① SYSLINUX ファミリーはすべて共通の設定ファイル書式を使用する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② PXELINUX は USB メモリからの起動に特化したブートローダである
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ PXE ブートでは DHCP サーバーが IP アドレスと TFTP サーバーの情報を配布する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ SYSLINUX の設定ファイルで <code>TIMEOUT 50</code> は 50 秒のタイムアウトを意味する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ PXELINUX は MAC アドレスに基づいた固有の設定ファイルを使用できる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ TFTP は UDP ポート 69 を使用する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ EXTLINUX は ext2/ext3/ext4 などの Linux ネイティブファイルシステムに対応している
+    </label>
+    <br>
+    <button class="btn btn-green" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：①③⑤⑥⑦（a,c,e,f,g）
+        // ② PXELINUX はネットワーク（PXE）用。USB は SYSLINUX
+        // ④ TIMEOUT は 1/10秒単位。50 = 5秒
+        const correct = { a:true, b:false, c:true, d:false, e:true, f:true, g:true };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>①③⑤⑥⑦<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・② PXELINUX は<strong>ネットワーク（PXE）経由</strong>での起動用です。USB メモリからの起動は <strong>SYSLINUX</strong> です<br>' +
+            '・④ SYSLINUX の <code>TIMEOUT</code> は<strong>1/10秒単位</strong>です。<code>TIMEOUT 50</code> は <strong>5秒</strong>のタイムアウトを意味します';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. シナリオ問題</h3>
+    <p>
+      100台のサーバーに Ubuntu を自動インストールしたいと考えています。
+      すべてのサーバーはネットワークに接続されており、NIC は PXE に対応しています。
+      <strong>最も効率的な方法</strong>として正しいものはどれですか？
+    </p>
+    <select id="q4">
+      <option value="">-- 選択してください --</option>
+      <option value="a">USB メモリを 100 本用意して 1 台ずつインストールする</option>
+      <option value="b">PXE ブートと Preseed（自動応答ファイル）を組み合わせてネットワーク一括インストールする</option>
+      <option value="c">CD/DVD を 100 枚用意して 1 台ずつインストールする</option>
+      <option value="d">1 台にインストールしてディスクをクローンする</option>
+    </select>
+    <br>
+    <button class="btn btn-green" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const v = document.getElementById('q4').value;
+        const r = document.getElementById('q4-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>PXE ブート + Preseed の構成：</strong><br>' +
+            '① DHCP サーバー：IP アドレスと TFTP サーバー情報を配布<br>' +
+            '② TFTP サーバー：PXELINUX・カーネル・initrd を配布<br>' +
+            '③ HTTP サーバー：Ubuntu インストールイメージを配布<br>' +
+            '④ Preseed ファイル：インストール設定を自動応答（パーティション・ユーザー・パッケージなど）<br><br>' +
+            '全サーバーを同時に電源投入するだけで自動インストールが完了します。<br>' +
+            'RHEL 系では Kickstart が同様の役割を担います。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br><br>' +
+            '100台への一括インストールには <strong>PXE ブート + Preseed（自動応答）</strong> の組み合わせが最も効率的です。<br>' +
+            '・DHCP・TFTP・HTTP サーバーを1台用意するだけで全台に同時インストールできます<br>' +
+            '・USB/CD は物理的な作業が必要で 100 台には非効率です<br>' +
+            '・ディスククローンはハードウェア構成が異なる場合に問題が生じる可能性があります';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-block">
+    <h3>Q5. 選択問題</h3>
+    <p>
+      PXELINUX が設定ファイルを検索する際の優先順位として正しいものはどれですか？
+    </p>
+    <select id="q5">
+      <option value="">-- 選択してください --</option>
+      <option value="a">default → IP アドレス → MAC アドレス → UUID の順</option>
+      <option value="b">UUID → MAC アドレス → IP アドレス（上位ビット順）→ default の順</option>
+      <option value="c">MAC アドレス → UUID → IP アドレス → default の順</option>
+      <option value="d">IP アドレス → MAC アドレス → UUID → default の順</option>
+    </select>
+    <br>
+    <button class="btn btn-green" onclick="checkQ5()">答え合わせ</button>
+    <div class="result-msg" id="q5-result"></div>
+    <script>
+      function checkQ5() {
+        const v = document.getElementById('q5').value;
+        const r = document.getElementById('q5-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>PXELINUX の設定ファイル検索順序（特定 → 汎用）：</strong><br>' +
+            '① UUID ベース（UEFI）：最も特定のクライアント向け<br>' +
+            '② MAC アドレスベース：<code>01-aa-bb-cc-dd-ee-ff</code><br>' +
+            '③ IP アドレスの16進数（上位ビットから順に短縮）：<code>C0A8010A</code> → <code>C0A8010</code> → ... → <code>C</code><br>' +
+            '④ <code>default</code>：すべてのクライアントに適用されるデフォルト設定<br><br>' +
+            'この仕組みにより、特定のクライアントには固有の設定を、それ以外にはデフォルト設定を適用できます。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            'PXELINUX は<strong>特定のクライアント向け設定を優先</strong>して検索します。<br>' +
+            '正しい順序：<strong>UUID → MAC アドレス → IP アドレス（上位ビット順に短縮）→ default</strong>';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 第3章「システムの起動」の全セクションが完了しました！</p>
+  <button class="btn btn-done" onclick="markComplete()">✅ 第3章を完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch3', '100');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  if (parseInt(localStorage.getItem('lpic201_ch3') || '0') >= 100) {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="02_bootloader.html">← ブートローダ</a>
+  <a class="home" href="../index.html">🏠 目次へ</a>
+  <a class="next" href="../04_filesystem/index.html">次章へ：ファイルシステムとストレージ →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
