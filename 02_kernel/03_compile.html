@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>カーネルのコンパイル ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em; color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #567ebb; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #2b4c7e, #567ebb);
+      border-radius: 12px; padding: 32px 32px 24px;
+      margin-bottom: 32px; color: #fff;
+      box-shadow: 0 4px 18px rgba(86,126,187,0.3);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em; font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85; letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .chapter-header h1 { margin: 0 0 10px; font-size: 1.6em; color: #fff; border: none; padding: 0; }
+    .chapter-header p  { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px; padding: 3px 12px;
+      font-size: 0.76em; font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 { color: #2b4c7e; margin-top: 48px; border-left: 5px solid #567ebb; padding-left: 12px; }
+    h3 { color: #276749; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7; padding: 2px 6px;
+      border-radius: 4px; font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c; color: #e2e8f0;
+      padding: 18px 20px; border-radius: 8px;
+      overflow-x: auto; font-size: 0.88em;
+      line-height: 1.7; font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+    pre .err     { color: #fc8181; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #4a5568; color: #e2e8f0;
+      border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 0.75em;
+      cursor: pointer; font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s; z-index: 1;
+    }
+    .copy-btn:hover { background: #567ebb; }
+
+    /* ボックス */
+    .note {
+      background: #fff; border: 1px dashed #90cdf4;
+      border-radius: 6px; padding: 14px 18px;
+      font-size: 0.93em; color: #4a5568; margin: 14px 0;
+    }
+    .note strong { color: #2b4c7e; }
+    .warn {
+      background: #fffaf0; border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #744210; margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4; border: 1px solid #68d391;
+      border-left: 5px solid #48bb78; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #276749; margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff; border: 1px solid #bee3f8;
+      border-radius: 8px; padding: 20px 24px;
+      margin: 12px 0 28px; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff; border: 1px solid #bee3f8;
+      border-radius: 10px; padding: 18px 22px;
+      margin-bottom: 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 { margin: 0 0 12px; font-size: 0.92em; color: #2b4c7e; border: none; padding: 0; }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #567ebb; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #2b4c7e; font-weight: bold; }
+
+    /* ステップフロー */
+    .step-flow {
+      display: flex; flex-direction: column; gap: 0;
+      margin: 20px 0; counter-reset: step-counter;
+    }
+    .step-item {
+      display: flex; gap: 16px; align-items: flex-start;
+      position: relative;
+    }
+    .step-item::before {
+      content: ''; position: absolute;
+      left: 19px; top: 40px;
+      width: 2px; height: calc(100% - 8px);
+      background: #bee3f8;
+    }
+    .step-item:last-child::before { display: none; }
+    .step-num {
+      flex-shrink: 0; width: 40px; height: 40px;
+      background: #2b4c7e; color: #fff;
+      border-radius: 50%; display: flex;
+      align-items: center; justify-content: center;
+      font-weight: bold; font-size: 0.95em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      z-index: 1; margin-top: 4px;
+    }
+    .step-body {
+      flex: 1; background: #fff;
+      border: 1px solid #bee3f8; border-radius: 8px;
+      padding: 14px 18px; margin-bottom: 12px;
+    }
+    .step-body h4 {
+      margin: 0 0 6px; color: #2b4c7e;
+      font-size: 0.95em;
+    }
+    .step-body p {
+      margin: 0; font-size: 0.88em; color: #4a5568;
+    }
+
+    /* 設定方法カード */
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 14px; margin: 14px 0;
+    }
+    .config-card {
+      background: #ebf8ff; border: 1px solid #90cdf4;
+      border-radius: 8px; padding: 16px;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .config-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(86,126,187,0.2);
+      border-color: #567ebb;
+    }
+    .config-card .config-cmd {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.95em; font-weight: bold;
+      color: #2b4c7e; margin-bottom: 6px;
+    }
+    .config-card .config-desc {
+      font-size: 0.82em; color: #4a5568; line-height: 1.6;
+    }
+
+    /* インタラクティブデモ */
+    .interactive-demo {
+      background: #f7fafc; border: 1px solid #bee3f8;
+      border-radius: 8px; padding: 16px 20px; margin: 14px 0;
+    }
+    .slider-row {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em; font-weight: bold;
+      min-width: 180px; color: #2b4c7e;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row select {
+      border: 2px solid #bee3f8; border-radius: 6px;
+      padding: 6px 10px; font-size: 0.88em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #2d3748; background: #fff;
+      cursor: pointer; flex: 1;
+    }
+    .slider-row select:focus { border-color: #567ebb; outline: none; }
+    .slider-row input[type="range"] { flex: 1; min-width: 100px; accent-color: #567ebb; }
+    .val-display {
+      min-width: 64px; text-align: right;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85em; color: #2d3748;
+    }
+    .output-display {
+      background: #1a202c; color: #68d391;
+      border-radius: 6px; padding: 12px 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em; margin-top: 10px;
+      white-space: pre; overflow-x: auto; line-height: 1.7;
+    }
+
+    /* プログレスバー（コンパイル時間シミュレーター） */
+    .compile-bar-wrap {
+      background: #edf2f7; border-radius: 8px;
+      height: 22px; overflow: hidden; margin: 8px 0;
+    }
+    .compile-bar {
+      height: 100%; border-radius: 8px;
+      background: linear-gradient(90deg, #2b4c7e, #567ebb);
+      transition: width 0.4s ease;
+      display: flex; align-items: center;
+      padding-left: 10px;
+      font-size: 0.75em; color: #fff;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-weight: bold; white-space: nowrap;
+    }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse; width: 100%;
+      background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0; font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #bee3f8; padding: 10px 14px; text-align: left;
+    }
+    table.ref-table thead tr { background: #2b4c7e; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #ebf8ff; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0; border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0; padding: 24px 28px; margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 18px 22px; margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 8px 12px; font-size: 0.95em;
+      width: 100%; max-width: 440px; margin: 6px 0;
+      outline: none; font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus { border-color: #f6ad55; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block; padding: 9px 20px;
+      border-radius: 6px; border: none; cursor: pointer;
+      font-size: 0.95em; font-weight: bold;
+      transition: opacity 0.2s; margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-blue  { background: #567ebb; color: #fff; }
+    .btn-green { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px; padding: 10px 14px;
+      border-radius: 6px; font-weight: bold; display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #bee3f8; color: #2b4c7e; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 48px;
+      padding-top: 20px; border-top: 2px solid #bee3f8;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block; padding: 10px 20px;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.9em; transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #567ebb; color: #fff; }
+    .page-nav .home { background: #fff; color: #567ebb; border: 2px solid #567ebb; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4; border: 2px solid #48bb78;
+      border-radius: 10px; padding: 20px 24px;
+      margin-top: 40px; text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 2px solid #bee3f8;
+      font-size: 0.82em; color: #a0aec0; text-align: center;
+    }
+    footer a { color: #567ebb; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .config-grid { grid-template-columns: 1fr; }
+      .step-item { gap: 10px; }
+      .step-num { width: 32px; height: 32px; font-size: 0.82em; }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  <a href="index.html">第2章：Linuxカーネル</a> ›
+  カーネルのコンパイル
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 02 › SECTION 03</div>
+  <h1>🔨 カーネルのコンパイル</h1>
+  <p>ソースコードからLinuxカーネルをビルドしてインストールする手順を、
+  設定・コンパイル・インストールの各フェーズに分けて体系的に学びます。</p>
+  <div class="badge-row">
+    <span class="badge">make menuconfig</span>
+    <span class="badge">make bzImage</span>
+    <span class="badge">make modules</span>
+    <span class="badge">make install</span>
+    <span class="badge">update-grub</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第2章のセクション</h2>
+  <ol>
+    <li><a href="index.html">カーネルの構成要素</a></li>
+    <li><a href="02_module.html">カーネルモジュールの管理</a></li>
+    <li class="current"><a href="03_compile.html">カーネルのコンパイル</a></li>
+    <li><a href="04_param.html">カーネルパラメータの変更</a></li>
+    <li><a href="05_manage.html">カーネルの管理と問題解決</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：なぜカーネルをコンパイルするのか -->
+<!-- ============================================================ -->
+<h2 id="why">① なぜカーネルをコンパイルするのか</h2>
+
+<div class="note">
+  <strong>重要ポイント①：カスタムカーネルのコンパイルは、特定ハードウェア対応・機能の追加・削除・パフォーマンス最適化のために行う</strong><br>
+  現代のディストリビューションでは通常は不要ですが、
+  LPIC-201の試験範囲として手順の理解が求められます。
+</div>
+
+<div class="demo-box">
+  <h3>カーネルコンパイルが必要なケース</h3>
+  <table class="ref-table">
+    <thead><tr><th>ケース</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>新しいハードウェアのサポート</strong></td>
+        <td>ディストリビューションのカーネルに含まれていないドライバが必要な場合</td>
+      </tr>
+      <tr>
+        <td><strong>機能の追加・削除</strong></td>
+        <td>特定の機能を有効化・無効化してシステムを最適化する場合</td>
+      </tr>
+      <tr>
+        <td><strong>パフォーマンスチューニング</strong></td>
+        <td>特定のCPUアーキテクチャに最適化したカーネルを作成する場合</td>
+      </tr>
+      <tr>
+        <td><strong>セキュリティパッチの適用</strong></td>
+        <td>公式リリース前のセキュリティパッチを適用したカーネルが必要な場合</td>
+      </tr>
+      <tr>
+        <td><strong>組み込みシステム</strong></td>
+        <td>リソースが限られた組み込み環境向けに最小構成のカーネルを作成する場合</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：全体の流れ -->
+<!-- ============================================================ -->
+<h2 id="flow">② コンパイル・インストールの全体フロー</h2>
+
+<div class="demo-box">
+  <div class="step-flow">
+
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>📦 事前準備：必要パッケージのインストール</h4>
+        <p>ビルドツール（gcc・make・bc など）とカーネルソースを用意する</p>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>⬇️ ソースコードの取得と展開</h4>
+        <p>kernel.org からソースをダウンロードし <code>/usr/src/</code> に展開する</p>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>⚙️ カーネルの設定（.config ファイルの生成）</h4>
+        <p><code>make menuconfig</code> などで有効にする機能を選択し <code>.config</code> を生成する</p>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h4>🔨 カーネルイメージのコンパイル</h4>
+        <p><code>make bzImage</code>（または <code>make</code>）でカーネルイメージをビルドする</p>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <h4>🔌 カーネルモジュールのコンパイル</h4>
+        <p><code>make modules</code> でカーネルモジュール（.koファイル）をビルドする</p>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <h4>📂 モジュールのインストール</h4>
+        <p><code>make modules_install</code> でモジュールを <code>/lib/modules/&lt;version&gt;/</code> にインストールする</p>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-num">7</div>
+      <div class="step-body">
+        <h4>🚀 カーネルイメージのインストール</h4>
+        <p><code>make install</code> でカーネルイメージ・initramfs を <code>/boot/</code> にインストールし、GRUBを更新する</p>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-num">8</div>
+      <div class="step-body">
+        <h4>🔄 システムの再起動と確認</h4>
+        <p>再起動後に新しいカーネルで起動し、<code>uname -r</code> でバージョンを確認する</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：事前準備 -->
+<!-- ============================================================ -->
+<h2 id="prepare">③ 事前準備</h2>
+
+<div class="demo-box">
+  <h3>必要パッケージのインストール</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># Debian / Ubuntu 系</span>
+$ <span class="cmd">sudo apt update</span>
+$ <span class="cmd">sudo apt install</span> \
+    build-essential \   <span class="comment"># gcc, make, libc-dev など</span>
+    libncurses-dev \    <span class="comment"># menuconfig の表示に必要</span>
+    libssl-dev \        <span class="comment"># SSL関連</span>
+    libelf-dev \        <span class="comment"># ELFファイル処理</span>
+    bison flex \        <span class="comment"># パーサジェネレータ</span>
+    bc \                <span class="comment"># 計算ツール（Makefile内で使用）</span>
+    dwarves \           <span class="comment"># BTF（BPF Type Format）生成</span>
+    zstd                <span class="comment"># zstd圧縮（モジュール圧縮に使用）</span>
+
+<span class="comment"># RHEL / CentOS / AlmaLinux 系</span>
+$ <span class="cmd">sudo dnf install</span> \
+    gcc make ncurses-devel \
+    openssl-devel elfutils-libelf-devel \
+    bison flex bc dwarves
+</pre>
+  </div>
+
+  <h3>カーネルソースの取得と展開</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># kernel.org から最新の安定版をダウンロード</span>
+$ <span class="cmd">wget</span> https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.8.tar.xz
+
+<span class="comment"># /usr/src/ に展開（慣習的な配置場所）</span>
+$ <span class="cmd">sudo tar</span> <span class="opt">-xf</span> linux-6.8.tar.xz <span class="opt">-C</span> /usr/src/
+
+<span class="comment"># ソースディレクトリに移動</span>
+$ <span class="cmd">cd</span> /usr/src/linux-6.8/
+
+<span class="comment"># ディレクトリ構造の確認</span>
+$ <span class="cmd">ls</span>
+<span class="out">arch/  block/  crypto/  Documentation/  drivers/  fs/</span>
+<span class="out">include/  init/  ipc/  kernel/  lib/  mm/  net/  scripts/</span>
+<span class="out">security/  sound/  tools/  usr/  virt/  Makefile  Kconfig ...</span>
+
+<span class="comment"># ソースツリーのクリーンアップ（再ビルド時）</span>
+$ <span class="cmd">make mrproper</span>   <span class="comment"># 設定ファイルを含むすべての生成ファイルを削除</span>
+$ <span class="cmd">make clean</span>      <span class="comment"># 生成ファイルのみ削除（.config は保持）</span>
+</pre>
+  </div>
+
+  <div class="good">
+    ✅ <strong>ソースディレクトリの慣習</strong><br>
+    カーネルソースは <code>/usr/src/linux-&lt;version&gt;/</code> に展開するのが慣習です。<br>
+    また <code>/usr/src/linux</code> というシンボリックリンクで最新ソースを指すことも多いです。<br>
+    <code>sudo ln -s /usr/src/linux-6.8 /usr/src/linux</code>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 4：カーネルの設定 -->
+<!-- ============================================================ -->
+<h2 id="config">④ カーネルの設定（.config の生成）</h2>
+
+<div class="note">
+  <strong>重要ポイント②：カーネルの設定は .config ファイルで管理され、make menuconfig などのツールで生成・編集する</strong><br>
+  設定値は <code>y</code>（静的組み込み）・<code>m</code>（モジュール）・<code>n</code>（無効）の3種類です。
+</div>
+
+<div class="demo-box">
+  <h3>設定ツール一覧（クリックで詳細表示）</h3>
+  <div class="config-grid">
+
+    <div class="config-card" onclick="showConfigDetail('menuconfig')">
+      <div class="config-cmd">make menuconfig</div>
+      <div class="config-desc">ncursesベースのTUIメニュー。ターミナルで使える最も一般的な設定ツール</div>
+    </div>
+
+    <div class="config-card" onclick="showConfigDetail('xconfig')">
+      <div class="config-cmd">make xconfig</div>
+      <div class="config-desc">Qt/X11ベースのGUIツール。グラフィカルな設定画面（要X環境）</div>
+    </div>
+
+    <div class="config-card" onclick="showConfigDetail('gconfig')">
+      <div class="config-cmd">make gconfig</div>
+      <div class="config-desc">GTK+ベースのGUIツール。GNOMEデスクトップ環境向け（要X環境）</div>
+    </div>
+
+    <div class="config-card" onclick="showConfigDetail('oldconfig')">
+      <div class="config-cmd">make oldconfig</div>
+      <div class="config-desc">既存の .config を元に新しいオプションのみ対話的に設定する</div>
+    </div>
+
+    <div class="config-card" onclick="showConfigDetail('defconfig')">
+      <div class="config-cmd">make defconfig</div>
+      <div class="config-desc">アーキテクチャのデフォルト設定で .config を生成する</div>
+    </div>
+
+    <div class="config-card" onclick="showConfigDetail('localmodconfig')">
+      <div class="config-cmd">make localmodconfig</div>
+      <div class="config-desc">現在ロードされているモジュールのみ有効にした最小設定を生成する</div>
+    </div>
+
+  </div>
+
+  <!-- 設定ツール詳細表示エリア -->
+  <div id="config-detail" style="display:none; margin-top:14px; background:#ebf8ff; border:1px solid #90cdf4; border-left:5px solid #567ebb; border-radius:0 8px 8px 0; padding:14px 18px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const configDetails = {
+      menuconfig: {
+        title: 'make menuconfig',
+        body: `ncurses（テキストUI）ベースの設定ツールです。X環境不要でSSH越しでも使えるため、最も広く使われます。<br><br>
+          <strong>操作方法：</strong><br>
+          ・矢印キー：項目の移動<br>
+          ・<code>Enter</code>：サブメニューに入る<br>
+          ・<code>Space</code>：設定値の切り替え（y → m → n → y ...）<br>
+          ・<code>Y</code>：静的組み込み（y）に設定<br>
+          ・<code>M</code>：モジュール（m）に設定<br>
+          ・<code>N</code>：無効（n）に設定<br>
+          ・<code>/</code>：設定項目の検索<br>
+          ・<code>?</code>：ヘルプ表示<br>
+          ・<code>Esc Esc</code>：上位メニューに戻る<br><br>
+          <strong>必要パッケージ：</strong> <code>libncurses-dev</code>`
+      },
+      xconfig: {
+        title: 'make xconfig',
+        body: `Qt/X11ベースのグラフィカルな設定ツールです。<br><br>
+          ・ツリー形式で設定項目を視覚的に確認できる<br>
+          ・検索機能が充実している<br>
+          ・X環境（デスクトップ）が必要<br><br>
+          <strong>必要パッケージ：</strong> <code>qtbase5-dev</code>（Qt5）`
+      },
+      gconfig: {
+        title: 'make gconfig',
+        body: `GTK+ベースのグラフィカルな設定ツールです。<br><br>
+          ・GNOMEデスクトップ環境向け<br>
+          ・左ペインにツリー、右ペインに詳細を表示<br>
+          ・X環境（デスクトップ）が必要<br><br>
+          <strong>必要パッケージ：</strong> <code>libgtk-3-dev</code>`
+      },
+      oldconfig: {
+        title: 'make oldconfig',
+        body: `既存の <code>.config</code> ファイルを元に、新しいカーネルバージョンで追加されたオプションのみを対話的に設定します。<br><br>
+          ・カーネルバージョンアップ時に既存設定を引き継ぐのに便利<br>
+          ・新しいオプションのみ質問される（既存設定はそのまま）<br>
+          ・<code>make olddefconfig</code>：新しいオプションをすべてデフォルト値で設定（非対話的）<br><br>
+          <strong>使用例：</strong><br>
+          <code>cp /boot/config-$(uname -r) .config</code><br>
+          <code>make oldconfig</code>`
+      },
+      defconfig: {
+        title: 'make defconfig',
+        body: `現在のアーキテクチャ（x86_64など）のデフォルト設定で <code>.config</code> を生成します。<br><br>
+          ・ゼロから始める場合のベースとして使用<br>
+          ・<code>arch/&lt;arch&gt;/configs/</code> 内のデフォルト設定ファイルを使用<br><br>
+          <strong>関連コマンド：</strong><br>
+          ・<code>make allmodconfig</code>：すべての機能をモジュールとして有効化<br>
+          ・<code>make allnoconfig</code>：すべての機能を無効化（最小構成）<br>
+          ・<code>make allyesconfig</code>：すべての機能を静的組み込みで有効化`
+      },
+      localmodconfig: {
+        title: 'make localmodconfig',
+        body: `現在実行中のシステムでロードされているモジュール（<code>lsmod</code> の出力）のみを有効にした最小設定を生成します。<br><br>
+          ・コンパイル時間を大幅に短縮できる<br>
+          ・現在使用していない機能はすべて無効化される<br>
+          ・他のシステムで使うカーネルには不向き（そのシステム専用になる）<br><br>
+          <strong>使用例：</strong><br>
+          <code>lsmod > /tmp/lsmod.txt</code><br>
+          <code>LSMOD=/tmp/lsmod.txt make localmodconfig</code>`
+      }
+    };
+
+    function showConfigDetail(key) {
+      const d = configDetails[key];
+      const el = document.getElementById('config-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display = 'none';
+        el.dataset.current = '';
+        return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.innerHTML = `<strong style="color:#2b4c7e; font-family:'Consolas','Monaco',monospace; font-size:1em;">${d.title}</strong><br><br>${d.body}`;
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  </script>
+
+  <h3>現在のカーネル設定を流用する（推奨）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># 現在実行中のカーネルの設定を .config としてコピー</span>
+$ <span class="cmd">cp</span> /boot/config-$(uname -r) /usr/src/linux-6.8/.config
+
+<span class="comment"># または /proc/config.gz から取得（カーネルにCONFIG_IKCONFIG=yが必要）</span>
+$ <span class="cmd">zcat</span> /proc/config.gz > /usr/src/linux-6.8/.config
+
+<span class="comment"># 新しいカーネルバージョンで追加されたオプションをデフォルト値で設定</span>
+$ <span class="cmd">cd</span> /usr/src/linux-6.8/
+$ <span class="cmd">make olddefconfig</span>
+
+<span class="comment"># 必要に応じて menuconfig で追加設定</span>
+$ <span class="cmd">make menuconfig</span>
+</pre>
+  </div>
+
+  <h3>.config の設定値の意味</h3>
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#2b4c7e; margin:0 0 10px;">
+      設定値を選択して意味を確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>設定値</label>
+      <select id="config-val-sel" onchange="showConfigVal()">
+        <option value="">-- 選択してください --</option>
+        <option value="y">CONFIG_XXX=y</option>
+        <option value="m">CONFIG_XXX=m</option>
+        <option value="n"># CONFIG_XXX is not set</option>
+      </select>
+    </div>
+    <div class="output-display" id="config-val-output" style="display:none;"></div>
+  </div>
+
+  <script>
+    function showConfigVal() {
+      const v = document.getElementById('config-val-sel').value;
+      const el = document.getElementById('config-val-output');
+      if (!v) { el.style.display='none'; return; }
+      el.style.display = 'block';
+      const vals = {
+        y: {
+          color: '#68d391',
+          text:
+`CONFIG_XXX=y  →  カーネルに「静的に組み込み」
+
+・カーネルイメージ（vmlinuz）に直接含まれる
+・起動時から常に使用可能
+・modprobe / insmod は不要
+・カーネルイメージのサイズが大きくなる
+・例：CONFIG_EXT4_FS=y → ext4が常に使用可能`
+        },
+        m: {
+          color: '#90cdf4',
+          text:
+`CONFIG_XXX=m  →  「カーネルモジュール」として利用可能
+
+・.ko ファイルとして /lib/modules/<version>/ に配置される
+・必要なときに modprobe でロードする
+・カーネルイメージのサイズを小さく保てる
+・動的にロード・アンロード可能
+・例：CONFIG_USB_STORAGE=m → usb_storage.ko が生成される`
+        },
+        n: {
+          color: '#fc8181',
+          text:
+`# CONFIG_XXX is not set  →  「無効」
+
+・この機能はコンパイルされない
+・カーネルイメージにもモジュールにも含まれない
+・使用不可（後から有効にするにはカーネルの再コンパイルが必要）
+・例：# CONFIG_SOUND is not set → サウンド機能なし`
+        }
+      };
+      const d = vals[v];
+      el.style.color = d.color;
+      el.textContent = d.text;
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 5：コンパイル -->
+<!-- ============================================================ -->
+<h2 id="compile">⑤ コンパイル</h2>
+
+<div class="note">
+  <strong>重要ポイント③：make コマンドでカーネルイメージとモジュールをコンパイルする。-j オプションで並列ビルドを指定できる</strong><br>
+  CPUコア数に合わせた並列ビルドにより、コンパイル時間を大幅に短縮できます。
+</div>
+
+<div class="demo-box">
+  <h3>コンパイルコマンド</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># ソースディレクトリに移動</span>
+$ <span class="cmd">cd</span> /usr/src/linux-6.8/
+
+<span class="comment"># カーネルイメージのコンパイル（x86_64では bzImage が生成される）</span>
+$ <span class="cmd">make bzImage</span>
+<span class="comment"># または単に make でもカーネルイメージとモジュールを両方ビルドできる</span>
+$ <span class="cmd">make</span>
+
+<span class="comment"># 並列ビルド（-j でCPUコア数を指定）</span>
+$ <span class="cmd">make</span> <span class="opt">-j</span><span class="val">$(nproc)</span>        <span class="comment"># nproc でCPUコア数を自動取得</span>
+$ <span class="cmd">make</span> <span class="opt">-j</span><span class="val">4</span>               <span class="comment"># 4並列でビルド</span>
+$ <span class="cmd">make bzImage</span> <span class="opt">-j</span><span class="val">$(nproc)</span>  <span class="comment"># カーネルイメージのみ並列ビルド</span>
+
+<span class="comment"># カーネルモジュールのコンパイル</span>
+$ <span class="cmd">make modules</span> <span class="opt">-j</span><span class="val">$(nproc)</span>
+
+<span class="comment"># コンパイル完了後の成果物の確認</span>
+$ <span class="cmd">ls</span> <span class="opt">-lh</span> arch/x86/boot/bzImage
+<span class="hl">-rw-r--r-- 1 root root 11M arch/x86/boot/bzImage</span>
+</pre>
+  </div>
+
+  <h3>並列ビルドによるコンパイル時間シミュレーター</h3>
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#2b4c7e; margin:0 0 12px;">
+      CPUコア数と並列数を変えてコンパイル時間の目安を確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>CPUコア数</label>
+      <input type="range" id="cpu-cores" min="1" max="16" value="4" oninput="updateCompile()">
+      <span class="val-display" id="cores-val">4コア</span>
+    </div>
+    <div class="slider-row">
+      <label>-j 並列数</label>
+      <input type="range" id="parallel" min="1" max="16" value="1" oninput="updateCompile()">
+      <span class="val-display" id="parallel-val">1</span>
+    </div>
+
+    <div style="margin-top:12px;">
+      <div style="font-size:0.82em; font-weight:bold; color:#2b4c7e; margin-bottom:6px; font-family:'Consolas','Monaco',monospace;">
+        推定コンパイル時間（フルビルド目安）
+      </div>
+      <div class="compile-bar-wrap">
+        <div class="compile-bar" id="compile-bar"></div>
+      </div>
+      <div class="output-display" id="compile-output"></div>
+    </div>
+  </div>
+
+  <script>
+    function updateCompile() {
+      const cores    = parseInt(document.getElementById('cpu-cores').value);
+      const parallel = parseInt(document.getElementById('parallel').value);
+      document.getElementById('cores-val').textContent    = cores + 'コア';
+      document.getElementById('parallel-val').textContent = parallel;
+
+      // 基準：1コア1並列で約60分
+      const baseMin = 60;
+      const effective = Math.min(parallel, cores);
+      const minutes = Math.round(baseMin / effective);
+      const pct = Math.max(5, Math.round((1 / effective) * 100));
+      const barPct = Math.max(4, Math.min(100, Math.round(100 - pct * 0.9)));
+
+      document.getElementById('compile-bar').style.width = barPct + '%';
+      document.getElementById('compile-bar').textContent =
+        minutes >= 60 ? Math.round(minutes/60) + '時間' : minutes + '分';
+
+      let msg = `make -j${parallel}  （${cores}コアCPU）\n`;
+      msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      msg += `有効並列数    : ${effective}（min(${parallel}, ${cores})）\n`;
+      msg += `推定時間      : 約 ${minutes >= 60 ? Math.round(minutes/60)+'時間' : minutes+'分'}\n`;
+      msg += `\n`;
+      if (parallel > cores) {
+        msg += `⚠️  -j${parallel} はCPUコア数(${cores})を超えています\n`;
+        msg += `   コア数を超えるとオーバーヘッドが増え逆効果になる場合があります\n`;
+        msg += `   推奨：make -j${cores}  または  make -j$(nproc)`;
+      } else if (parallel === cores) {
+        msg += `✅ CPUコア数と並列数が一致しています（最適）\n`;
+        msg += `   推奨：make -j$(nproc)  でCPUコア数を自動取得できます`;
+      } else {
+        msg += `💡 -j${cores} にするとさらに ${Math.round(baseMin/cores)}分 に短縮できます\n`;
+        msg += `   推奨：make -j$(nproc)`;
+      }
+
+      const out = document.getElementById('compile-output');
+      out.textContent = msg;
+      out.style.color = parallel > cores ? '#f6ad55' : '#68d391';
+    }
+    updateCompile();
+  </script>
+
+  <div class="warn">
+    <strong>⚠️ コンパイルに関する注意事項</strong><br>
+    ・フルビルドには<strong>数十分〜数時間</strong>かかります（スペックによる）<br>
+    ・<code>-j</code> の値はCPUコア数（<code>nproc</code> の出力）を目安にする<br>
+    ・コア数を大幅に超える値を指定するとメモリ不足になる場合がある<br>
+    ・コンパイル中はCPU・メモリを大量消費するため、本番サーバーでは避ける
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 6：インストール -->
+<!-- ============================================================ -->
+<h2 id="install">⑥ インストール</h2>
+
+<div class="note">
+  <strong>重要ポイント④：make modules_install でモジュールを、make install でカーネルイメージをインストールする</strong><br>
+  <code>make install</code> は自動的に initramfs の生成と GRUB の設定更新も行います。
+</div>
+
+<div class="demo-box">
+  <h3>モジュールのインストール</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># モジュールを /lib/modules/<version>/ にインストール</span>
+$ <span class="cmd">sudo make modules_install</span>
+<span class="out">  INSTALL /lib/modules/6.8.0/kernel/drivers/hid/usbhid/usbhid.ko</span>
+<span class="out">  INSTALL /lib/modules/6.8.0/kernel/fs/ext4/ext4.ko</span>
+<span class="out">  ...</span>
+<span class="out">  DEPMOD  6.8.0</span>   <span class="comment"># modules.dep を自動生成</span>
+
+<span class="comment"># インストール確認</span>
+$ <span class="cmd">ls</span> /lib/modules/
+<span class="out">6.8.0  6.8.0-51-generic</span>
+</pre>
+  </div>
+
+  <h3>カーネルイメージのインストール</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># カーネルイメージを /boot/ にインストール</span>
+<span class="comment"># 以下のファイルが /boot/ にコピーされる：</span>
+<span class="comment">#   vmlinuz-6.8.0  System.map-6.8.0  config-6.8.0</span>
+$ <span class="cmd">sudo make install</span>
+<span class="out">sh ./arch/x86/boot/install.sh 6.8.0 arch/x86/boot/bzImage \</span>
+<span class="out">        System.map "/boot"</span>
+
+<span class="comment"># /boot の確認</span>
+$ <span class="cmd">ls</span> <span class="opt">-lh</span> /boot/
+<span class="hl">-rw-r--r-- 1 root root  11M vmlinuz-6.8.0</span>
+<span class="hl">-rw-r--r-- 1 root root 7.7M System.map-6.8.0</span>
+<span class="hl">-rw-r--r-- 1 root root 287K config-6.8.0</span>
+<span class="out">-rw-r--r-- 1 root root  84M initrd.img-6.8.0-51-generic</span>
+<span class="out">...</span>
+</pre>
+  </div>
+
+  <h3>initramfs の生成</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># Debian / Ubuntu 系：initramfs を手動生成</span>
+$ <span class="cmd">sudo update-initramfs</span> <span class="opt">-c</span> <span class="opt">-k</span> <span class="val">6.8.0</span>
+<span class="comment">#                       ↑-c：新規作成  ↑-k：カーネルバージョン指定</span>
+<span class="out">update-initramfs: Generating /boot/initrd.img-6.8.0</span>
+
+<span class="comment"># 既存の initramfs を更新（現在のカーネル）</span>
+$ <span class="cmd">sudo update-initramfs</span> <span class="opt">-u</span>
+
+<span class="comment"># すべてのカーネルの initramfs を更新</span>
+$ <span class="cmd">sudo update-initramfs</span> <span class="opt">-u</span> <span class="opt">-k</span> <span class="val">all</span>
+
+<span class="comment"># RHEL / CentOS 系：dracut を使用</span>
+$ <span class="cmd">sudo dracut</span> <span class="opt">--force</span> /boot/initramfs-6.8.0.img <span class="val">6.8.0</span>
+</pre>
+  </div>
+
+  <h3>GRUBの更新</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># Debian / Ubuntu 系：grub.cfg を自動更新</span>
+$ <span class="cmd">sudo update-grub</span>
+<span class="out">Sourcing file `/etc/default/grub'</span>
+<span class="out">Sourcing file `/etc/default/grub.d/init-select.cfg'</span>
+<span class="out">Generating grub configuration file ...</span>
+<span class="out">Found linux image: /boot/vmlinuz-6.8.0</span>
+<span class="out">Found initrd image: /boot/initrd.img-6.8.0</span>
+<span class="out">Found linux image: /boot/vmlinuz-6.8.0-51-generic</span>
+<span class="out">done</span>
+
+<span class="comment"># RHEL / CentOS 系</span>
+$ <span class="cmd">sudo grub2-mkconfig</span> <span class="opt">-o</span> /boot/grub2/grub.cfg
+
+<span class="comment"># GRUB設定の確認</span>
+$ <span class="cmd">grep</span> <span class="val">menuentry</span> /boot/grub/grub.cfg
+<span class="out">menuentry 'Ubuntu, with Linux 6.8.0' ...</span>
+<span class="out">menuentry 'Ubuntu, with Linux 6.8.0-51-generic' ...</span>
+</pre>
+  </div>
+
+  <div class="good">
+    ✅ <strong>make install が自動的に行うこと</strong><br>
+    <code>make install</code> を実行すると、ディストリビューションの install スクリプトが呼ばれ、
+    以下が自動的に実行されます：<br>
+    ① <code>/boot/</code> へのカーネルイメージ・System.map・config のコピー<br>
+    ② <code>update-initramfs</code>（または <code>dracut</code>）による initramfs の生成<br>
+    ③ <code>update-grub</code>（または <code>grub2-mkconfig</code>）による GRUB 設定の更新
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 7：再起動と確認 -->
+<!-- ============================================================ -->
+<h2 id="verify">⑦ 再起動と確認</h2>
+
+<div class="demo-box">
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># システムを再起動</span>
+$ <span class="cmd">sudo reboot</span>
+
+<span class="comment"># 再起動後：新しいカーネルで起動しているか確認</span>
+$ <span class="cmd">uname</span> <span class="opt">-r</span>
+<span class="hl">6.8.0</span>
+
+$ <span class="cmd">uname</span> <span class="opt">-a</span>
+<span class="out">Linux hostname 6.8.0 #1 SMP PREEMPT_DYNAMIC Sat Jan 1 00:00:00 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux</span>
+
+<span class="comment"># モジュールが正しくインストールされているか確認</span>
+$ <span class="cmd">ls</span> /lib/modules/6.8.0/
+<span class="out">build  kernel  modules.alias  modules.dep  modules.symbols ...</span>
+
+<span class="comment"># カーネルメッセージの確認（起動時のエラーがないか）</span>
+$ <span class="cmd">dmesg</span> | <span class="cmd">grep</span> <span class="opt">-i</span> <span class="val">error</span>
+$ <span class="cmd">dmesg</span> | <span class="cmd">head</span> <span class="opt">-30</span>
+
+<span class="comment"># 問題があった場合：GRUBメニューで旧カーネルを選択して起動</span>
+<span class="comment"># 起動時に Shift キーを押してGRUBメニューを表示する</span>
+</pre>
+  </div>
+
+  <div class="warn">
+    <strong>⚠️ 新しいカーネルで起動しない場合の対処</strong><br>
+    ① 再起動時に <strong>Shift キー</strong>（BIOS）または <strong>Esc キー</strong>（UEFI）を押してGRUBメニューを表示<br>
+    ② 「Advanced options」から<strong>旧バージョンのカーネル</strong>を選択して起動<br>
+    ③ 旧カーネルで起動後、<code>dmesg</code> や <code>/var/log/syslog</code> でエラーを確認<br>
+    ④ 設定を修正して再コンパイル・再インストールを行う
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 8：コンパイル手順まとめ -->
+<!-- ============================================================ -->
+<h2>📌 コンパイル手順まとめ</h2>
+
+<div class="demo-box">
+  <table class="ref-table">
+    <thead>
+      <tr><th>手順</th><th>コマンド</th><th>説明</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>① 準備</strong></td>
+        <td><code>apt install build-essential libncurses-dev ...</code></td>
+        <td>ビルドツールのインストール</td>
+      </tr>
+      <tr>
+        <td><strong>② ソース取得</strong></td>
+        <td><code>wget https://cdn.kernel.org/...</code></td>
+        <td>kernel.org からソースをダウンロード</td>
+      </tr>
+      <tr>
+        <td><strong>③ クリーン</strong></td>
+        <td><code>make mrproper</code></td>
+        <td>ソースツリーを完全にクリーン（設定も削除）</td>
+      </tr>
+      <tr>
+        <td><strong>④ 設定</strong></td>
+        <td><code>make menuconfig</code></td>
+        <td>.config ファイルの生成・編集</td>
+      </tr>
+      <tr>
+        <td><strong>⑤ カーネルビルド</strong></td>
+        <td><code>make bzImage -j$(nproc)</code></td>
+        <td>カーネルイメージ（bzImage）のコンパイル</td>
+      </tr>
+      <tr>
+        <td><strong>⑥ モジュールビルド</strong></td>
+        <td><code>make modules -j$(nproc)</code></td>
+        <td>カーネルモジュール（.ko）のコンパイル</td>
+      </tr>
+      <tr>
+        <td><strong>⑦ モジュール配置</strong></td>
+        <td><code>sudo make modules_install</code></td>
+        <td>/lib/modules/&lt;version&gt;/ へのインストール</td>
+      </tr>
+      <tr>
+        <td><strong>⑧ カーネル配置</strong></td>
+        <td><code>sudo make install</code></td>
+        <td>/boot/ へのコピー・initramfs生成・GRUB更新</td>
+      </tr>
+      <tr>
+        <td><strong>⑨ 再起動</strong></td>
+        <td><code>sudo reboot</code></td>
+        <td>新カーネルで起動</td>
+      </tr>
+      <tr>
+        <td><strong>⑩ 確認</strong></td>
+        <td><code>uname -r</code></td>
+        <td>新カーネルバージョンの確認</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>make の主要ターゲット一覧</h3>
+  <table class="ref-table">
+    <thead>
+      <tr><th>ターゲット</th><th>説明</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>make mrproper</code></td><td>すべての生成ファイルと .config を削除（完全クリーン）</td></tr>
+      <tr><td><code>make clean</code></td><td>生成ファイルを削除（.config は保持）</td></tr>
+      <tr><td><code>make menuconfig</code></td><td>ncurses ベースの設定ツールを起動</td></tr>
+      <tr><td><code>make oldconfig</code></td><td>既存 .config を元に新オプションのみ対話設定</td></tr>
+      <tr><td><code>make olddefconfig</code></td><td>既存 .config を元に新オプションをデフォルト値で設定</td></tr>
+      <tr><td><code>make defconfig</code></td><td>アーキテクチャのデフォルト設定で .config を生成</td></tr>
+      <tr><td><code>make bzImage</code></td><td>x86/x86_64 向け圧縮カーネルイメージをビルド</td></tr>
+      <tr><td><code>make modules</code></td><td>カーネルモジュール（.ko）をビルド</td></tr>
+      <tr><td><code>make modules_install</code></td><td>モジュールを /lib/modules/&lt;version&gt;/ にインストール</td></tr>
+      <tr><td><code>make install</code></td><td>カーネルを /boot/ にインストール・initramfs生成・GRUB更新</td></tr>
+      <tr><td><code>make all</code></td><td>bzImage・modules を一括ビルド</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 手順の並べ替え問題</h3>
+    <p>
+      カーネルのコンパイルとインストールの手順を正しい順序に並べてください。<br>
+      各手順の番号（1〜5）を順に入力してください。
+    </p>
+    <div style="background:#ebf8ff; border:1px solid #90cdf4; border-radius:6px; padding:12px 16px; margin:10px 0; font-size:0.88em;">
+      <div>A. <code>sudo make install</code></div>
+      <div>B. <code>make menuconfig</code></div>
+      <div>C. <code>make modules -j$(nproc)</code></div>
+      <div>D. <code>make mrproper</code></div>
+      <div>E. <code>sudo make modules_install</code></div>
+    </div>
+    <label>正しい順序（例：D→B→... の形式で入力）：</label>
+    <input type="text" id="q1" placeholder="X→X→X→X→X">
+    <br>
+    <button class="btn btn-blue" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const v = document.getElementById('q1').value.trim().toUpperCase().replace(/[^A-E→>-]/g,'').replace(/[-›>]+/g,'→');
+        const r = document.getElementById('q1-result');
+        const correct = 'D→B→C→E→A';
+        if (v === correct || v === 'D→B→C→E→A') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>正しい手順：</strong><br>' +
+            '① D：<code>make mrproper</code>（ソースのクリーン）<br>' +
+            '② B：<code>make menuconfig</code>（カーネルの設定）<br>' +
+            '③ C：<code>make modules -j$(nproc)</code>（モジュールのコンパイル）<br>' +
+            '④ E：<code>sudo make modules_install</code>（モジュールのインストール）<br>' +
+            '⑤ A：<code>sudo make install</code>（カーネルイメージのインストール・GRUB更新）';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ 不正解。あなたの回答：${v || '（未入力）'}<br><br>` +
+            '<strong>正しい順序：D→B→C→E→A</strong><br>' +
+            '① D：<code>make mrproper</code>（クリーン）<br>' +
+            '② B：<code>make menuconfig</code>（設定）<br>' +
+            '③ C：<code>make modules</code>（モジュールコンパイル）<br>' +
+            '④ E：<code>make modules_install</code>（モジュールインストール）<br>' +
+            '⑤ A：<code>make install</code>（カーネルインストール）';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 穴埋め問題</h3>
+    <p>以下の説明に合うコマンドを入力してください。</p>
+    <label>① .config ファイルを含むすべての生成ファイルを削除するコマンド：</label>
+    <input type="text" id="q2a" placeholder="make xxx">
+    <label>② ncurses ベースのカーネル設定ツールを起動するコマンド：</label>
+    <input type="text" id="q2b" placeholder="make xxx">
+    <label>③ 4コアCPUで並列ビルドするコマンド（CPUコア数を自動取得）：</label>
+    <input type="text" id="q2c" placeholder="make -jXXX">
+    <label>④ モジュールを /lib/modules/ にインストールするコマンド：</label>
+    <input type="text" id="q2d" placeholder="make xxx">
+    <label>⑤ Debian/Ubuntu系でGRUBの設定を更新するコマンド：</label>
+    <input type="text" id="q2e" placeholder="コマンド名">
+    <br>
+    <button class="btn btn-blue" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const a = document.getElementById('q2a').value.trim().toLowerCase().replace(/\s+/g,'');
+        const b = document.getElementById('q2b').value.trim().toLowerCase().replace(/\s+/g,'');
+        const c = document.getElementById('q2c').value.trim().toLowerCase().replace(/\s+/g,'');
+        const d = document.getElementById('q2d').value.trim().toLowerCase().replace(/\s+/g,'');
+        const e = document.getElementById('q2e').value.trim().toLowerCase().replace(/\s+/g,'');
+        const r = document.getElementById('q2-result');
+        const ca = a === 'makemrproper' || a === 'mrproper';
+        const cb = b === 'makemenuconfig' || b === 'menuconfig';
+        const cc = c === 'make-j$(nproc)' || c === 'make-jnproc' || c === 'make-j$(nproc)';
+        const cd = d === 'makemodules_install' || d === 'modules_install';
+        const ce = e === 'update-grub' || e === 'update-grub2';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ make mrproper'}　` +
+            `② ${cb?'✅':'❌ make menuconfig'}　` +
+            `③ ${cc?'✅':'❌ make -j$(nproc)'}　` +
+            `④ ${cd?'✅':'❌ make modules_install'}　` +
+            `⑤ ${ce?'✅':'❌ update-grub'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① <code>make mrproper</code> は <code>.config</code> ファイルを保持したまま生成ファイルのみ削除する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② <code>CONFIG_XXX=m</code> は、その機能がカーネルモジュールとしてコンパイルされることを示す
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ <code>make -j$(nproc)</code> はCPUコア数を自動取得して並列ビルドを行う
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ <code>make install</code> はカーネルイメージを /boot/ にコピーするだけで、GRUBの更新は手動で行う必要がある
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ <code>make oldconfig</code> は既存の .config を元に新しいオプションのみ対話的に設定する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ カーネルソースは慣習的に <code>/usr/src/</code> 以下に展開する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ <code>make modules_install</code> は <code>depmod</code> を自動実行して modules.dep を更新する
+    </label>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：②③⑤⑥⑦（b,c,e,f,g）
+        // ① make mrproper は .config も削除する（make clean が .config を保持）
+        // ④ make install はGRUBの更新も自動で行う
+        const correct = { a:false, b:true, c:true, d:false, e:true, f:true, g:true };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>②③⑤⑥⑦<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・① <code>make mrproper</code> は <strong>.config も含めて</strong>すべての生成ファイルを削除します。' +
+            '.config を保持するのは <code>make clean</code> です<br>' +
+            '・④ <code>make install</code> はカーネルイメージのコピーだけでなく、' +
+            '<strong>initramfs の生成と GRUB の設定更新も自動的に行います</strong>';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. シナリオ問題</h3>
+    <p>
+      カーネルを新しいバージョン（6.9）にアップグレードしようとしています。
+      現在のカーネル（6.8）の設定をできるだけ引き継ぎながら、
+      新しいバージョンで追加されたオプションをデフォルト値で設定したいと考えています。<br><br>
+      最も適切な手順はどれですか？
+    </p>
+    <select id="q4">
+      <option value="">-- 選択してください --</option>
+      <option value="a">make defconfig を実行してデフォルト設定から始める</option>
+      <option value="b">現在の .config をコピーして make olddefconfig を実行する</option>
+      <option value="c">make menuconfig を最初から実行してすべて手動設定する</option>
+      <option value="d">make allmodconfig を実行してすべての機能をモジュールとして有効化する</option>
+    </select>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const v = document.getElementById('q4').value;
+        const r = document.getElementById('q4-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>手順：</strong><br>' +
+            '<code>cp /boot/config-6.8.0 /usr/src/linux-6.9/.config</code><br>' +
+            '<code>cd /usr/src/linux-6.9/</code><br>' +
+            '<code>make olddefconfig</code><br><br>' +
+            '<code>make olddefconfig</code> は既存の .config を元に、新しいバージョンで追加されたオプションを<br>' +
+            'すべてデフォルト値で自動設定します（対話なし）。<br>' +
+            '<code>make oldconfig</code> は対話的に1つずつ確認しながら設定します。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br><br>' +
+            '現在の設定を引き継ぎながら新オプションをデフォルト値で設定するには：<br>' +
+            '① <code>cp /boot/config-$(uname -r) .config</code>（現在の設定をコピー）<br>' +
+            '② <code>make olddefconfig</code>（新オプションをデフォルト値で自動設定）<br><br>' +
+            'これが最も効率的で安全な方法です。';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 「カーネルのコンパイル」の学習が完了したら記録しましょう！</p>
+  <button class="btn btn-green" onclick="markComplete()">✅ このセクションを完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch2', '60');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  if (parseInt(localStorage.getItem('lpic201_ch2') || '0') >= 60) {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="02_module.html">← カーネルモジュールの管理</a>
+  <a class="home" href="../index.html">🏠 目次へ</a>
+  <a class="next" href="04_param.html">次へ：カーネルパラメータの変更 →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
