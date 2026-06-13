@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>カーネルの構成要素 ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em;
+      color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #9f7aea; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #2b4c7e, #567ebb);
+      border-radius: 12px;
+      padding: 32px 32px 24px;
+      margin-bottom: 32px;
+      color: #fff;
+      box-shadow: 0 4px 18px rgba(86,126,187,0.3);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .chapter-header h1 {
+      margin: 0 0 10px;
+      font-size: 1.6em;
+      color: #fff;
+      border: none;
+      padding: 0;
+    }
+    .chapter-header p { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 0.76em;
+      font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 {
+      color: #2b4c7e;
+      margin-top: 48px;
+      border-left: 5px solid #567ebb;
+      padding-left: 12px;
+    }
+    h3 { color: #276749; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c;
+      color: #e2e8f0;
+      padding: 18px 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.88em;
+      line-height: 1.7;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute;
+      top: 8px; right: 8px;
+      background: #4a5568;
+      color: #e2e8f0;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 0.75em;
+      cursor: pointer;
+      font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s;
+      z-index: 1;
+    }
+    .copy-btn:hover { background: #567ebb; }
+
+    /* ボックス */
+    .note {
+      background: #fff;
+      border: 1px dashed #90cdf4;
+      border-radius: 6px;
+      padding: 14px 18px;
+      font-size: 0.93em;
+      color: #4a5568;
+      margin: 14px 0;
+    }
+    .note strong { color: #2b4c7e; }
+    .warn {
+      background: #fffaf0;
+      border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55;
+      border-radius: 6px;
+      padding: 14px 18px;
+      font-size: 0.93em;
+      color: #744210;
+      margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4;
+      border: 1px solid #68d391;
+      border-left: 5px solid #48bb78;
+      border-radius: 6px;
+      padding: 14px 18px;
+      font-size: 0.93em;
+      color: #276749;
+      margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff;
+      border: 1px solid #bee3f8;
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin: 12px 0 28px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff;
+      border: 1px solid #bee3f8;
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin-bottom: 32px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 {
+      margin: 0 0 12px;
+      font-size: 0.92em;
+      color: #2b4c7e;
+      border: none;
+      padding: 0;
+    }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #567ebb; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #2b4c7e; font-weight: bold; }
+
+    /* バージョン番号インタラクティブ */
+    .version-display {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+    .ver-part {
+      background: #1a202c;
+      color: #e2e8f0;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 1.6em;
+      font-weight: bold;
+      padding: 14px 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+      border: 2px solid #2d3748;
+      text-align: center;
+      min-width: 70px;
+    }
+    .ver-part:first-child { border-radius: 8px 0 0 8px; }
+    .ver-part:last-child  { border-radius: 0 8px 8px 0; }
+    .ver-part:hover { background: #2b4c7e; }
+    .ver-part.active { background: #2b4c7e; border-color: #567ebb; color: #90cdf4; }
+    .ver-sep {
+      background: #1a202c;
+      color: #718096;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 1.6em;
+      font-weight: bold;
+      padding: 14px 4px;
+      border-top: 2px solid #2d3748;
+      border-bottom: 2px solid #2d3748;
+    }
+    .ver-detail {
+      background: #fff;
+      border: 1px solid #bee3f8;
+      border-left: 5px solid #567ebb;
+      border-radius: 0 8px 8px 0;
+      padding: 14px 18px;
+      margin-top: 12px;
+      font-size: 0.9em;
+      color: #2d3748;
+      display: none;
+    }
+    .ver-detail.show { display: block; }
+
+    /* アーキテクチャ図 */
+    .arch-diagram {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin: 16px 0;
+    }
+    .arch-layer {
+      border-radius: 8px;
+      padding: 12px 20px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 0.9em;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .arch-layer:hover {
+      transform: scale(1.01);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+    .arch-layer.user    { background: #ebf8ff; border: 2px solid #90cdf4; color: #2b4c7e; }
+    .arch-layer.syscall { background: #e9d8fd; border: 2px solid #b794f4; color: #553c9a; }
+    .arch-layer.kernel  { background: #2b4c7e; border: 2px solid #567ebb; color: #fff; }
+    .arch-layer.driver  { background: #1a365d; border: 2px solid #2b4c7e; color: #bee3f8; }
+    .arch-layer.hw      { background: #1a202c; border: 2px solid #4a5568; color: #a0aec0; }
+    .arch-arrow {
+      text-align: center;
+      color: #718096;
+      font-size: 1.2em;
+      line-height: 1;
+    }
+    .arch-detail {
+      background: #fff;
+      border: 1px solid #bee3f8;
+      border-left: 5px solid #567ebb;
+      border-radius: 0 8px 8px 0;
+      padding: 14px 18px;
+      margin-top: 10px;
+      font-size: 0.88em;
+      color: #2d3748;
+      display: none;
+    }
+    .arch-detail.show { display: block; }
+
+    /* イメージファイル表 */
+    .file-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+      margin: 14px 0;
+    }
+    .file-card {
+      background: #ebf8ff;
+      border: 1px solid #90cdf4;
+      border-radius: 8px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .file-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(86,126,187,0.18);
+    }
+    .file-card .file-name {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.95em;
+      font-weight: bold;
+      color: #2b4c7e;
+      margin-bottom: 4px;
+    }
+    .file-card .file-desc {
+      font-size: 0.82em;
+      color: #4a5568;
+      line-height: 1.6;
+    }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse;
+      width: 100%;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0;
+      font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #bee3f8;
+      padding: 10px 14px;
+      text-align: left;
+    }
+    table.ref-table thead tr { background: #2b4c7e; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #ebf8ff; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0;
+      border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0;
+      padding: 24px 28px;
+      margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff;
+      border: 1px solid #fbd38d;
+      border-radius: 8px;
+      padding: 18px 22px;
+      margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.95em;
+      width: 100%;
+      max-width: 440px;
+      margin: 6px 0;
+      outline: none;
+      font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus { border-color: #f6ad55; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block;
+      padding: 9px 20px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.95em;
+      font-weight: bold;
+      transition: opacity 0.2s;
+      margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-blue  { background: #567ebb; color: #fff; }
+    .btn-green { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-weight: bold;
+      display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #bee3f8; color: #2b4c7e; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 48px;
+      padding-top: 20px;
+      border-top: 2px solid #bee3f8;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 0.9em;
+      transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #567ebb; color: #fff; }
+    .page-nav .home { background: #fff; color: #567ebb; border: 2px solid #567ebb; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4;
+      border: 2px solid #48bb78;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-top: 40px;
+      text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px;
+      padding-top: 16px;
+      border-top: 2px solid #bee3f8;
+      font-size: 0.82em;
+      color: #a0aec0;
+      text-align: center;
+    }
+    footer a { color: #567ebb; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .file-grid { grid-template-columns: 1fr; }
+      .ver-part { font-size: 1.2em; padding: 10px 12px; min-width: 50px; }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  第2章：Linuxカーネル › カーネルの構成要素
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 02 › SECTION 01</div>
+  <h1>⚙️ カーネルの構成要素</h1>
+  <p>Linuxカーネルのバージョン体系・アーキテクチャ・カーネルイメージの種類と
+  配置場所を理解し、システム管理の基礎を固めます。</p>
+  <div class="badge-row">
+    <span class="badge">カーネルバージョン</span>
+    <span class="badge">カーネルイメージ</span>
+    <span class="badge">uname</span>
+    <span class="badge">/boot</span>
+    <span class="badge">vmlinuz</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第2章のセクション</h2>
+  <ol>
+    <li class="current"><a href="index.html">カーネルの構成要素</a></li>
+    <li><a href="02_module.html">カーネルモジュールの管理</a></li>
+    <li><a href="03_compile.html">カーネルのコンパイル</a></li>
+    <li><a href="04_param.html">カーネルパラメータの変更</a></li>
+    <li><a href="05_manage.html">カーネルの管理と問題解決</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：カーネルとは -->
+<!-- ============================================================ -->
+<h2 id="what-is-kernel">① カーネルとは</h2>
+
+<div class="note">
+  <strong>重要ポイント①：カーネルはOSの中核であり、ハードウェアとアプリケーションの橋渡しをする</strong><br>
+  ユーザーが直接ハードウェアを操作することはできません。
+  すべてのハードウェアアクセスはカーネルを経由して行われます。
+</div>
+
+<div class="demo-box">
+  <h3>Linuxカーネルのアーキテクチャ（クリックで詳細表示）</h3>
+  <div class="arch-diagram">
+
+    <div class="arch-layer user" onclick="showArch('user')">
+      👤 ユーザー空間（User Space）<br>
+      <span style="font-size:0.8em; font-weight:normal;">シェル・アプリケーション・ライブラリ（glibc）</span>
+    </div>
+    <div class="arch-arrow">↕ システムコール（System Call Interface）</div>
+    <div class="arch-layer syscall" onclick="showArch('syscall')">
+      🔗 システムコールインターフェース<br>
+      <span style="font-size:0.8em; font-weight:normal;">read / write / open / fork / exec ...</span>
+    </div>
+    <div class="arch-arrow">↕</div>
+    <div class="arch-layer kernel" onclick="showArch('kernel')">
+      ⚙️ カーネル空間（Kernel Space）<br>
+      <span style="font-size:0.8em; font-weight:normal;">プロセス管理 ／ メモリ管理 ／ ファイルシステム ／ ネットワーク ／ IPC</span>
+    </div>
+    <div class="arch-arrow">↕</div>
+    <div class="arch-layer driver" onclick="showArch('driver')">
+      🔌 デバイスドライバ<br>
+      <span style="font-size:0.8em; font-weight:normal;">ディスク・NIC・USB・GPU・キーボード...</span>
+    </div>
+    <div class="arch-arrow">↕</div>
+    <div class="arch-layer hw" onclick="showArch('hw')">
+      🖥️ ハードウェア（Hardware）<br>
+      <span style="font-size:0.8em; font-weight:normal;">CPU ／ RAM ／ ストレージ ／ ネットワーク機器</span>
+    </div>
+
+  </div>
+  <div class="arch-detail" id="arch-detail"></div>
+
+  <script>
+    const archData = {
+      user: {
+        title: '👤 ユーザー空間（User Space）',
+        color: '#2b4c7e',
+        body: `ユーザーが実行するアプリケーション・シェル・ライブラリが動作する空間です。<br><br>
+          <strong>主な構成要素：</strong><br>
+          ・<strong>シェル</strong>（bash / zsh / sh）：コマンドインタープリタ<br>
+          ・<strong>アプリケーション</strong>：Apache・MySQL・Python スクリプトなど<br>
+          ・<strong>Cライブラリ（glibc）</strong>：システムコールをラップした標準ライブラリ<br><br>
+          ユーザー空間のプロセスは直接ハードウェアにアクセスできず、必ずシステムコールを通じてカーネルに依頼します。`
+      },
+      syscall: {
+        title: '🔗 システムコールインターフェース',
+        color: '#553c9a',
+        body: `ユーザー空間とカーネル空間の境界です。アプリケーションはここを通じてカーネルの機能を呼び出します。<br><br>
+          <strong>主なシステムコール：</strong><br>
+          ・<code>read()</code> / <code>write()</code>：ファイルの読み書き<br>
+          ・<code>open()</code> / <code>close()</code>：ファイルのオープン・クローズ<br>
+          ・<code>fork()</code> / <code>exec()</code>：プロセスの生成・実行<br>
+          ・<code>mmap()</code>：メモリマッピング<br>
+          ・<code>socket()</code>：ネットワーク通信<br><br>
+          <code>strace コマンド名</code> でプログラムが発行するシステムコールを追跡できます。`
+      },
+      kernel: {
+        title: '⚙️ カーネル空間（Kernel Space）',
+        color: '#2b4c7e',
+        body: `Linuxカーネルの中核機能が動作する空間です。最高の権限（Ring 0）で実行されます。<br><br>
+          <strong>主なサブシステム：</strong><br>
+          ・<strong>プロセス管理</strong>：プロセスの生成・スケジューリング・終了<br>
+          ・<strong>メモリ管理</strong>：仮想メモリ・ページング・スワップ制御<br>
+          ・<strong>ファイルシステム（VFS）</strong>：ext4・XFS・Btrfs などの抽象化<br>
+          ・<strong>ネットワークスタック</strong>：TCP/IP・ソケット・パケットフィルタ<br>
+          ・<strong>IPC</strong>：プロセス間通信（パイプ・シグナル・共有メモリ）`
+      },
+      driver: {
+        title: '🔌 デバイスドライバ',
+        color: '#1a365d',
+        body: `ハードウェアを制御するためのソフトウェアモジュールです。<br><br>
+          <strong>ドライバの種類：</strong><br>
+          ・<strong>ブロックデバイスドライバ</strong>：HDD・SSD・NVMe（ランダムアクセス可能）<br>
+          ・<strong>キャラクタデバイスドライバ</strong>：キーボード・シリアルポート（順次アクセス）<br>
+          ・<strong>ネットワークデバイスドライバ</strong>：NIC・Wi-Fiアダプタ<br><br>
+          <strong>組み込み方式：</strong><br>
+          ・<strong>静的組み込み</strong>：カーネルイメージに直接組み込む（起動時から使用可能）<br>
+          ・<strong>カーネルモジュール</strong>：動的にロード・アンロード可能（<code>.ko</code>ファイル）`
+      },
+      hw: {
+        title: '🖥️ ハードウェア',
+        color: '#4a5568',
+        body: `物理的なハードウェアコンポーネントです。カーネルはデバイスドライバを通じてこれらを制御します。<br><br>
+          <strong>主なコンポーネント：</strong><br>
+          ・<strong>CPU</strong>：命令の実行・割り込み処理<br>
+          ・<strong>RAM</strong>：プログラムとデータの一時保存<br>
+          ・<strong>ストレージ</strong>：HDD・SSD・NVMe・光学ドライブ<br>
+          ・<strong>ネットワーク機器</strong>：NIC・Wi-Fiアダプタ<br>
+          ・<strong>入出力デバイス</strong>：キーボード・マウス・ディスプレイ`
+      }
+    };
+
+    function showArch(key) {
+      const d = archData[key];
+      const el = document.getElementById('arch-detail');
+      if (el.dataset.current === key && el.classList.contains('show')) {
+        el.classList.remove('show');
+        el.dataset.current = '';
+        return;
+      }
+      el.dataset.current = key;
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-size:0.95em;">${d.title}</strong><br><br>${d.body}`;
+      el.classList.add('show');
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：カーネルバージョン -->
+<!-- ============================================================ -->
+<h2 id="version">② カーネルバージョン</h2>
+
+<div class="note">
+  <strong>重要ポイント②：Linuxカーネルのバージョン番号は「メジャー.マイナー.パッチレベル」の形式で表される</strong><br>
+  バージョン番号の各部分が何を意味するかを正確に理解することが重要です。
+</div>
+
+<div class="demo-box">
+  <h3>バージョン番号の確認</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># カーネルバージョンを確認する主なコマンド</span>
+
+<span class="comment"># uname コマンド（最もよく使う）</span>
+$ <span class="cmd">uname</span> <span class="opt">-r</span>
+<span class="out">6.8.0-51-generic</span>
+
+<span class="comment"># すべての情報を表示</span>
+$ <span class="cmd">uname</span> <span class="opt">-a</span>
+<span class="out">Linux teru-LetsNote 6.8.0-51-generic #52-Ubuntu SMP PREEMPT_DYNAMIC Thu Dec  5 13:09:44 UTC 2024 x86_64 x86_64 x86_64 GNU/Linux</span>
+
+<span class="comment"># /proc/version からも確認可能</span>
+$ <span class="cmd">cat</span> /proc/version
+<span class="out">Linux version 6.8.0-51-generic (buildd@lcy02-amd64-032) (gcc version 13.2.0 ...) #52-Ubuntu SMP ...</span>
+
+<span class="comment"># インストール済みカーネル一覧</span>
+$ <span class="cmd">dpkg</span> <span class="opt">--list</span> | <span class="cmd">grep</span> linux-image
+<span class="out">ii  linux-image-6.8.0-51-generic  6.8.0-51.52  amd64  Signed kernel image generic</span>
+<span class="out">ii  linux-image-6.8.0-49-generic  6.8.0-49.49  amd64  Signed kernel image generic</span>
+</pre>
+  </div>
+
+  <h3>バージョン番号の構造（クリックで各部分を解説）</h3>
+
+  <!-- バージョン番号インタラクティブ表示 -->
+  <div class="version-display">
+    <div class="ver-part" id="vp-major" onclick="showVerDetail('major')">6</div>
+    <div class="ver-sep">.</div>
+    <div class="ver-part" id="vp-minor" onclick="showVerDetail('minor')">8</div>
+    <div class="ver-sep">.</div>
+    <div class="ver-part" id="vp-patch" onclick="showVerDetail('patch')">0</div>
+    <div class="ver-sep">-</div>
+    <div class="ver-part" id="vp-local" onclick="showVerDetail('local')" style="font-size:1.1em; min-width:160px;">51-generic</div>
+  </div>
+  <div style="text-align:center; font-size:0.78em; color:#a0aec0; margin-bottom:10px;">
+    ↑ 各部分をクリックすると解説が表示されます
+  </div>
+  <div class="ver-detail" id="ver-detail"></div>
+
+  <script>
+    const verDetails = {
+      major: {
+        label: 'メジャーバージョン（6）',
+        color: '#2b4c7e',
+        body: `カーネルの大きなバージョン番号です。<br><br>
+          ・現在は <strong>6.x</strong> 系が主流（2022年〜）<br>
+          ・メジャーバージョンが変わるのは非常に大きな変更があった場合<br>
+          ・過去の主なバージョン：1.x（1994）→ 2.x（1996）→ 3.x（2011）→ 4.x（2015）→ 5.x（2019）→ 6.x（2022）`
+      },
+      minor: {
+        label: 'マイナーバージョン（8）',
+        color: '#2b4c7e',
+        body: `新機能の追加や大きな改善が行われたときに増加します。<br><br>
+          ・Linuxカーネルは約9〜10週間ごとに新しいマイナーバージョンをリリース<br>
+          ・<strong>偶数</strong>：安定版（旧来の慣習。現在は廃止）<br>
+          ・<strong>奇数</strong>：開発版（旧来の慣習。現在は廃止）<br>
+          ・現在はすべてのバージョンが安定版としてリリースされる`
+      },
+      patch: {
+        label: 'パッチレベル（0）',
+        color: '#2b4c7e',
+        body: `バグ修正・セキュリティパッチが適用されたときに増加します。<br><br>
+          ・<code>6.8.0</code> → <code>6.8.1</code> → <code>6.8.2</code> ... のように増加<br>
+          ・機能追加は行われず、バグ修正のみ<br>
+          ・<strong>LTS（Long Term Support）</strong>カーネルは数年間パッチが提供される<br>
+          ・例：<code>6.6</code>（LTS）は2026年末までサポート予定`
+      },
+      local: {
+        label: 'ローカルバージョン（51-generic）',
+        color: '#567ebb',
+        body: `ディストリビューションが独自に付加する識別子です。<br><br>
+          ・<strong>51</strong>：ディストリビューションのパッケージリビジョン番号<br>
+          ・<strong>generic</strong>：カーネルの種類（汎用版）<br><br>
+          <strong>Ubuntuの主なカーネル種類：</strong><br>
+          ・<code>generic</code>：一般的なデスクトップ・サーバー向け<br>
+          ・<code>server</code>：サーバー最適化版（旧来）<br>
+          ・<code>lowlatency</code>：低レイテンシ版（音楽制作など）<br>
+          ・<code>virtual</code>：仮想マシン向け最適化版`
+      }
+    };
+
+    function showVerDetail(key) {
+      const d = verDetails[key];
+      const el = document.getElementById('ver-detail');
+      document.querySelectorAll('.ver-part').forEach(p => p.classList.remove('active'));
+      document.getElementById('vp-' + key).classList.add('active');
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color};">${d.label}</strong><br><br>${d.body}`;
+      el.classList.add('show');
+    }
+  </script>
+
+  <h3>uname コマンドのオプション一覧</h3>
+  <table class="ref-table">
+    <thead>
+      <tr><th>オプション</th><th>表示内容</th><th>出力例</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>-r</code></td><td>カーネルリリース番号</td><td><code>6.8.0-51-generic</code></td></tr>
+      <tr><td><code>-v</code></td><td>カーネルバージョン（ビルド情報）</td><td><code>#52-Ubuntu SMP PREEMPT_DYNAMIC Thu Dec 5...</code></td></tr>
+      <tr><td><code>-s</code></td><td>カーネル名</td><td><code>Linux</code></td></tr>
+      <tr><td><code>-n</code></td><td>ホスト名</td><td><code>teru-LetsNote</code></td></tr>
+      <tr><td><code>-m</code></td><td>ハードウェアアーキテクチャ</td><td><code>x86_64</code></td></tr>
+      <tr><td><code>-p</code></td><td>プロセッサタイプ</td><td><code>x86_64</code></td></tr>
+      <tr><td><code>-o</code></td><td>OS名</td><td><code>GNU/Linux</code></td></tr>
+      <tr><td><code>-a</code></td><td>すべての情報</td><td>上記すべてをスペース区切りで表示</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：カーネルイメージ -->
+<!-- ============================================================ -->
+<h2 id="image">③ カーネルイメージ</h2>
+
+<div class="note">
+  <strong>重要ポイント③：カーネルイメージとはカーネル本体の実行ファイルであり、/boot ディレクトリに配置される</strong><br>
+  システム起動時にブートローダ（GRUBなど）がカーネルイメージを読み込んでメモリに展開します。
+</div>
+
+<div class="demo-box">
+  <h3>/boot ディレクトリの構成</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+$ <span class="cmd">ls</span> <span class="opt">-lh</span> /boot/
+<span class="out">total 156M</span>
+<span class="hl">-rw-r--r-- 1 root root  286K vmlinuz-6.8.0-51-generic</span>   <span class="comment"># カーネルイメージ（圧縮済み）</span>
+<span class="hl">-rw-r--r-- 1 root root   84M initrd.img-6.8.0-51-generic</span>  <span class="comment"># 初期RAMディスク</span>
+<span class="out">-rw-r--r-- 1 root root  7.7M System.map-6.8.0-51-generic</span>  <span class="comment"># カーネルシンボルテーブル</span>
+<span class="out">-rw-r--r-- 1 root root  287K config-6.8.0-51-generic</span>      <span class="comment"># カーネルビルド設定</span>
+<span class="out">drwxr-xr-x 6 root root  4.0K grub/</span>                        <span class="comment"># GRUBブートローダ設定</span>
+<span class="out">lrwxrwxrwx 1 root root    27 vmlinuz -> vmlinuz-6.8.0-51-generic</span>
+<span class="out">lrwxrwxrwx 1 root root    32 initrd.img -> initrd.img-6.8.0-51-generic</span>
+</pre>
+  </div>
+
+  <h3>/boot の主要ファイル（クリックで詳細表示）</h3>
+  <div class="file-grid">
+
+    <div class="file-card" onclick="showFileDetail('vmlinuz')">
+      <div class="file-name">vmlinuz-&lt;version&gt;</div>
+      <div class="file-desc">圧縮されたカーネルイメージ本体。ブートローダが最初に読み込むファイル</div>
+    </div>
+
+    <div class="file-card" onclick="showFileDetail('initrd')">
+      <div class="file-name">initrd.img-&lt;version&gt;</div>
+      <div class="file-desc">初期RAMディスク。カーネル起動直後に使用する一時的なルートファイルシステム</div>
+    </div>
+
+    <div class="file-card" onclick="showFileDetail('sysmap')">
+      <div class="file-name">System.map-&lt;version&gt;</div>
+      <div class="file-desc">カーネルのシンボルテーブル。デバッグやカーネルクラッシュ解析に使用</div>
+    </div>
+
+    <div class="file-card" onclick="showFileDetail('config')">
+      <div class="file-name">config-&lt;version&gt;</div>
+      <div class="file-desc">カーネルのビルド設定ファイル。どの機能が有効化されているかを記録</div>
+    </div>
+
+    <div class="file-card" onclick="showFileDetail('grub')">
+      <div class="file-name">grub/</div>
+      <div class="file-desc">GRUBブートローダの設定ディレクトリ。grub.cfgが起動メニューを定義</div>
+    </div>
+
+    <div class="file-card" onclick="showFileDetail('symlink')">
+      <div class="file-name">vmlinuz（シンボリックリンク）</div>
+      <div class="file-desc">最新カーネルへのシンボリックリンク。常に最新バージョンを指す</div>
+    </div>
+
+  </div>
+
+  <!-- ファイル詳細表示エリア -->
+  <div class="arch-detail" id="file-detail" style="margin-top:14px;"></div>
+
+  <script>
+    const fileData = {
+      vmlinuz: {
+        title: 'vmlinuz-&lt;version&gt;',
+        color: '#2b4c7e',
+        body: `カーネルイメージ本体（圧縮済み実行ファイル）です。<br><br>
+          <strong>名前の由来：</strong><br>
+          ・<code>vm</code>：Virtual Memory（仮想メモリ対応）<br>
+          ・<code>linu</code>：Linux<br>
+          ・<code>z</code>：zlib/gzip圧縮済み（<code>bzImage</code>形式が一般的）<br><br>
+          <strong>圧縮形式：</strong><br>
+          ・<code>bzImage</code>（big zImage）：x86系で標準的に使われる圧縮カーネル<br>
+          ・<code>zImage</code>：古い形式（512KB以下のカーネル向け）<br>
+          ・<code>Image</code>：非圧縮（ARM系で使われることがある）<br><br>
+          <strong>起動の流れ：</strong><br>
+          ブートローダ → vmlinuz をメモリに読み込み → 自己展開 → カーネル初期化`
+      },
+      initrd: {
+        title: 'initrd.img-&lt;version&gt;（initramfs）',
+        color: '#2b4c7e',
+        body: `カーネル起動直後に使用される一時的なルートファイルシステムです。<br><br>
+          <strong>役割：</strong><br>
+          ・本来のルートファイルシステム（/）をマウントするために必要なドライバ・ツールを提供<br>
+          ・LVM・RAID・暗号化ディスクなど、カーネル単体では扱えないストレージをマウント可能にする<br><br>
+          <strong>initrd と initramfs の違い：</strong><br>
+          ・<strong>initrd</strong>（Initial RAM Disk）：古い形式。ブロックデバイスとしてマウント<br>
+          ・<strong>initramfs</strong>（Initial RAM File System）：現在の標準。tmpfsとしてメモリに展開<br><br>
+          <strong>再生成コマンド：</strong><br>
+          <code>sudo update-initramfs -u</code>（Debian/Ubuntu）<br>
+          <code>sudo dracut --force</code>（RHEL/CentOS）`
+      },
+      sysmap: {
+        title: 'System.map-&lt;version&gt;',
+        color: '#276749',
+        body: `カーネルのシンボルテーブルです。カーネル内の関数・変数のアドレスを記録しています。<br><br>
+          <strong>用途：</strong><br>
+          ・カーネルクラッシュ（oops/panic）のデバッグ時にアドレスを関数名に変換<br>
+          ・<code>klogd</code> がカーネルログのアドレスをシンボル名に変換するために参照<br><br>
+          <strong>確認例：</strong><br>
+          <code>grep " T sys_read" /boot/System.map-$(uname -r)</code><br>
+          → <code>sys_read</code> 関数のメモリアドレスが表示される<br><br>
+          ・<code>/proc/kallsyms</code> でも実行中カーネルのシンボルを確認できる`
+      },
+      config: {
+        title: 'config-&lt;version&gt;',
+        color: '#276749',
+        body: `カーネルのビルド時設定ファイルです。どの機能が有効・無効・モジュールとして組み込まれているかを記録します。<br><br>
+          <strong>設定値の種類：</strong><br>
+          ・<code>CONFIG_XXX=y</code>：カーネルに静的に組み込まれている<br>
+          ・<code>CONFIG_XXX=m</code>：カーネルモジュールとして利用可能<br>
+          ・<code># CONFIG_XXX is not set</code>：無効化されている<br><br>
+          <strong>確認例：</strong><br>
+          <code>grep CONFIG_EXT4 /boot/config-$(uname -r)</code><br>
+          → <code>CONFIG_EXT4_FS=y</code>（ext4が静的に組み込まれている）<br><br>
+          ・実行中カーネルの設定は <code>/proc/config.gz</code> でも確認できる（要展開）`
+      },
+      grub: {
+        title: 'grub/ ディレクトリ',
+        color: '#567ebb',
+        body: `GRUBブートローダの設定ファイルが格納されるディレクトリです。<br><br>
+          <strong>主なファイル：</strong><br>
+          ・<code>/boot/grub/grub.cfg</code>：起動メニューの定義（自動生成）<br>
+          ・<code>/etc/default/grub</code>：GRUBの基本設定（手動編集）<br>
+          ・<code>/etc/grub.d/</code>：grub.cfg を生成するスクリプト群<br><br>
+          <strong>grub.cfg の再生成：</strong><br>
+          <code>sudo update-grub</code>（Debian/Ubuntu）<br>
+          <code>sudo grub2-mkconfig -o /boot/grub2/grub.cfg</code>（RHEL系）`
+      },
+      symlink: {
+        title: 'vmlinuz（シンボリックリンク）',
+        color: '#567ebb',
+        body: `最新のカーネルイメージへのシンボリックリンクです。<br><br>
+          <strong>確認方法：</strong><br>
+          <code>ls -la /boot/vmlinuz</code><br>
+          → <code>vmlinuz -> vmlinuz-6.8.0-51-generic</code><br><br>
+          <strong>同様のシンボリックリンク：</strong><br>
+          ・<code>/boot/vmlinuz</code> → 最新カーネルイメージ<br>
+          ・<code>/boot/initrd.img</code> → 最新initramfs<br>
+          ・<code>/boot/vmlinuz.old</code> → 一つ前のカーネル（フォールバック用）<br><br>
+          カーネルアップデート時に自動的に更新されます。`
+      }
+    };
+
+    function showFileDetail(key) {
+      const d = fileData[key];
+      const el = document.getElementById('file-detail');
+      if (el.dataset.current === key && el.classList.contains('show')) {
+        el.classList.remove('show');
+        el.dataset.current = '';
+        return;
+      }
+      el.dataset.current = key;
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-size:0.95em;">${d.title}</strong><br><br>${d.body}`;
+      el.classList.add('show');
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  </script>
+
+  <h3>カーネルイメージの種類と特徴</h3>
+  <table class="ref-table">
+    <thead>
+      <tr><th>ファイル名</th><th>説明</th><th>主な用途</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>vmlinuz</code></td>
+        <td>圧縮カーネルイメージ（bzImage形式）</td>
+        <td>x86/x86_64系の標準カーネル</td>
+      </tr>
+      <tr>
+        <td><code>vmlinux</code></td>
+        <td>非圧縮カーネルイメージ（ELF形式）</td>
+        <td>デバッグ・カーネル解析用（通常は/bootに置かない）</td>
+      </tr>
+      <tr>
+        <td><code>bzImage</code></td>
+        <td>big zImage。vmlinuzの実体</td>
+        <td>x86系の標準圧縮形式</td>
+      </tr>
+      <tr>
+        <td><code>zImage</code></td>
+        <td>古い圧縮形式（512KB以下）</td>
+        <td>古いx86システム・組み込み系</td>
+      </tr>
+      <tr>
+        <td><code>Image</code></td>
+        <td>非圧縮イメージ</td>
+        <td>ARM系（Raspberry Piなど）</td>
+      </tr>
+      <tr>
+        <td><code>uImage</code></td>
+        <td>U-Boot用カーネルイメージ</td>
+        <td>組み込みLinux（U-Bootブートローダ使用時）</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 4：カーネルの種類 -->
+<!-- ============================================================ -->
+<h2 id="types">④ カーネルの種類</h2>
+
+<div class="demo-box">
+  <h3>モノリシックカーネル vs マイクロカーネル</h3>
+  <table class="ref-table">
+    <thead>
+      <tr><th>種類</th><th>特徴</th><th>代表例</th><th>長所</th><th>短所</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>モノリシックカーネル</strong></td>
+        <td>OS機能すべてをカーネル空間で実行</td>
+        <td>Linux・FreeBSD</td>
+        <td>高速・効率的</td>
+        <td>一部の障害が全体に影響</td>
+      </tr>
+      <tr>
+        <td><strong>マイクロカーネル</strong></td>
+        <td>最小限の機能のみカーネル空間で実行</td>
+        <td>Mach・MINIX・QNX</td>
+        <td>安定性・移植性が高い</td>
+        <td>オーバーヘッドが大きい</td>
+      </tr>
+      <tr>
+        <td><strong>ハイブリッドカーネル</strong></td>
+        <td>両者の折衷案</td>
+        <td>Windows NT・macOS（XNU）</td>
+        <td>バランスが良い</td>
+        <td>複雑</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="good">
+    ✅ <strong>Linuxはモノリシックカーネルだが、カーネルモジュールで動的拡張が可能</strong><br>
+    純粋なモノリシックカーネルと異なり、Linuxはカーネルモジュール（<code>.ko</code>ファイル）を
+    実行中に動的にロード・アンロードできます。これにより、モノリシックの高速性と
+    マイクロカーネルの柔軟性を両立しています。
+  </div>
+
+  <h3>カーネルのコンパイルオプション（config-* の設定値）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># カーネル設定の確認</span>
+$ <span class="cmd">grep</span> <span class="val">CONFIG_EXT4</span> /boot/config-$(uname -r)
+<span class="out">CONFIG_EXT4_FS=y</span>           <span class="comment"># y：カーネルに静的組み込み</span>
+<span class="out">CONFIG_EXT4_USE_FOR_EXT2=y</span>
+
+$ <span class="cmd">grep</span> <span class="val">CONFIG_USB</span> /boot/config-$(uname -r)
+<span class="out">CONFIG_USB=m</span>               <span class="comment"># m：カーネルモジュールとして利用可能</span>
+<span class="out">CONFIG_USB_STORAGE=m</span>
+
+$ <span class="cmd">grep</span> <span class="val">CONFIG_SOUND</span> /boot/config-$(uname -r)
+<span class="out"># CONFIG_SOUND is not set</span>  <span class="comment"># 無効化されている</span>
+
+<span class="comment"># 実行中カーネルの設定を確認（/proc/config.gz）</span>
+$ <span class="cmd">zcat</span> /proc/config.gz | <span class="cmd">grep</span> <span class="val">CONFIG_EXT4</span>
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 5：カーネル関連ディレクトリ -->
+<!-- ============================================================ -->
+<h2 id="dirs">⑤ カーネル関連の重要ディレクトリ</h2>
+
+<div class="demo-box">
+  <table class="ref-table">
+    <thead>
+      <tr><th>パス</th><th>内容</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>/boot/</code></td>
+        <td>カーネルイメージ・initramfs・GRUBなどのブート関連ファイル</td>
+      </tr>
+      <tr>
+        <td><code>/proc/</code></td>
+        <td>カーネルが提供する仮想ファイルシステム。実行中カーネルの状態をファイルとして参照できる</td>
+      </tr>
+      <tr>
+        <td><code>/proc/version</code></td>
+        <td>カーネルバージョン情報</td>
+      </tr>
+      <tr>
+        <td><code>/proc/cmdline</code></td>
+        <td>カーネル起動時に渡されたパラメータ</td>
+      </tr>
+      <tr>
+        <td><code>/proc/modules</code></td>
+        <td>現在ロードされているカーネルモジュール一覧</td>
+      </tr>
+      <tr>
+        <td><code>/proc/kallsyms</code></td>
+        <td>実行中カーネルのシンボルテーブル</td>
+      </tr>
+      <tr>
+        <td><code>/sys/</code></td>
+        <td>sysfs。デバイス・ドライバ・カーネルサブシステムの情報を提供する仮想FS</td>
+      </tr>
+      <tr>
+        <td><code>/lib/modules/&lt;version&gt;/</code></td>
+        <td>カーネルモジュール（.koファイル）の格納ディレクトリ</td>
+      </tr>
+      <tr>
+        <td><code>/usr/src/linux-headers-&lt;version&gt;/</code></td>
+        <td>カーネルヘッダファイル（モジュールのコンパイルに必要）</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /proc の主要ファイルを確認</span>
+$ <span class="cmd">cat</span> /proc/version
+<span class="out">Linux version 6.8.0-51-generic ...</span>
+
+$ <span class="cmd">cat</span> /proc/cmdline
+<span class="out">BOOT_IMAGE=/boot/vmlinuz-6.8.0-51-generic root=UUID=xxxx-xxxx ro quiet splash</span>
+
+$ <span class="cmd">ls</span> /lib/modules/$(uname -r)/
+<span class="out">build  kernel  modules.alias  modules.dep  modules.symbols ...</span>
+
+<span class="comment"># カーネルモジュールの格納場所</span>
+$ <span class="cmd">ls</span> /lib/modules/$(uname -r)/kernel/
+<span class="out">arch/  crypto/  drivers/  fs/  lib/  net/  sound/ ...</span>
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. バージョン解析問題</h3>
+    <p>
+      カーネルバージョン <code>6.8.0-51-generic</code> について、
+      各部分の意味を答えてください。
+    </p>
+    <label>① 「6」は何を表しますか？</label>
+    <input type="text" id="q1a" placeholder="〇〇バージョン">
+    <label>② 「8」は何を表しますか？</label>
+    <input type="text" id="q1b" placeholder="〇〇バージョン">
+    <label>③ 「0」は何を表しますか？</label>
+    <input type="text" id="q1c" placeholder="〇〇レベル">
+    <label>④ 「generic」は何を表しますか？</label>
+    <input type="text" id="q1d" placeholder="カーネルの〇〇">
+    <br>
+    <button class="btn btn-blue" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const a = document.getElementById('q1a').value.trim();
+        const b = document.getElementById('q1b').value.trim();
+        const c = document.getElementById('q1c').value.trim();
+        const d = document.getElementById('q1d').value.trim();
+        const r = document.getElementById('q1-result');
+        const ca = /メジャー|major/i.test(a);
+        const cb = /マイナー|minor/i.test(b);
+        const cc = /パッチ|patch|リビジョン/i.test(c);
+        const cd = /種類|タイプ|汎用|ディストリ|識別/i.test(d);
+        const count = [ca,cb,cc,cd].filter(Boolean).length;
+        if (count === 4) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/4 問正解。<br>` +
+            `① ${ca?'✅':'❌ メジャーバージョン'}　` +
+            `② ${cb?'✅':'❌ マイナーバージョン'}　` +
+            `③ ${cc?'✅':'❌ パッチレベル'}　` +
+            `④ ${cd?'✅':'❌ カーネルの種類（ディストリビューションが付加するローカルバージョン）'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 穴埋め問題</h3>
+    <p>以下の説明に合うコマンド・ファイル・ディレクトリを入力してください。</p>
+    <label>① カーネルのリリース番号のみを表示するコマンド（オプション含む）：</label>
+    <input type="text" id="q2a" placeholder="コマンド -オプション">
+    <label>② 圧縮されたカーネルイメージ本体のファイル名（バージョン部分は除く）：</label>
+    <input type="text" id="q2b" placeholder="ファイル名">
+    <label>③ カーネル起動直後に使用される一時的なルートファイルシステムのファイル：</label>
+    <input type="text" id="q2c" placeholder="ファイル名（バージョン部分除く）">
+    <label>④ カーネルモジュール（.koファイル）が格納されるディレクトリ（バージョン部分は &lt;version&gt; と表記）：</label>
+    <input type="text" id="q2d" placeholder="/lib/...">
+    <label>⑤ カーネルのシンボルテーブルが格納されるファイル（バージョン部分除く）：</label>
+    <input type="text" id="q2e" placeholder="ファイル名">
+    <br>
+    <button class="btn btn-blue" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const a = document.getElementById('q2a').value.trim().toLowerCase().replace(/\s+/g,'');
+        const b = document.getElementById('q2b').value.trim().toLowerCase();
+        const c = document.getElementById('q2c').value.trim().toLowerCase();
+        const d = document.getElementById('q2d').value.trim().toLowerCase().replace(/\s/g,'');
+        const e = document.getElementById('q2e').value.trim().toLowerCase();
+        const r = document.getElementById('q2-result');
+        const ca = a === 'uname-r';
+        const cb = b === 'vmlinuz' || b === 'vmlinuz-<version>';
+        const cc = c === 'initrd.img' || c === 'initramfs' || c === 'initrd';
+        const cd = d === '/lib/modules/<version>' || d === '/lib/modules/<version>/' || d === '/lib/modules/';
+        const ce = e === 'system.map' || e === 'system.map-<version>';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ uname -r'}　` +
+            `② ${cb?'✅':'❌ vmlinuz'}　` +
+            `③ ${cc?'✅':'❌ initrd.img（initramfs）'}　` +
+            `④ ${cd?'✅':'❌ /lib/modules/&lt;version&gt;/'}　` +
+            `⑤ ${ce?'✅':'❌ System.map'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① <code>vmlinuz</code> は圧縮されたカーネルイメージであり、<code>z</code> は圧縮を意味する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② Linuxはマイクロカーネルアーキテクチャを採用している
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ <code>config-&lt;version&gt;</code> の <code>CONFIG_XXX=m</code> はその機能がカーネルモジュールとして利用可能であることを示す
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ <code>uname -a</code> はカーネルに関するすべての情報を表示する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ <code>initrd.img</code> はカーネルイメージ本体であり、ブートローダが最初に読み込む
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ <code>/proc/cmdline</code> にはカーネル起動時に渡されたパラメータが記録されている
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ <code>System.map</code> はカーネルのシンボルテーブルであり、デバッグに使用される
+    </label>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：①③④⑥⑦（a,c,d,f,g）
+        // ② Linuxはモノリシックカーネル
+        // ⑤ initrd.imgは一時的なルートFS。カーネルイメージ本体はvmlinuz
+        const correct = { a:true, b:false, c:true, d:true, e:false, f:true, g:true };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>①③④⑥⑦<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・② Linuxは<strong>モノリシックカーネル</strong>です（カーネルモジュールで動的拡張可能）<br>' +
+            '・⑤ <code>initrd.img</code> は一時的なルートファイルシステムです。カーネルイメージ本体は <code>vmlinuz</code> です';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. 選択問題</h3>
+    <p>
+      カーネルのビルド設定ファイルで <code>CONFIG_USB_STORAGE=m</code> と記述されている場合、
+      USBストレージ機能はどのような状態ですか？
+    </p>
+    <select id="q4">
+      <option value="">-- 選択してください --</option>
+      <option value="a">カーネルに静的に組み込まれており、常に使用可能</option>
+      <option value="b">カーネルモジュールとして利用可能で、必要時に動的ロードできる</option>
+      <option value="c">無効化されており、使用できない</option>
+      <option value="d">コンパイルエラーが発生している</option>
+    </select>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const v = document.getElementById('q4').value;
+        const r = document.getElementById('q4-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<code>config-*</code> ファイルの設定値の意味：<br>' +
+            '・<code>=y</code>：カーネルに<strong>静的に組み込み</strong>（常に使用可能）<br>' +
+            '・<code>=m</code>：<strong>カーネルモジュール</strong>として利用可能（動的ロード可能）<br>' +
+            '・<code>is not set</code>：<strong>無効化</strong>（使用不可）';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '<code>=m</code> はカーネルモジュールとして利用可能な状態を示します。<br>' +
+            '必要なときに <code>modprobe usb_storage</code> などでロードできます。';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 「カーネルの構成要素」の学習が完了したら記録しましょう！</p>
+  <button class="btn btn-green" onclick="markComplete()">✅ このセクションを完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch2', '20');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  if (localStorage.getItem('lpic201_ch2') >= '20') {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="../01_capacity/03_analysis.html">← 第1章：リソース需要の分析と予測</a>
+  <a class="home" href="../index.html">🏠 目次へ</a>
+  <a class="next" href="02_module.html">次へ：カーネルモジュールの管理 →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
