@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ファイルシステムの保守 ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em; color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #b7791f; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #744210, #b7791f);
+      border-radius: 12px; padding: 32px 32px 24px;
+      margin-bottom: 32px; color: #fff;
+      box-shadow: 0 4px 18px rgba(183,121,31,0.35);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em; font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85; letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .chapter-header h1 { margin: 0 0 10px; font-size: 1.6em; color: #fff; border: none; padding: 0; }
+    .chapter-header p  { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px; padding: 3px 12px;
+      font-size: 0.76em; font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 { color: #744210; margin-top: 48px; border-left: 5px solid #b7791f; padding-left: 12px; }
+    h3 { color: #276749; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7; padding: 2px 6px;
+      border-radius: 4px; font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c; color: #e2e8f0;
+      padding: 18px 20px; border-radius: 8px;
+      overflow-x: auto; font-size: 0.88em;
+      line-height: 1.7; font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+    pre .err     { color: #fc8181; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #4a5568; color: #e2e8f0;
+      border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 0.75em;
+      cursor: pointer; font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s; z-index: 1;
+    }
+    .copy-btn:hover { background: #b7791f; }
+
+    /* ボックス */
+    .note {
+      background: #fff; border: 1px dashed #fbd38d;
+      border-radius: 6px; padding: 14px 18px;
+      font-size: 0.93em; color: #4a5568; margin: 14px 0;
+    }
+    .note strong { color: #744210; }
+    .warn {
+      background: #fffaf0; border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #744210; margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4; border: 1px solid #68d391;
+      border-left: 5px solid #48bb78; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #276749; margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 20px 24px;
+      margin: 12px 0 28px; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 10px; padding: 18px 22px;
+      margin-bottom: 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 { margin: 0 0 12px; font-size: 0.92em; color: #744210; border: none; padding: 0; }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #b7791f; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #744210; font-weight: bold; }
+
+    /* ext 構造図 */
+    .ext-struct {
+      display: flex; flex-direction: column; gap: 4px; margin: 14px 0;
+    }
+    .ext-row {
+      display: flex; gap: 4px; align-items: stretch;
+    }
+    .ext-block {
+      border-radius: 6px; padding: 10px 14px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.82em; font-weight: bold;
+      text-align: center; cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      flex: 1;
+    }
+    .ext-block:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+
+    /* SMART ゲージ */
+    .smart-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px; margin: 14px 0;
+    }
+    .smart-card {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 14px;
+      cursor: pointer; transition: transform 0.15s;
+    }
+    .smart-card:hover { transform: translateY(-2px); }
+    .smart-card .smart-id {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.78em; color: #a0aec0; margin-bottom: 2px;
+    }
+    .smart-card .smart-name {
+      font-size: 0.88em; font-weight: bold; color: #744210; margin-bottom: 6px;
+    }
+    .smart-card .smart-bar-bg {
+      background: #edf2f7; border-radius: 4px; height: 8px; overflow: hidden;
+    }
+    .smart-card .smart-bar-fill {
+      height: 100%; border-radius: 4px; transition: width 0.4s;
+    }
+    .smart-card .smart-val {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.82em; margin-top: 4px; color: #4a5568;
+    }
+
+    /* オートマウントフロー */
+    .automount-flow {
+      display: flex; align-items: center;
+      gap: 6px; flex-wrap: wrap;
+      justify-content: center; margin: 16px 0;
+    }
+    .am-box {
+      border-radius: 8px; padding: 12px 14px;
+      text-align: center; font-size: 0.82em;
+      font-weight: bold; min-width: 110px;
+    }
+    .am-arrow { font-size: 1.3em; color: #718096; }
+
+    /* インタラクティブデモ */
+    .interactive-demo {
+      background: #fffaf0; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 16px 20px; margin: 14px 0;
+    }
+    .slider-row {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em; font-weight: bold;
+      min-width: 180px; color: #744210;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row select {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 6px 10px; font-size: 0.88em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #2d3748; background: #fff;
+      cursor: pointer; flex: 1;
+    }
+    .slider-row select:focus { border-color: #b7791f; outline: none; }
+    .output-display {
+      background: #1a202c; color: #68d391;
+      border-radius: 6px; padding: 12px 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em; margin-top: 10px;
+      white-space: pre; overflow-x: auto; line-height: 1.7;
+    }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse; width: 100%;
+      background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0; font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #fbd38d; padding: 10px 14px; text-align: left;
+    }
+    table.ref-table thead tr { background: #744210; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #fffaf0; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0; border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0; padding: 24px 28px; margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 18px 22px; margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 8px 12px; font-size: 0.95em;
+      width: 100%; max-width: 440px; margin: 6px 0;
+      outline: none; font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus { border-color: #b7791f; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block; padding: 9px 20px;
+      border-radius: 6px; border: none; cursor: pointer;
+      font-size: 0.95em; font-weight: bold;
+      transition: opacity 0.2s; margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-amber { background: #b7791f; color: #fff; }
+    .btn-done  { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px; padding: 10px 14px;
+      border-radius: 6px; font-weight: bold; display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #fefcbf; color: #744210; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 48px;
+      padding-top: 20px; border-top: 2px solid #fbd38d;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block; padding: 10px 20px;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.9em; transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #b7791f; color: #fff; }
+    .page-nav .home { background: #fff; color: #b7791f; border: 2px solid #b7791f; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4; border: 2px solid #48bb78;
+      border-radius: 10px; padding: 20px 24px;
+      margin-top: 40px; text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 2px solid #fbd38d;
+      font-size: 0.82em; color: #a0aec0; text-align: center;
+    }
+    footer a { color: #b7791f; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .smart-grid { grid-template-columns: repeat(2, 1fr); }
+      .automount-flow { gap: 4px; }
+      .am-box { min-width: 80px; font-size: 0.75em; padding: 8px 10px; }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  <a href="index.html">第4章：デバイスとファイルシステム</a> ›
+  ファイルシステムの保守
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 04 › SECTION 03</div>
+  <h1>🔧 ファイルシステムの保守</h1>
+  <p>ext2/3/4 の内部構造・fsck によるチェック・tune2fs による管理、
+  S.M.A.R.T. によるディスク健全性監視、XFS・Btrfs の管理コマンド、
+  autofs によるオートマウントの設定を学びます。</p>
+  <div class="badge-row">
+    <span class="badge">fsck</span>
+    <span class="badge">e2fsck</span>
+    <span class="badge">tune2fs</span>
+    <span class="badge">dumpe2fs</span>
+    <span class="badge">smartctl</span>
+    <span class="badge">xfs_repair</span>
+    <span class="badge">autofs</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第4章のセクション</h2>
+  <ol>
+    <li><a href="index.html">ファイルシステムの操作</a></li>
+    <li><a href="02_fscheck.html">ファイルシステムの作成</a></li>
+    <li class="current"><a href="03_lvm.html">ファイルシステムの保守</a></li>
+    <li><a href="04_raid.html">RAID の管理</a></li>
+    <li><a href="05_storage.html">ストレージデバイスの管理</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：ext2/ext3 ファイルシステムの構造 -->
+<!-- ============================================================ -->
+<h2 id="ext-struct">① ext2/ext3 ファイルシステムの構造</h2>
+
+<div class="note">
+  <strong>重要ポイント①：ext2/3/4 はブロックグループ構造を持ち、各グループにスーパーブロック・inode テーブル・データブロックが含まれる</strong><br>
+  この構造を理解することで、fsck の動作や障害回復の仕組みを把握できます。
+</div>
+
+<div class="demo-box">
+  <h3>ext2/3/4 のディスクレイアウト（クリックで詳細）</h3>
+
+  <div class="ext-struct">
+    <!-- ブート -->
+    <div class="ext-row">
+      <div class="ext-block" style="background:#2d3748; color:#e2e8f0; border:2px solid #4a5568; max-width:120px; flex:none;"
+           onclick="showExtBlock('boot')">
+        ブートブロック<br><span style="font-size:0.8em; font-weight:normal;">1024B</span>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
+        <!-- ブロックグループ 0 -->
+        <div style="font-size:0.78em; color:#a0aec0; font-family:'Consolas','Monaco',monospace; padding-left:4px;">
+          ブロックグループ 0
+        </div>
+        <div style="display:flex; gap:4px;">
+          <div class="ext-block" style="background:#553c9a; color:#fff; border:2px solid #9f7aea; flex:1.2;"
+               onclick="showExtBlock('superblock')">
+            スーパーブロック<br><span style="font-size:0.8em; font-weight:normal;">1024B</span>
+          </div>
+          <div class="ext-block" style="background:#2b4c7e; color:#fff; border:2px solid #567ebb; flex:1;"
+               onclick="showExtBlock('gdt')">
+            グループ記述子<br><span style="font-size:0.8em; font-weight:normal;">テーブル</span>
+          </div>
+          <div class="ext-block" style="background:#744210; color:#fff; border:2px solid #b7791f; flex:0.8;"
+               onclick="showExtBlock('bitmap')">
+            ブロック<br>ビットマップ
+          </div>
+          <div class="ext-block" style="background:#744210; color:#fff; border:2px solid #b7791f; flex:0.8;"
+               onclick="showExtBlock('ibitmap')">
+            inode<br>ビットマップ
+          </div>
+          <div class="ext-block" style="background:#1a4731; color:#fff; border:2px solid #2f855a; flex:1.2;"
+               onclick="showExtBlock('itable')">
+            inode<br>テーブル
+          </div>
+          <div class="ext-block" style="background:#276749; color:#fff; border:2px solid #48bb78; flex:3;"
+               onclick="showExtBlock('data')">
+            データブロック
+          </div>
+        </div>
+        <!-- ブロックグループ 1〜N -->
+        <div style="font-size:0.78em; color:#a0aec0; font-family:'Consolas','Monaco',monospace; padding-left:4px; margin-top:4px;">
+          ブロックグループ 1〜N（同じ構造が繰り返される）
+        </div>
+        <div style="display:flex; gap:4px;">
+          <div class="ext-block" style="background:#553c9a; color:#fff; border:2px dashed #9f7aea; flex:1.2; opacity:0.6;"
+               onclick="showExtBlock('superblock')">
+            SB バックアップ
+          </div>
+          <div class="ext-block" style="background:#2b4c7e; color:#fff; border:2px dashed #567ebb; flex:1; opacity:0.6;"
+               onclick="showExtBlock('gdt')">
+            GDT バックアップ
+          </div>
+          <div class="ext-block" style="background:#744210; color:#fff; border:2px solid #b7791f; flex:0.8;"
+               onclick="showExtBlock('bitmap')">
+            ビットマップ
+          </div>
+          <div class="ext-block" style="background:#1a4731; color:#fff; border:2px solid #2f855a; flex:1.2;"
+               onclick="showExtBlock('itable')">
+            inode テーブル
+          </div>
+          <div class="ext-block" style="background:#276749; color:#fff; border:2px solid #48bb78; flex:3;"
+               onclick="showExtBlock('data')">
+            データブロック
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 構造詳細 -->
+  <div id="ext-block-detail" style="display:none; margin-top:12px; background:#fff; border:1px solid #fbd38d; border-left:5px solid #b7791f; border-radius:0 8px 8px 0; padding:14px 18px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const extBlocks = {
+      boot: {
+        title: 'ブートブロック（Boot Block）',
+        color: '#4a5568',
+        body: `ディスクの先頭 1024 バイトに配置されます。<br><br>
+          ・ブートローダのコードを格納（MBR 方式の場合）<br>
+          ・ext2/3/4 ファイルシステム自体はこの領域を使用しない<br>
+          ・すべてのブロックグループの先頭に存在するわけではなく、ディスクの最初のみ`
+      },
+      superblock: {
+        title: 'スーパーブロック（Superblock）',
+        color: '#553c9a',
+        body: `ファイルシステム全体のメタデータを格納する最重要ブロックです。<br><br>
+          <strong>格納される情報：</strong><br>
+          ・ブロック数・inode 数・ブロックサイズ<br>
+          ・空きブロック数・空き inode 数<br>
+          ・マウント回数・最終マウント時刻<br>
+          ・ファイルシステムの状態（clean/dirty）<br>
+          ・ファイルシステムのバージョン・UUID・ラベル<br><br>
+          <strong>バックアップ：</strong><br>
+          スーパーブロックは各ブロックグループにバックアップが存在します。<br>
+          主スーパーブロックが破損した場合は <code>e2fsck -b バックアップ位置</code> で回復できます。<br><br>
+          <strong>確認コマンド：</strong><br>
+          <code>sudo tune2fs -l /dev/sdb1</code><br>
+          <code>sudo dumpe2fs /dev/sdb1 | head -50</code>`
+      },
+      gdt: {
+        title: 'グループ記述子テーブル（Group Descriptor Table）',
+        color: '#2b4c7e',
+        body: `各ブロックグループの情報を格納するテーブルです。<br><br>
+          <strong>各エントリに含まれる情報：</strong><br>
+          ・ブロックビットマップの場所<br>
+          ・inode ビットマップの場所<br>
+          ・inode テーブルの場所<br>
+          ・空きブロック数・空き inode 数<br><br>
+          スーパーブロックと同様に各ブロックグループにバックアップが存在します。`
+      },
+      bitmap: {
+        title: 'ブロックビットマップ（Block Bitmap）',
+        color: '#744210',
+        body: `各データブロックの使用状況を 1 ビットで管理するビットマップです。<br><br>
+          ・<code>1</code>：使用中<br>
+          ・<code>0</code>：空き<br><br>
+          ファイルの割り当て・解放時にこのビットマップが更新されます。<br>
+          fsck はビットマップと実際のブロック使用状況を照合して不整合を検出します。`
+      },
+      ibitmap: {
+        title: 'inode ビットマップ（Inode Bitmap）',
+        color: '#744210',
+        body: `各 inode の使用状況を 1 ビットで管理するビットマップです。<br><br>
+          ・<code>1</code>：使用中の inode<br>
+          ・<code>0</code>：空き inode<br><br>
+          ファイル・ディレクトリの作成・削除時に更新されます。<br>
+          <code>df -i</code> で inode の使用状況を確認できます。`
+      },
+      itable: {
+        title: 'inode テーブル（Inode Table）',
+        color: '#1a4731',
+        body: `各ファイル・ディレクトリのメタデータを格納するテーブルです。<br><br>
+          <strong>inode に格納される情報：</strong><br>
+          ・ファイルタイプ（通常/ディレクトリ/シンボリックリンク等）<br>
+          ・パーミッション（rwxrwxrwx）<br>
+          ・所有者（UID）・グループ（GID）<br>
+          ・ファイルサイズ<br>
+          ・タイムスタンプ（atime/mtime/ctime）<br>
+          ・ハードリンク数<br>
+          ・データブロックへのポインタ（直接・間接・二重間接・三重間接）<br><br>
+          <strong>注意：</strong>inode にはファイル名は含まれません（ディレクトリエントリに格納）`
+      },
+      data: {
+        title: 'データブロック（Data Block）',
+        color: '#276749',
+        body: `実際のファイルデータが格納される領域です。<br><br>
+          ・ブロックサイズは通常 4096 バイト（1KB/2KB/4KB から選択）<br>
+          ・ディレクトリの場合：ファイル名と inode 番号のマッピングテーブルを格納<br>
+          ・シンボリックリンクの場合：リンク先パスを格納（短い場合は inode に直接格納）<br><br>
+          <strong>ext4 のエクステント：</strong><br>
+          ext4 では連続するブロックを「エクステント」として効率的に管理します。<br>
+          これにより断片化が少なく、大きなファイルへのアクセスが高速になります。`
+      }
+    };
+
+    function showExtBlock(key) {
+      const d = extBlocks[key];
+      const el = document.getElementById('ext-block-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display='none'; el.dataset.current=''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-size:0.95em;">${d.title}</strong><br><br>${d.body}`;
+      el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：ファイルシステムのチェック（fsck） -->
+<!-- ============================================================ -->
+<h2 id="fsck">② ファイルシステムのチェック（fsck / e2fsck）</h2>
+
+<div class="note">
+  <strong>重要ポイント②：fsck はファイルシステムの整合性を検査・修復するコマンド。必ずアンマウント状態で実行する</strong><br>
+  マウント中のファイルシステムに対して fsck を実行するとデータが破損する危険があります。
+</div>
+
+<div class="demo-box">
+  <h3>fsck / e2fsck の基本操作</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># fsck の基本（アンマウント状態で実行すること！）</span>
+$ <span class="cmd">sudo fsck</span> /dev/sdb1
+$ <span class="cmd">sudo fsck</span> <span class="opt">-t</span> <span class="val">ext4</span> /dev/sdb1   <span class="comment"># FSタイプを明示</span>
+
+<span class="comment"># e2fsck（ext2/3/4 専用）</span>
+$ <span class="cmd">sudo e2fsck</span> /dev/sdb1
+
+<span class="comment"># 対話なしで自動修復（-y = すべての質問に yes）</span>
+$ <span class="cmd">sudo e2fsck</span> <span class="opt">-y</span> /dev/sdb1
+
+<span class="comment"># 強制チェック（クリーンでも実行）</span>
+$ <span class="cmd">sudo e2fsck</span> <span class="opt">-f</span> /dev/sdb1
+
+<span class="comment"># 強制チェック + 自動修復（よく使う組み合わせ）</span>
+$ <span class="cmd">sudo e2fsck</span> <span class="opt">-fy</span> /dev/sdb1
+
+<span class="comment"># 詳細表示（verbose）</span>
+$ <span class="cmd">sudo e2fsck</span> <span class="opt">-v</span> /dev/sdb1
+
+<span class="comment"># バックアップスーパーブロックを使って修復</span>
+<span class="comment"># バックアップの場所を確認</span>
+$ <span class="cmd">sudo dumpe2fs</span> /dev/sdb1 | <span class="cmd">grep</span> <span class="val">"superblock"</span>
+<span class="out">Primary superblock at 0, Group descriptors at 1-1</span>
+<span class="out">Backup superblock at 32768, Group descriptors at 32769-32769</span>
+<span class="out">Backup superblock at 98304, Group descriptors at 98305-98305</span>
+
+<span class="comment"># バックアップスーパーブロックを指定して修復</span>
+$ <span class="cmd">sudo e2fsck</span> <span class="opt">-b</span> <span class="val">32768</span> /dev/sdb1
+
+<span class="comment"># /etc/fstab の全ファイルシステムをチェック</span>
+$ <span class="cmd">sudo fsck</span> <span class="opt">-A</span>
+
+<span class="comment"># 起動時の自動チェック（次回起動時に強制チェック）</span>
+$ <span class="cmd">sudo tune2fs</span> <span class="opt">-C</span> <span class="val">99</span> /dev/sdb1   <span class="comment"># マウント回数を最大値に設定</span>
+$ <span class="cmd">sudo shutdown</span> <span class="opt">-rF</span> <span class="val">now</span>           <span class="comment"># -F：次回起動時に強制 fsck</span>
+</pre>
+  </div>
+
+  <h3>fsck の終了コード</h3>
+  <table class="ref-table">
+    <thead><tr><th>終了コード</th><th>意味</th></tr></thead>
+    <tbody>
+      <tr><td><code>0</code></td><td>エラーなし</td></tr>
+      <tr><td><code>1</code></td><td>ファイルシステムのエラーを修正した</td></tr>
+      <tr><td><code>2</code></td><td>システムを再起動すべき</td></tr>
+      <tr><td><code>4</code></td><td>未修正のファイルシステムエラーが残っている</td></tr>
+      <tr><td><code>8</code></td><td>操作エラー</td></tr>
+      <tr><td><code>16</code></td><td>使用方法・構文エラー</td></tr>
+      <tr><td><code>32</code></td><td>ユーザーによるキャンセル</td></tr>
+      <tr><td><code>128</code></td><td>共有ライブラリエラー</td></tr>
+    </tbody>
+  </table>
+
+  <div class="warn">
+    <strong>⚠️ fsck 実行時の注意事項</strong><br>
+    ・<strong>必ずアンマウント状態</strong>で実行する（マウント中の実行はデータ破損の原因）<br>
+    ・ルートFS（<code>/</code>）のチェックは起動時のシングルユーザーモードまたは Live CD から行う<br>
+    ・<code>-y</code> オプションは自動修復するが、意図しない変更が行われる可能性がある<br>
+    ・重要なデータは事前にバックアップを取ること
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：ext2/3/4 ファイルシステムの管理 -->
+<!-- ============================================================ -->
+<h2 id="ext-manage">③ ext2/3/4 ファイルシステムの管理</h2>
+
+<div class="demo-box">
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#744210; margin:0 0 12px;">
+      管理コマンドを選択して使い方を確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>コマンド</label>
+      <select id="ext-cmd-sel" onchange="showExtCmd()">
+        <option value="">-- 選択してください --</option>
+        <option value="tune2fs">tune2fs（設定変更）</option>
+        <option value="dumpe2fs">dumpe2fs（詳細情報表示）</option>
+        <option value="debugfs">debugfs（デバッグ・回復）</option>
+        <option value="resize2fs">resize2fs（サイズ変更）</option>
+        <option value="e2label">e2label（ラベル操作）</option>
+      </select>
+    </div>
+    <div class="output-display" id="ext-cmd-output" style="display:none;"></div>
+  </div>
+
+  <script>
+    const extCmds = {
+      tune2fs: {
+        color: '#90cdf4',
+        text:
+`# tune2fs：ext2/3/4 のスーパーブロック設定を変更
+
+# スーパーブロック情報を表示
+$ sudo tune2fs -l /dev/sdb1
+
+# ラベルを設定・変更
+$ sudo tune2fs -L "mydata" /dev/sdb1
+
+# 予約ブロック率を変更（デフォルト5%）
+$ sudo tune2fs -m 1 /dev/sdb1
+
+# マウント回数でのfsck間隔（0=無効）
+$ sudo tune2fs -c 0 /dev/sdb1
+
+# 時間間隔でのfsck間隔（0=無効）
+$ sudo tune2fs -i 0 /dev/sdb1
+
+# ext2 にジャーナルを追加（ext3 に変換）
+$ sudo tune2fs -j /dev/sdb1
+
+# UUID を新たに生成
+$ sudo tune2fs -U random /dev/sdb1
+
+# エラー発生時の動作を設定
+$ sudo tune2fs -e continue /dev/sdb1  # 継続
+$ sudo tune2fs -e remount-ro /dev/sdb1  # ro で再マウント
+$ sudo tune2fs -e panic /dev/sdb1  # カーネルパニック`
+      },
+      dumpe2fs: {
+        color: '#68d391',
+        text:
+`# dumpe2fs：ext2/3/4 の詳細情報を表示
+
+# 全情報を表示（大量出力）
+$ sudo dumpe2fs /dev/sdb1
+
+# スーパーブロック情報のみ表示
+$ sudo dumpe2fs -h /dev/sdb1
+Filesystem volume name:   mydata
+Filesystem UUID:          xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+Filesystem magic number:  0xEF53
+Filesystem revision #:    1 (dynamic)
+Filesystem features:      has_journal ext_attr resize_inode dir_index
+                          filetype needs_recovery extent 64bit flex_bg
+Filesystem flags:         signed_directory_hash
+Default mount options:    user_xattr acl
+Filesystem state:         clean
+Errors behavior:          Continue
+Filesystem OS type:       Linux
+Inode count:              655360
+Block count:              2621440
+Reserved block count:     131072
+Free blocks:              2345678
+Free inodes:              654321
+
+# バックアップスーパーブロックの場所を確認
+$ sudo dumpe2fs /dev/sdb1 | grep -i "superblock"
+Primary superblock at 0
+Backup superblock at 32768
+Backup superblock at 98304`
+      },
+      debugfs: {
+        color: '#b794f4',
+        text:
+`# debugfs：ext2/3/4 の低レベルデバッグ・回復ツール
+
+# 読み取り専用モードで起動（安全）
+$ sudo debugfs /dev/sdb1
+
+# 読み書きモードで起動（修復時）
+$ sudo debugfs -w /dev/sdb1
+
+# debugfs のプロンプトで使えるコマンド
+debugfs> ls          # ルートディレクトリの一覧
+debugfs> stat /etc/passwd  # ファイルの inode 情報
+debugfs> cat /etc/passwd   # ファイル内容を表示
+debugfs> dump /etc/passwd /tmp/passwd_recovered  # ファイルを取り出す
+debugfs> lsdel       # 削除済みファイルの一覧
+debugfs> undel <inode番号> /tmp/recovered  # ファイルの復元
+debugfs> quit        # 終了
+
+# 削除されたファイルを復元する例
+$ sudo debugfs /dev/sdb1
+debugfs> lsdel
+debugfs> undel 12345 /tmp/recovered_file`
+      },
+      resize2fs: {
+        color: '#f6ad55',
+        text:
+`# resize2fs：ext2/3/4 のファイルシステムサイズを変更
+
+# ファイルシステムを最大サイズに拡張
+$ sudo resize2fs /dev/sdb1
+
+# 特定サイズに拡張（例：10GB）
+$ sudo resize2fs /dev/sdb1 10G
+
+# 縮小（事前に e2fsck が必要）
+$ sudo e2fsck -f /dev/sdb1
+$ sudo resize2fs /dev/sdb1 5G
+
+# LVM 拡張後のファイルシステム拡張手順
+$ sudo lvextend -L +5G /dev/vg0/lv0
+$ sudo resize2fs /dev/vg0/lv0
+
+⚠️  縮小する場合は必ず事前に e2fsck -f を実行すること
+⚠️  縮小後のサイズは現在使用量より大きくする必要がある`
+      },
+      e2label: {
+        color: '#fbd38d',
+        text:
+`# e2label：ext2/3/4 のラベルを表示・変更
+
+# ラベルを表示
+$ sudo e2label /dev/sdb1
+mydata
+
+# ラベルを設定・変更
+$ sudo e2label /dev/sdb1 "newlabel"
+
+# ラベルを削除
+$ sudo e2label /dev/sdb1 ""
+
+# tune2fs でも同じ操作が可能
+$ sudo tune2fs -L "newlabel" /dev/sdb1
+
+# ラベルでマウント
+$ sudo mount -L "mydata" /mnt/data
+
+# /etc/fstab でラベル指定
+LABEL=mydata  /data  ext4  defaults  0 2`
+      }
+    };
+
+    function showExtCmd() {
+      const key = document.getElementById('ext-cmd-sel').value;
+      const el  = document.getElementById('ext-cmd-output');
+      if (!key) { el.style.display='none'; return; }
+      const d = extCmds[key];
+      el.style.display = 'block';
+      el.style.color   = d.color;
+      el.textContent   = d.text;
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 4：S.M.A.R.T. -->
+<!-- ============================================================ -->
+<h2 id="smart">④ S.M.A.R.T.（ディスク健全性監視）</h2>
+
+<div class="note">
+  <strong>重要ポイント③：S.M.A.R.T.（Self-Monitoring, Analysis and Reporting Technology）はHDD/SSDが自己診断する機能。smartctl コマンドで確認する</strong><br>
+  ディスク障害を事前に検知して、データ損失を防ぐために使用します。
+</div>
+
+<div class="demo-box">
+  <h3>主要な S.M.A.R.T. 属性（クリックで詳細）</h3>
+  <div class="smart-grid">
+
+    <div class="smart-card" onclick="showSmart('reallocated')">
+      <div class="smart-id">ID: 05</div>
+      <div class="smart-name">Reallocated Sectors Count</div>
+      <div class="smart-bar-bg">
+        <div class="smart-bar-fill" style="width:15%; background:#fc8181;"></div>
+      </div>
+      <div class="smart-val">値: 15（要注意）</div>
+    </div>
+
+    <div class="smart-card" onclick="showSmart('spin')">
+      <div class="smart-id">ID: 07</div>
+      <div class="smart-name">Seek Error Rate</div>
+      <div class="smart-bar-bg">
+        <div class="smart-bar-fill" style="width:95%; background:#68d391;"></div>
+      </div>
+      <div class="smart-val">値: 95（正常）</div>
+    </div>
+
+    <div class="smart-card" onclick="showSmart('poweronhours')">
+      <div class="smart-id">ID: 09</div>
+      <div class="smart-name">Power-On Hours Count</div>
+      <div class="smart-bar-bg">
+        <div class="smart-bar-fill" style="width:60%; background:#f6ad55;"></div>
+      </div>
+      <div class="smart-val">値: 17520時間</div>
+    </div>
+
+    <div class="smart-card" onclick="showSmart('uncorrectable')">
+      <div class="smart-id">ID: C6</div>
+      <div class="smart-name">Uncorrectable Sector Count</div>
+      <div class="smart-bar-bg">
+        <div class="smart-bar-fill" style="width:5%; background:#fc8181;"></div>
+      </div>
+      <div class="smart-val">値: 5（危険）</div>
+    </div>
+
+    <div class="smart-card" onclick="showSmart('temperature')">
+      <div class="smart-id">ID: C2</div>
+      <div class="smart-name">Temperature</div>
+      <div class="smart-bar-bg">
+        <div class="smart-bar-fill" style="width:45%; background:#68d391;"></div>
+      </div>
+      <div class="smart-val">値: 35°C（正常）</div>
+    </div>
+
+    <div class="smart-card" onclick="showSmart('pending')">
+      <div class="smart-id">ID: C5</div>
+      <div class="smart-name">Current Pending Sector</div>
+      <div class="smart-bar-bg">
+        <div class="smart-bar-fill" style="width:0%; background:#68d391;"></div>
+      </div>
+      <div class="smart-val">値: 0（正常）</div>
+    </div>
+
+  </div>
+
+  <!-- SMART 詳細 -->
+  <div id="smart-detail" style="display:none; margin-top:12px; background:#fff; border:1px solid #fbd38d; border-left:5px solid #b7791f; border-radius:0 8px 8px 0; padding:14px 18px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const smartData = {
+      reallocated: {
+        title: 'ID 05：Reallocated Sectors Count（代替セクタ数）',
+        color: '#fc8181',
+        body: `不良セクタが検出されて、予備領域に代替された回数です。<br><br>
+          ・<strong>0</strong>：正常<br>
+          ・<strong>1以上</strong>：不良セクタが発生している（増加傾向は危険）<br>
+          ・<strong>急増</strong>：ディスク交換を強く推奨<br><br>
+          この値が増加し続ける場合は、ディスクが物理的に劣化しています。<br>
+          早急にデータのバックアップとディスク交換を行ってください。`
+      },
+      spin: {
+        title: 'ID 07：Seek Error Rate（シークエラー率）',
+        color: '#68d391',
+        body: `ヘッドのシーク（位置決め）操作中に発生したエラーの割合です。<br><br>
+          ・高い値（100に近い）：正常<br>
+          ・低い値：ヘッドの機械的な問題の可能性<br><br>
+          メーカーによって値の解釈が異なります（Seagate は特殊な計算方式）。`
+      },
+      poweronhours: {
+        title: 'ID 09：Power-On Hours Count（電源投入時間）',
+        color: '#f6ad55',
+        body: `ディスクが電源オンになっていた累積時間（時間単位）です。<br><br>
+          ・一般的な HDD の寿命：30,000〜50,000 時間（約3〜6年）<br>
+          ・SSD の寿命：TBW（書き込み総量）で管理<br><br>
+          この値だけで寿命を判断するのは難しいですが、<br>
+          他の属性と組み合わせて総合的に判断します。`
+      },
+      uncorrectable: {
+        title: 'ID C6（198）：Uncorrectable Sector Count（修正不能セクタ数）',
+        color: '#fc8181',
+        body: `ECC（誤り訂正符号）でも修正できなかったエラーの数です。<br><br>
+          ・<strong>0</strong>：正常<br>
+          ・<strong>1以上</strong>：非常に危険（即座にバックアップとディスク交換を推奨）<br><br>
+          この値が 0 以外の場合、データの読み取りに失敗している箇所があります。<br>
+          最も重要な S.M.A.R.T. 属性の一つです。`
+      },
+      temperature: {
+        title: 'ID C2（194）：Temperature（温度）',
+        color: '#68d391',
+        body: `ディスクの現在の温度（摂氏）です。<br><br>
+          ・<strong>HDD</strong>：20〜50°C が正常範囲（50°C 以上は危険）<br>
+          ・<strong>SSD</strong>：0〜70°C が動作保証範囲<br><br>
+          高温はディスクの寿命を縮めます。<br>
+          サーバーの冷却が適切かどうかの確認にも使用します。`
+      },
+      pending: {
+        title: 'ID C5（197）：Current Pending Sector（保留中セクタ数）',
+        color: '#68d391',
+        body: `読み取りエラーが発生し、代替処理を待っているセクタの数です。<br><br>
+          ・<strong>0</strong>：正常<br>
+          ・<strong>1以上</strong>：不安定なセクタが存在（要注意）<br><br>
+          次回の書き込み時に代替処理が行われます。<br>
+          Reallocated Sectors Count と合わせて確認することが重要です。`
+      }
+    };
+
+    function showSmart(key) {
+      const d = smartData[key];
+      const el = document.getElementById('smart-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display='none'; el.dataset.current=''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-size:0.95em;">${d.title}</strong><br><br>${d.body}`;
+      el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+  </script>
+
+  <h3>smartctl コマンドの使い方</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># smartmontools のインストール</span>
+$ <span class="cmd">sudo apt install</span> smartmontools
+
+<span class="comment"># S.M.A.R.T. の対応確認</span>
+$ <span class="cmd">sudo smartctl</span> <span class="opt">-i</span> /dev/sda
+<span class="out">Device Model:     SAMSUNG MZNLN256HAJQ-000H1</span>
+<span class="out">Serial Number:    S3EVNX0K123456</span>
+<span class="out">Firmware Version: MAV21H3Q</span>
+<span class="out">SMART support is: Available - device has SMART capability.</span>
+<span class="out">SMART support is: Enabled</span>
+
+<span class="comment"># S.M.A.R.T. の有効化</span>
+$ <span class="cmd">sudo smartctl</span> <span class="opt">-s</span> <span class="val">on</span> /dev/sda
+
+<span class="comment"># S.M.A.R.T. 属性の一覧表示</span>
+$ <span class="cmd">sudo smartctl</span> <span class="opt">-a</span> /dev/sda
+<span class="hdr">SMART Attributes Data Structure revision number: 1</span>
+<span class="hdr">Vendor Specific SMART Attributes with Thresholds:</span>
+<span class="hdr">ID# ATTRIBUTE_NAME          FLAG  VALUE WORST THRESH TYPE      UPDATED  WHEN_FAILED RAW_VALUE</span>
+<span class="out">  5 Reallocated_Sector_Ct   0x0033   100   100   010  Pre-fail  Always       -       0</span>
+<span class="hl">  9 Power_On_Hours          0x0032   097   097   000  Old_age   Always       -       17520</span>
+<span class="out"> 12 Power_Cycle_Count       0x0032   099   099   000  Old_age   Always       -       123</span>
+<span class="out">194 Temperature_Celsius     0x0022   065   049   000  Old_age   Always       -       35</span>
+<span class="out">197 Current_Pending_Sector  0x0012   100   100   000  Old_age   Always       -       0</span>
+<span class="out">198 Offline_Uncorrectable   0x0010   100   100   000  Old_age   Offline      -       0</span>
+
+<span class="comment"># ヘルスチェックのみ表示</span>
+$ <span class="cmd">sudo smartctl</span> <span class="opt">-H</span> /dev/sda
+<span class="out">SMART overall-health self-assessment test result: PASSED</span>
+
+<span class="comment"># セルフテストの実行</span>
+$ <span class="cmd">sudo smartctl</span> <span class="opt">-t</span> <span class="val">short</span> /dev/sda    <span class="comment"># 短時間テスト（約2分）</span>
+$ <span class="cmd">sudo smartctl</span> <span class="opt">-t</span> <span class="val">long</span> /dev/sda     <span class="comment"># 長時間テスト（数時間）</span>
+$ <span class="cmd">sudo smartctl</span> <span class="opt">-t</span> <span class="val">conveyance</span> /dev/sda  <span class="comment"># 輸送テスト</span>
+
+<span class="comment"># テスト結果の確認</span>
+$ <span class="cmd">sudo smartctl</span> <span class="opt">-l</span> <span class="val">selftest</span> /dev/sda
+
+<span class="comment"># smartd デーモンによる自動監視</span>
+$ <span class="cmd">sudo systemctl</span> enable --now smartd
+<span class="comment"># 設定ファイル：/etc/smartd.conf</span>
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 5：XFS ファイルシステムの管理 -->
+<!-- ============================================================ -->
+<h2 id="xfs-manage">⑤ XFS ファイルシステムの管理</h2>
+
+<div class="demo-box">
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># XFS のチェックと修復（アンマウント状態で実行）</span>
+$ <span class="cmd">sudo xfs_repair</span> /dev/sdb1
+<span class="out">Phase 1 - find and verify superblock...</span>
+<span class="out">Phase 2 - using internal log</span>
+<span class="out">Phase 3 - for each AG...</span>
+<span class="out">Phase 4 - check for duplicate blocks...</span>
+<span class="out">Phase 5 - rebuild AG headers and trees...</span>
+<span class="out">Phase 6 - check inode connectivity...</span>
+<span class="out">Phase 7 - verify and correct link counts...</span>
+<span class="out">done</span>
+
+<span class="comment"># ドライラン（実際には修復しない）</span>
+$ <span class="cmd">sudo xfs_repair</span> <span class="opt">-n</span> /dev/sdb1
+
+<span class="comment"># ログをクリアして修復（ログが壊れている場合）</span>
+$ <span class="cmd">sudo xfs_repair</span> <span class="opt">-L</span> /dev/sdb1   <span class="comment"># ⚠️ データ損失の可能性あり</span>
+
+<span class="comment"># XFS の情報表示</span>
+$ <span class="cmd">xfs_info</span> /dev/sdb1
+$ <span class="cmd">xfs_info</span> /mnt/xfsdata       <span class="comment"># マウントポイントでも可</span>
+
+<span class="comment"># XFS のラベル・UUID 操作</span>
+$ <span class="cmd">sudo xfs_admin</span> <span class="opt">-l</span> /dev/sdb1          <span class="comment"># ラベル表示</span>
+$ <span class="cmd">sudo xfs_admin</span> <span class="opt">-L</span> <span class="val">"xfsdata"</span> /dev/sdb1 <span class="comment"># ラベル設定</span>
+$ <span class="cmd">sudo xfs_admin</span> <span class="opt">-u</span> /dev/sdb1          <span class="comment"># UUID 表示</span>
+$ <span class="cmd">sudo xfs_admin</span> <span class="opt">-U</span> <span class="val">generate</span> /dev/sdb1  <span class="comment"># UUID 再生成</span>
+
+<span class="comment"># XFS のオンライン拡張（マウント中でも可能）</span>
+$ <span class="cmd">sudo xfs_growfs</span> /mnt/xfsdata
+$ <span class="cmd">sudo xfs_growfs</span> <span class="opt">-D</span> <span class="val">2097152</span> /mnt/xfsdata  <span class="comment"># サイズを指定（ブロック数）</span>
+
+<span class="comment"># XFS のバックアップとリストア</span>
+$ <span class="cmd">sudo xfsdump</span> <span class="opt">-l</span> <span class="val">0</span> <span class="opt">-f</span> /backup/xfs.dump /mnt/xfsdata  <span class="comment"># フルバックアップ</span>
+$ <span class="cmd">sudo xfsrestore</span> <span class="opt">-f</span> /backup/xfs.dump /mnt/restore    <span class="comment"># リストア</span>
+
+<span class="comment"># XFS のデフラグ（マウント中に実行可能）</span>
+$ <span class="cmd">sudo xfs_fsr</span> /mnt/xfsdata
+
+<span class="comment"># XFS のクォータ管理</span>
+$ <span class="cmd">sudo mount</span> <span class="opt">-o</span> <span class="val">uquota</span> /dev/sdb1 /mnt/xfsdata  <span class="comment"># ユーザークォータ有効</span>
+$ <span class="cmd">xfs_quota</span> <span class="opt">-x</span> <span class="opt">-c</span> <span class="val">'report -u'</span> /mnt/xfsdata
+</pre>
+  </div>
+
+  <h3>XFS 管理コマンド一覧</h3>
+  <table class="ref-table">
+    <thead><tr><th>コマンド</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td><code>xfs_repair</code></td><td>XFS ファイルシステムの検査・修復（アンマウント必須）</td></tr>
+      <tr><td><code>xfs_info</code></td><td>XFS ファイルシステムの詳細情報を表示</td></tr>
+      <tr><td><code>xfs_admin</code></td><td>ラベル・UUID の表示・変更</td></tr>
+      <tr><td><code>xfs_growfs</code></td><td>XFS ファイルシステムをオンラインで拡張</td></tr>
+      <tr><td><code>xfsdump</code></td><td>XFS ファイルシステムのバックアップ</td></tr>
+      <tr><td><code>xfsrestore</code></td><td>xfsdump バックアップからのリストア</td></tr>
+      <tr><td><code>xfs_fsr</code></td><td>XFS ファイルシステムのデフラグ</td></tr>
+      <tr><td><code>xfs_quota</code></td><td>XFS クォータの管理</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 6：Btrfs ファイルシステムの管理 -->
+<!-- ============================================================ -->
+<h2 id="btrfs-manage">⑥ Btrfs ファイルシステムの管理</h2>
+
+<div class="demo-box">
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># Btrfs のチェックと修復</span>
+$ <span class="cmd">sudo btrfs</span> check /dev/sdb1                  <span class="comment"># 読み取り専用チェック</span>
+$ <span class="cmd">sudo btrfs</span> check <span class="opt">--repair</span> /dev/sdb1         <span class="comment"># 修復（⚠️ アンマウント必須）</span>
+
+<span class="comment"># Btrfs の情報表示</span>
+$ <span class="cmd">sudo btrfs</span> filesystem show /dev/sdb1
+$ <span class="cmd">sudo btrfs</span> filesystem df /mnt/btrfs          <span class="comment"># 使用量表示</span>
+$ <span class="cmd">sudo btrfs</span> filesystem usage /mnt/btrfs       <span class="comment"># 詳細使用量</span>
+
+<span class="comment"># サブボリュームの管理</span>
+$ <span class="cmd">sudo btrfs</span> subvolume create /mnt/btrfs/data  <span class="comment"># 作成</span>
+$ <span class="cmd">sudo btrfs</span> subvolume list /mnt/btrfs          <span class="comment"># 一覧</span>
+$ <span class="cmd">sudo btrfs</span> subvolume delete /mnt/btrfs/data  <span class="comment"># 削除</span>
+
+<span class="comment"># スナップショットの作成</span>
+$ <span class="cmd">sudo btrfs</span> subvolume snapshot \
+    /mnt/btrfs/data \
+    /mnt/btrfs/snapshots/data_$(date +%Y%m%d)
+<span class="comment"># 読み取り専用スナップショット</span>
+$ <span class="cmd">sudo btrfs</span> subvolume snapshot <span class="opt">-r</span> \
+    /mnt/btrfs/data \
+    /mnt/btrfs/snapshots/data_ro
+
+<span class="comment"># Btrfs のスクラブ（データ整合性チェック）</span>
+$ <span class="cmd">sudo btrfs</span> scrub start /mnt/btrfs            <span class="comment"># スクラブ開始</span>
+$ <span class="cmd">sudo btrfs</span> scrub status /mnt/btrfs           <span class="comment"># 状態確認</span>
+$ <span class="cmd">sudo btrfs</span> scrub cancel /mnt/btrfs           <span class="comment"># キャンセル</span>
+
+<span class="comment"># Btrfs のバランス（データ再配置）</span>
+$ <span class="cmd">sudo btrfs</span> balance start /mnt/btrfs
+$ <span class="cmd">sudo btrfs</span> balance status /mnt/btrfs
+
+<span class="comment"># Btrfs の拡張（デバイス追加）</span>
+$ <span class="cmd">sudo btrfs</span> device add /dev/sdc1 /mnt/btrfs
+$ <span class="cmd">sudo btrfs</span> filesystem resize max /mnt/btrfs
+
+<span class="comment"># Btrfs の圧縮を有効にしてマウント</span>
+$ <span class="cmd">sudo mount</span> <span class="opt">-o</span> <span class="val">compress=zstd</span> /dev/sdb1 /mnt/btrfs
+</pre>
+  </div>
+
+  <h3>Btrfs 管理コマンド一覧</h3>
+  <table class="ref-table">
+    <thead><tr><th>コマンド</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td><code>btrfs check</code></td><td>ファイルシステムの整合性チェック</td></tr>
+      <tr><td><code>btrfs filesystem show</code></td><td>ファイルシステムの情報表示</td></tr>
+      <tr><td><code>btrfs subvolume create</code></td><td>サブボリュームの作成</td></tr>
+      <tr><td><code>btrfs subvolume snapshot</code></td><td>スナップショットの作成</td></tr>
+      <tr><td><code>btrfs subvolume list</code></td><td>サブボリューム一覧</td></tr>
+      <tr><td><code>btrfs scrub start</code></td><td>データ整合性チェック（スクラブ）の開始</td></tr>
+      <tr><td><code>btrfs balance start</code></td><td>データの再配置（バランス）</td></tr>
+      <tr><td><code>btrfs device add</code></td><td>デバイスの追加</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 7：オートマウント（autofs） -->
+<!-- ============================================================ -->
+<h2 id="autofs">⑦ オートマウント（autofs）</h2>
+
+<div class="note">
+  <strong>重要ポイント④：autofs はファイルシステムへのアクセスが発生したときに自動的にマウントし、一定時間アクセスがなければ自動的にアンマウントするデーモン</strong><br>
+  NFS・CD/DVD・USB などを必要なときだけマウントするために使用します。
+</div>
+
+<div class="demo-box">
+  <h3>autofs の動作フロー</h3>
+  <div class="automount-flow">
+    <div class="am-box" style="background:#1a202c; color:#e2e8f0; border:2px solid #4a5568;">
+      👤 ユーザーが<br>/mnt/nfs/data<br>にアクセス
+    </div>
+    <div class="am-arrow">→</div>
+    <div class="am-box" style="background:#553c9a; color:#fff; border:2px solid #9f7aea;">
+      autofs デーモン<br>がアクセスを検知
+    </div>
+    <div class="am-arrow">→</div>
+    <div class="am-box" style="background:#744210; color:#fff; border:2px solid #b7791f;">
+      マップファイルを<br>参照してマウント<br>先を決定
+    </div>
+    <div class="am-arrow">→</div>
+    <div class="am-box" style="background:#1a4731; color:#fff; border:2px solid #2f855a;">
+      自動マウント<br>実行
+    </div>
+    <div class="am-arrow">→</div>
+    <div class="am-box" style="background:#2b4c7e; color:#fff; border:2px solid #567ebb;">
+      タイムアウト後<br>自動アンマウント<br>（デフォルト5分）
+    </div>
+  </div>
+
+  <h3>autofs の設定ファイル構成</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># autofs の設定ファイル構成</span>
+/etc/auto.master        <span class="comment"># マスターマップ（メイン設定）</span>
+/etc/auto.master.d/     <span class="comment"># マスターマップの追加設定ディレクトリ</span>
+/etc/auto.misc          <span class="comment"># 直接マップファイルの例（misc）</span>
+/etc/auto.net           <span class="comment"># NFS 自動検出マップ</span>
+
+<span class="comment"># autofs のインストール</span>
+$ <span class="cmd">sudo apt install</span> autofs
+
+<span class="comment"># autofs の起動</span>
+$ <span class="cmd">sudo systemctl</span> enable --now autofs
+</pre>
+  </div>
+
+  <h3>/etc/auto.master（マスターマップ）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># /etc/auto.master の書式</span>
+<span class="comment"># マウントポイント  マップファイル  [オプション]</span>
+
+<span class="comment"># /etc/auto.master の例</span>
+<span class="hdr">/misc   /etc/auto.misc</span>                    <span class="comment"># misc マップを /misc に適用</span>
+<span class="hdr">/mnt    /etc/auto.mnt   --timeout=60</span>      <span class="comment"># タイムアウト60秒</span>
+<span class="hdr">/net    -hosts</span>                             <span class="comment"># NFS ホスト自動検出</span>
+<span class="hdr">/home   auto.home</span>                          <span class="comment"># ホームディレクトリ自動マウント</span>
+
+<span class="comment"># オプション</span>
+<span class="comment"># --timeout=N  : N秒後に自動アンマウント（デフォルト300秒）</span>
+<span class="comment"># --ghost      : マウントポイントのディレクトリを常に表示</span>
+<span class="comment"># --browse     : ブラウズ可能なマップ</span>
+</pre>
+  </div>
+
+  <h3>マップファイルの種類と書式</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment">## 直接マップ（/etc/auto.misc の例）</span>
+<span class="comment"># 書式：キー  [オプション]  場所</span>
+
+<span class="comment"># CD/DVD の自動マウント</span>
+<span class="hdr">cdrom   -fstype=iso9660,ro,nosuid,nodev  :/dev/sr0</span>
+
+<span class="comment"># USB メモリの自動マウント</span>
+<span class="hdr">usb     -fstype=auto,rw,sync,nosuid      :/dev/sdb1</span>
+
+<span class="comment"># NFS の自動マウント</span>
+<span class="hdr">nfsdata -fstype=nfs,rw                   fileserver:/exports/data</span>
+
+<span class="comment"># アクセス方法</span>
+<span class="comment"># /misc/cdrom  → /dev/sr0 が iso9660 でマウントされる</span>
+<span class="comment"># /misc/usb    → /dev/sdb1 が自動検出でマウントされる</span>
+<span class="comment"># /misc/nfsdata → fileserver:/exports/data が NFS でマウントされる</span>
+</pre>
+  </div>
+
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment">## 間接マップ（/etc/auto.mnt の例）</span>
+<span class="comment"># auto.master に「/mnt  /etc/auto.mnt」と記述した場合</span>
+<span class="comment"># /mnt/以下のディレクトリが自動マウントポイントになる</span>
+
+<span class="comment"># NFS サーバーのマウント</span>
+<span class="hdr">data    -rw,soft  192.168.1.10:/exports/data</span>
+<span class="hdr">backup  -ro       192.168.1.10:/exports/backup</span>
+<span class="hdr">home    -rw       192.168.1.10:/home</span>
+
+<span class="comment"># アクセス方法</span>
+<span class="comment"># /mnt/data   → 192.168.1.10:/exports/data が NFS でマウント</span>
+<span class="comment"># /mnt/backup → 192.168.1.10:/exports/backup が ro でマウント</span>
+<span class="comment"># /mnt/home   → 192.168.1.10:/home が rw でマウント</span>
+</pre>
+  </div>
+
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment">## ワイルドカードマップ（ユーザーホームディレクトリの例）</span>
+<span class="comment"># /etc/auto.home の内容</span>
+<span class="hdr">*   -rw,soft  192.168.1.10:/home/&</span>
+<span class="comment"># &amp; はキー（*）の値に置換される</span>
+
+<span class="comment"># auto.master に「/home  /etc/auto.home」と記述した場合</span>
+<span class="comment"># /home/teru にアクセス → 192.168.1.10:/home/teru がマウントされる</span>
+<span class="comment"># /home/alice にアクセス → 192.168.1.10:/home/alice がマウントされる</span>
+
+<span class="comment">## 設定変更の反映</span>
+$ <span class="cmd">sudo systemctl</span> reload autofs
+$ <span class="cmd">sudo automount</span> <span class="opt">-f</span>   <span class="comment"># フォアグラウンドで起動（デバッグ用）</span>
+
+<span class="comment">## 動作確認</span>
+$ <span class="cmd">ls</span> /misc/cdrom      <span class="comment"># アクセスするとマウントされる</span>
+$ <span class="cmd">mount</span> | <span class="cmd">grep</span> autofs <span class="comment"># マウント状態を確認</span>
+</pre>
+  </div>
+
+  <h3>オートマウントの設定例（NFS ホームディレクトリ）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># NFS サーバーのホームディレクトリを自動マウントする設定例</span>
+
+<span class="comment">## ステップ1：/etc/auto.master に追記</span>
+$ <span class="cmd">sudo vi</span> /etc/auto.master
+<span class="out">/home   /etc/auto.home  --timeout=300</span>
+
+<span class="comment">## ステップ2：/etc/auto.home を作成</span>
+$ <span class="cmd">sudo vi</span> /etc/auto.home
+<span class="out">*   -rw,soft,intr  nfsserver:/home/&</span>
+
+<span class="comment">## ステップ3：autofs を再起動</span>
+$ <span class="cmd">sudo systemctl</span> restart autofs
+
+<span class="comment">## ステップ4：動作確認</span>
+<span class="comment"># ユーザー teru のホームにアクセス</span>
+$ <span class="cmd">ls</span> /home/teru
+<span class="comment"># → nfsserver:/home/teru が自動的にマウントされる</span>
+
+$ <span class="cmd">mount</span> | <span class="cmd">grep</span> <span class="val">home</span>
+<span class="out">nfsserver:/home/teru on /home/teru type nfs (rw,soft,intr,...)</span>
+
+<span class="comment"># 5分間アクセスがないと自動的にアンマウントされる</span>
+</pre>
+  </div>
+
+  <div class="good">
+    ✅ <strong>autofs の利点</strong><br>
+    ・<strong>必要なときだけマウント</strong>：常時マウントより効率的（特に NFS）<br>
+    ・<strong>自動アンマウント</strong>：使用後は自動的に解放されリソースを節約<br>
+    ・<strong>NFS サーバーが停止中でも問題なし</strong>：アクセス時にのみ接続を試みる<br>
+    ・<strong>大規模環境に最適</strong>：多数のユーザーのホームディレクトリを効率的に管理
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- まとめ表 -->
+<!-- ============================================================ -->
+<h2>📌 まとめ一覧</h2>
+<div class="demo-box">
+  <table class="ref-table">
+    <thead><tr><th>カテゴリ</th><th>コマンド / ファイル</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td colspan="3" style="background:#fefcbf; color:#744210; font-weight:bold; font-size:0.88em;">▼ ファイルシステムのチェック</td></tr>
+      <tr><td>ext チェック</td><td><code>fsck /dev/sdb1</code> / <code>e2fsck /dev/sdb1</code></td><td>ext2/3/4 の検査・修復</td></tr>
+      <tr><td>自動修復</td><td><code>e2fsck -fy /dev/sdb1</code></td><td>強制チェック + 自動修復</td></tr>
+      <tr><td>SB バックアップ</td><td><code>e2fsck -b 32768 /dev/sdb1</code></td><td>バックアップスーパーブロックで修復</td></tr>
+      <tr><td>XFS チェック</td><td><code>xfs_repair /dev/sdb1</code></td><td>XFS の検査・修復</td></tr>
+      <tr><td>Btrfs チェック</td><td><code>btrfs check /dev/sdb1</code></td><td>Btrfs の整合性チェック</td></tr>
+      <tr><td colspan="3" style="background:#fefcbf; color:#744210; font-weight:bold; font-size:0.88em;">▼ ext2/3/4 管理</td></tr>
+      <tr><td>情報表示</td><td><code>tune2fs -l /dev/sdb1</code></td><td>スーパーブロック情報の表示</td></tr>
+      <tr><td>詳細情報</td><td><code>dumpe2fs /dev/sdb1</code></td><td>詳細なFS情報（バックアップSBの場所も）</td></tr>
+      <tr><td>ラベル変更</td><td><code>tune2fs -L "ラベル" /dev/sdb1</code></td><td>ラベルの設定・変更</td></tr>
+      <tr><td>サイズ変更</td><td><code>resize2fs /dev/sdb1</code></td><td>ext2/3/4 のサイズ変更</td></tr>
+      <tr><td colspan="3" style="background:#fefcbf; color:#744210; font-weight:bold; font-size:0.88em;">▼ S.M.A.R.T.</td></tr>
+      <tr><td>属性表示</td><td><code>smartctl -a /dev/sda</code></td><td>全 S.M.A.R.T. 属性を表示</td></tr>
+      <tr><td>ヘルスチェック</td><td><code>smartctl -H /dev/sda</code></td><td>ヘルスチェック結果のみ表示</td></tr>
+      <tr><td>セルフテスト</td><td><code>smartctl -t short /dev/sda</code></td><td>短時間セルフテストを実行</td></tr>
+      <tr><td colspan="3" style="background:#fefcbf; color:#744210; font-weight:bold; font-size:0.88em;">▼ オートマウント</td></tr>
+      <tr><td>マスターマップ</td><td><code>/etc/auto.master</code></td><td>マウントポイントとマップファイルの対応</td></tr>
+      <tr><td>マップファイル</td><td><code>/etc/auto.misc</code> など</td><td>実際のマウント設定（キー・オプション・場所）</td></tr>
+      <tr><td>設定反映</td><td><code>systemctl reload autofs</code></td><td>設定変更の反映</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 穴埋め問題</h3>
+    <p>以下の説明に合うコマンド・ファイルを入力してください。</p>
+    <label>① ext4 ファイルシステムを強制チェック・自動修復するコマンド（/dev/sdb1 に対して）：</label>
+    <input type="text" id="q1a" placeholder="コマンド -オプション /dev/sdb1">
+    <label>② ext2/3/4 のスーパーブロック情報を表示するコマンド（/dev/sdb1 に対して）：</label>
+    <input type="text" id="q1b" placeholder="コマンド -l /dev/sdb1">
+    <label>③ ディスクの S.M.A.R.T. 属性をすべて表示するコマンド（/dev/sda に対して）：</label>
+    <input type="text" id="q1c" placeholder="コマンド -オプション /dev/sda">
+    <label>④ autofs のマスターマップファイルのパス：</label>
+    <input type="text" id="q1d" placeholder="/etc/...">
+    <label>⑤ XFS ファイルシステムの検査・修復コマンド（/dev/sdb1 に対して）：</label>
+    <input type="text" id="q1e" placeholder="コマンド /dev/sdb1">
+    <br>
+    <button class="btn btn-amber" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const a = document.getElementById('q1a').value.trim().toLowerCase().replace(/\s+/g,'');
+        const b = document.getElementById('q1b').value.trim().toLowerCase().replace(/\s+/g,'');
+        const c = document.getElementById('q1c').value.trim().toLowerCase().replace(/\s+/g,'');
+        const d = document.getElementById('q1d').value.trim().toLowerCase().replace(/\s/g,'');
+        const e = document.getElementById('q1e').value.trim().toLowerCase().replace(/\s+/g,'');
+        const r = document.getElementById('q1-result');
+        const ca = a === 'e2fsck-fy/dev/sdb1' || a === 'e2fsck-yf/dev/sdb1' ||
+                   a === 'fsck-fy/dev/sdb1';
+        const cb = b === 'tune2fs-l/dev/sdb1';
+        const cc = c === 'smartctl-a/dev/sda';
+        const cd = d === '/etc/auto.master';
+        const ce = e === 'xfs_repair/dev/sdb1';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ e2fsck -fy /dev/sdb1'}　` +
+            `② ${cb?'✅':'❌ tune2fs -l /dev/sdb1'}　` +
+            `③ ${cc?'✅':'❌ smartctl -a /dev/sda'}　` +
+            `④ ${cd?'✅':'❌ /etc/auto.master'}　` +
+            `⑤ ${ce?'✅':'❌ xfs_repair /dev/sdb1'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 選択問題</h3>
+    <p>
+      ext2/3/4 のスーパーブロックが破損した場合の回復方法として正しいものはどれですか？
+    </p>
+    <select id="q2">
+      <option value="">-- 選択してください --</option>
+      <option value="a">mkfs.ext4 でファイルシステムを再作成する</option>
+      <option value="b">e2fsck -b でバックアップスーパーブロックを指定して修復する</option>
+      <option value="c">tune2fs -l でスーパーブロックを修復する</option>
+      <option value="d">xfs_repair でスーパーブロックを修復する</option>
+    </select>
+    <br>
+    <button class="btn btn-amber" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const v = document.getElementById('q2').value;
+        const r = document.getElementById('q2-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>バックアップスーパーブロックを使った修復手順：</strong><br>' +
+            '① バックアップの場所を確認：<code>sudo dumpe2fs /dev/sdb1 | grep superblock</code><br>' +
+            '② バックアップを指定して修復：<code>sudo e2fsck -b 32768 /dev/sdb1</code><br><br>' +
+            'ext2/3/4 ではスーパーブロックのバックアップが各ブロックグループに存在するため、<br>' +
+            '主スーパーブロックが破損しても回復できます。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            'スーパーブロックが破損した場合は <code>e2fsck -b バックアップ位置</code> で<br>' +
+            'バックアップスーパーブロックを使って修復します。<br>' +
+            'バックアップの場所は <code>dumpe2fs /dev/sdb1 | grep superblock</code> で確認できます。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① fsck はマウント中のファイルシステムに対して実行してはいけない
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② S.M.A.R.T. の Reallocated Sectors Count が増加傾向にある場合、ディスク交換を検討すべきである
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ autofs はファイルシステムへのアクセスが発生したときに自動的にマウントする
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ /etc/auto.master のワイルドカードマップで「&」はキーの値に置換される
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ xfs_repair はマウント中の XFS ファイルシステムに対して実行できる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ Btrfs の scrub はデータの整合性チェックを行う機能である
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ ext2/3/4 のスーパーブロックは各ブロックグループにバックアップが存在する
+    </label>
+    <br>
+    <button class="btn btn-amber" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：①②③④⑥⑦（a,b,c,d,f,g）
+        // ⑤ xfs_repair はアンマウント状態で実行する必要がある
+        const correct = { a:true, b:true, c:true, d:true, e:false, f:true, g:true };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>①②③④⑥⑦<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・⑤ <code>xfs_repair</code> は<strong>アンマウント状態</strong>で実行する必要があります。<br>' +
+            '&nbsp;&nbsp;マウント中の XFS に対して実行するとデータが破損する危険があります。<br>' +
+            '&nbsp;&nbsp;オンラインで拡張するのは <code>xfs_growfs</code> です。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. シナリオ問題</h3>
+    <p>
+      NFS サーバー（<code>fileserver</code>）の <code>/exports/data</code> を
+      クライアントの <code>/mnt/data</code> に autofs でオートマウントしたいと考えています。
+      <code>/etc/auto.master</code> と <code>/etc/auto.mnt</code> の設定として正しい組み合わせはどれですか？
+    </p>
+    <select id="q4">
+      <option value="">-- 選択してください --</option>
+      <option value="a">auto.master: /mnt/data fileserver:/exports/data<br>auto.mnt: data -rw fileserver:/exports/data</option>
+      <option value="b">auto.master: /mnt /etc/auto.mnt<br>auto.mnt: data -rw fileserver:/exports/data</option>
+      <option value="c">auto.master: /mnt /etc/auto.mnt<br>auto.mnt: /mnt/data -rw fileserver:/exports/data</option>
+      <option value="d">auto.master: /mnt/data -rw fileserver:/exports/data<br>auto.mnt: 不要</option>
+    </select>
+    <br>
+    <button class="btn btn-amber" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const v = document.getElementById('q4').value;
+        const r = document.getElementById('q4-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>/etc/auto.master：</strong><br>' +
+            '<code>/mnt   /etc/auto.mnt</code><br>' +
+            '→ /mnt 以下のアクセスを /etc/auto.mnt で管理する<br><br>' +
+            '<strong>/etc/auto.mnt：</strong><br>' +
+            '<code>data   -rw   fileserver:/exports/data</code><br>' +
+            '→ /mnt/data にアクセスすると fileserver:/exports/data が rw でマウントされる<br><br>' +
+            '<strong>ポイント：</strong><br>' +
+            '・auto.master のマウントポイントは親ディレクトリ（/mnt）を指定<br>' +
+            '・マップファイルのキー（data）が親ディレクトリの下のサブディレクトリになる<br>' +
+            '・結果として /mnt/data がマウントポイントになる';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br><br>' +
+            '<strong>正しい設定：</strong><br>' +
+            '/etc/auto.master：<code>/mnt   /etc/auto.mnt</code><br>' +
+            '/etc/auto.mnt：<code>data   -rw   fileserver:/exports/data</code><br><br>' +
+            'auto.master では<strong>親ディレクトリ</strong>（/mnt）とマップファイルを対応付けます。<br>' +
+            'マップファイルのキー（data）が /mnt の下のサブディレクトリ名になります。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-block">
+    <h3>Q5. 選択問題</h3>
+    <p>
+      ext2/3/4 ファイルシステムの inode に<strong>含まれない</strong>情報はどれですか？
+    </p>
+    <select id="q5">
+      <option value="">-- 選択してください --</option>
+      <option value="a">ファイルのパーミッション</option>
+      <option value="b">ファイル名</option>
+      <option value="c">ファイルサイズ</option>
+      <option value="d">データブロックへのポインタ</option>
+    </select>
+    <br>
+    <button class="btn btn-amber" onclick="checkQ5()">答え合わせ</button>
+    <div class="result-msg" id="q5-result"></div>
+    <script>
+      function checkQ5() {
+        const v = document.getElementById('q5').value;
+        const r = document.getElementById('q5-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>inode に含まれる情報：</strong><br>' +
+            '・ファイルタイプ・パーミッション<br>' +
+            '・所有者（UID）・グループ（GID）<br>' +
+            '・ファイルサイズ<br>' +
+            '・タイムスタンプ（atime/mtime/ctime）<br>' +
+            '・ハードリンク数<br>' +
+            '・データブロックへのポインタ<br><br>' +
+            '<strong>inode に含まれない情報：</strong><br>' +
+            '・<strong>ファイル名</strong>（ファイル名はディレクトリエントリに格納される）<br><br>' +
+            'ファイル名と inode 番号の対応はディレクトリのデータブロックに格納されます。<br>' +
+            'これがハードリンクが同じ inode を複数のファイル名で参照できる理由です。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            'inode に<strong>含まれない</strong>のは<strong>ファイル名</strong>です。<br>' +
+            'ファイル名はディレクトリのデータブロック（ディレクトリエントリ）に格納されます。<br>' +
+            'inode にはパーミッション・サイズ・タイムスタンプ・データブロックへのポインタなどが含まれます。';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 「ファイルシステムの保守」の学習が完了したら記録しましょう！</p>
+  <button class="btn btn-done" onclick="markComplete()">✅ このセクションを完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch4', '60');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  if (parseInt(localStorage.getItem('lpic201_ch4') || '0') >= 60) {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="02_fscheck.html">← ファイルシステムの作成</a>
+  <a class="home" href="../index.html">🏠 目次へ</a>
+  <a class="next" href="04_raid.html">次へ：RAID の管理 →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
