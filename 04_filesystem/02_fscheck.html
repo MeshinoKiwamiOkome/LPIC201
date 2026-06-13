@@ -1,0 +1,1631 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ファイルシステムの作成 ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em; color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #b7791f; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #744210, #b7791f);
+      border-radius: 12px; padding: 32px 32px 24px;
+      margin-bottom: 32px; color: #fff;
+      box-shadow: 0 4px 18px rgba(183,121,31,0.35);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em; font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85; letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .chapter-header h1 { margin: 0 0 10px; font-size: 1.6em; color: #fff; border: none; padding: 0; }
+    .chapter-header p  { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px; padding: 3px 12px;
+      font-size: 0.76em; font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 { color: #744210; margin-top: 48px; border-left: 5px solid #b7791f; padding-left: 12px; }
+    h3 { color: #276749; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7; padding: 2px 6px;
+      border-radius: 4px; font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c; color: #e2e8f0;
+      padding: 18px 20px; border-radius: 8px;
+      overflow-x: auto; font-size: 0.88em;
+      line-height: 1.7; font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+    pre .err     { color: #fc8181; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #4a5568; color: #e2e8f0;
+      border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 0.75em;
+      cursor: pointer; font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s; z-index: 1;
+    }
+    .copy-btn:hover { background: #b7791f; }
+
+    /* ボックス */
+    .note {
+      background: #fff; border: 1px dashed #fbd38d;
+      border-radius: 6px; padding: 14px 18px;
+      font-size: 0.93em; color: #4a5568; margin: 14px 0;
+    }
+    .note strong { color: #744210; }
+    .warn {
+      background: #fffaf0; border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #744210; margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4; border: 1px solid #68d391;
+      border-left: 5px solid #48bb78; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #276749; margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 20px 24px;
+      margin: 12px 0 28px; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 10px; padding: 18px 22px;
+      margin-bottom: 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 { margin: 0 0 12px; font-size: 0.92em; color: #744210; border: none; padding: 0; }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #b7791f; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #744210; font-weight: bold; }
+
+    /* mkfs コマンドカード */
+    .mkfs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px; margin: 14px 0;
+    }
+    .mkfs-card {
+      border-radius: 8px; padding: 14px 16px;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+      text-align: center;
+    }
+    .mkfs-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+    .mkfs-card .mkfs-cmd {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.95em; font-weight: bold; margin-bottom: 6px;
+    }
+    .mkfs-card .mkfs-alias {
+      font-size: 0.75em; font-weight: bold;
+      border-radius: 10px; padding: 2px 10px;
+      display: inline-block; margin-bottom: 6px;
+    }
+    .mkfs-card .mkfs-desc {
+      font-size: 0.82em; color: #4a5568; line-height: 1.6;
+    }
+
+    /* LUKS フロー */
+    .luks-flow {
+      display: flex; flex-direction: column; gap: 0; margin: 16px 0;
+    }
+    .luks-step {
+      display: flex; gap: 0; align-items: stretch;
+    }
+    .luks-num {
+      flex-shrink: 0; width: 44px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .luks-circle {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 0.9em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      flex-shrink: 0; z-index: 1; margin-top: 6px;
+    }
+    .luks-line {
+      width: 2px; flex: 1; margin: 0 auto; min-height: 16px;
+    }
+    .luks-step:last-child .luks-line { display: none; }
+    .luks-body {
+      flex: 1; border-radius: 8px;
+      padding: 12px 16px; margin-bottom: 8px;
+      border: 2px solid transparent;
+    }
+    .luks-body h4 { margin: 0 0 4px; font-size: 0.95em; }
+    .luks-body p  { margin: 0; font-size: 0.82em; opacity: 0.88; }
+
+    /* インタラクティブデモ */
+    .interactive-demo {
+      background: #fffaf0; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 16px 20px; margin: 14px 0;
+    }
+    .slider-row {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em; font-weight: bold;
+      min-width: 180px; color: #744210;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row select {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 6px 10px; font-size: 0.88em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #2d3748; background: #fff;
+      cursor: pointer; flex: 1;
+    }
+    .slider-row select:focus { border-color: #b7791f; outline: none; }
+    .slider-row input[type="range"] { flex: 1; min-width: 100px; accent-color: #b7791f; }
+    .val-display {
+      min-width: 60px; text-align: right;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85em; color: #2d3748;
+    }
+    .output-display {
+      background: #1a202c; color: #68d391;
+      border-radius: 6px; padding: 12px 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em; margin-top: 10px;
+      white-space: pre; overflow-x: auto; line-height: 1.7;
+    }
+
+    /* タブ */
+    .tab-wrap { margin: 14px 0; }
+    .tab-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: -1px; }
+    .tab-btn {
+      padding: 8px 18px; border: 1px solid #fbd38d;
+      border-bottom: none; border-radius: 6px 6px 0 0;
+      background: #edf2f7; color: #744210;
+      font-size: 0.85em; font-weight: bold;
+      font-family: 'Consolas', 'Monaco', monospace;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .tab-btn.active { background: #fff; border-bottom: 1px solid #fff; }
+    .tab-btn:hover:not(.active) { background: #fefcbf; }
+    .tab-content {
+      display: none; background: #fff;
+      border: 1px solid #fbd38d;
+      border-radius: 0 6px 6px 6px; padding: 18px 20px;
+    }
+    .tab-content.active { display: block; }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse; width: 100%;
+      background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0; font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #fbd38d; padding: 10px 14px; text-align: left;
+    }
+    table.ref-table thead tr { background: #744210; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #fffaf0; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0; border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0; padding: 24px 28px; margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 18px 22px; margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 8px 12px; font-size: 0.95em;
+      width: 100%; max-width: 440px; margin: 6px 0;
+      outline: none; font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus { border-color: #b7791f; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block; padding: 9px 20px;
+      border-radius: 6px; border: none; cursor: pointer;
+      font-size: 0.95em; font-weight: bold;
+      transition: opacity 0.2s; margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-amber { background: #b7791f; color: #fff; }
+    .btn-done  { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px; padding: 10px 14px;
+      border-radius: 6px; font-weight: bold; display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #fefcbf; color: #744210; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 48px;
+      padding-top: 20px; border-top: 2px solid #fbd38d;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block; padding: 10px 20px;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.9em; transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #b7791f; color: #fff; }
+    .page-nav .home { background: #fff; color: #b7791f; border: 2px solid #b7791f; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4; border: 2px solid #48bb78;
+      border-radius: 10px; padding: 20px 24px;
+      margin-top: 40px; text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 2px solid #fbd38d;
+      font-size: 0.82em; color: #a0aec0; text-align: center;
+    }
+    footer a { color: #b7791f; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .mkfs-grid { grid-template-columns: repeat(2, 1fr); }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+      .slider-row label { min-width: 130px; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  <a href="index.html">第4章：デバイスとファイルシステム</a> ›
+  ファイルシステムの作成
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 04 › SECTION 02</div>
+  <h1>🔨 ファイルシステムの作成</h1>
+  <p>ext2/3/4・XFS・Btrfs の作成コマンド、mkfs による統一的な作成方法、
+  CD/DVD イメージの作成、そして LUKS による暗号化ファイルシステムの構築を学びます。</p>
+  <div class="badge-row">
+    <span class="badge">mke2fs</span>
+    <span class="badge">mkfs.ext4</span>
+    <span class="badge">mkfs.xfs</span>
+    <span class="badge">mkfs.btrfs</span>
+    <span class="badge">mkisofs</span>
+    <span class="badge">cryptsetup</span>
+    <span class="badge">LUKS</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第4章のセクション</h2>
+  <ol>
+    <li><a href="index.html">ファイルシステムの操作</a></li>
+    <li class="current"><a href="02_fscheck.html">ファイルシステムの作成</a></li>
+    <li><a href="03_lvm.html">LVM の管理</a></li>
+    <li><a href="04_raid.html">RAID の管理</a></li>
+    <li><a href="05_storage.html">ストレージデバイスの管理</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：mkfs コマンドの概要 -->
+<!-- ============================================================ -->
+<h2 id="mkfs-overview">① mkfs コマンドの概要</h2>
+
+<div class="note">
+  <strong>重要ポイント①：mkfs は各ファイルシステム作成コマンドのフロントエンド。mkfs -t ext4 と mkfs.ext4 は同じ動作をする</strong><br>
+  実際には <code>mkfs.ext4</code>・<code>mkfs.xfs</code> などの専用コマンドを直接呼び出すことが多いです。
+</div>
+
+<div class="demo-box">
+  <h3>mkfs ファミリー一覧（クリックで詳細）</h3>
+  <div class="mkfs-grid">
+
+    <div class="mkfs-card" style="background:#ebf8ff; border:2px solid #90cdf4;"
+         onclick="showMkfs('ext4')">
+      <div class="mkfs-cmd" style="color:#2b4c7e;">mkfs.ext4</div>
+      <div class="mkfs-alias" style="background:#2b4c7e; color:#fff;">mke2fs -t ext4</div>
+      <div class="mkfs-desc">Linux 標準 ext4 FS の作成</div>
+    </div>
+
+    <div class="mkfs-card" style="background:#fff5f5; border:2px solid #fc8181;"
+         onclick="showMkfs('ext2')">
+      <div class="mkfs-cmd" style="color:#9b2335;">mkfs.ext2</div>
+      <div class="mkfs-alias" style="background:#9b2335; color:#fff;">mke2fs</div>
+      <div class="mkfs-desc">ジャーナリングなし（レガシー）</div>
+    </div>
+
+    <div class="mkfs-card" style="background:#f0fff4; border:2px solid #68d391;"
+         onclick="showMkfs('xfs')">
+      <div class="mkfs-cmd" style="color:#1a4731;">mkfs.xfs</div>
+      <div class="mkfs-alias" style="background:#1a4731; color:#fff;">RHEL 標準</div>
+      <div class="mkfs-desc">高性能・大容量 XFS FS の作成</div>
+    </div>
+
+    <div class="mkfs-card" style="background:#faf5ff; border:2px solid #b794f4;"
+         onclick="showMkfs('btrfs')">
+      <div class="mkfs-cmd" style="color:#553c9a;">mkfs.btrfs</div>
+      <div class="mkfs-alias" style="background:#553c9a; color:#fff;">次世代</div>
+      <div class="mkfs-desc">スナップショット・RAID 内蔵 FS</div>
+    </div>
+
+    <div class="mkfs-card" style="background:#fffaf0; border:2px solid #f6ad55;"
+         onclick="showMkfs('vfat')">
+      <div class="mkfs-cmd" style="color:#744210;">mkfs.vfat</div>
+      <div class="mkfs-alias" style="background:#744210; color:#fff;">FAT32</div>
+      <div class="mkfs-desc">USB・ESP パーティション用</div>
+    </div>
+
+    <div class="mkfs-card" style="background:#edf2f7; border:2px solid #a0aec0;"
+         onclick="showMkfs('generic')">
+      <div class="mkfs-cmd" style="color:#4a5568;">mkfs -t FSタイプ</div>
+      <div class="mkfs-alias" style="background:#4a5568; color:#fff;">汎用</div>
+      <div class="mkfs-desc">フロントエンドコマンド</div>
+    </div>
+
+  </div>
+
+  <!-- mkfs 詳細 -->
+  <div id="mkfs-detail" style="display:none; margin-top:12px; background:#fff; border:1px solid #fbd38d; border-left:5px solid #b7791f; border-radius:0 8px 8px 0; padding:14px 18px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const mkfsData = {
+      ext4: {
+        title: 'mkfs.ext4 / mke2fs -t ext4',
+        color: '#2b4c7e',
+        body: `ext4 ファイルシステムを作成します。<code>mkfs.ext4</code> は <code>mke2fs -t ext4</code> と同等です。<br><br>
+          <strong>基本コマンド：</strong><br>
+          <code>sudo mkfs.ext4 /dev/sdb1</code><br>
+          <code>sudo mke2fs -t ext4 /dev/sdb1</code><br><br>
+          <strong>主なオプション：</strong><br>
+          ・<code>-L ラベル</code>：ラベルを設定（例：<code>-L "data"</code>）<br>
+          ・<code>-b ブロックサイズ</code>：ブロックサイズを指定（1024/2048/4096）<br>
+          ・<code>-m 予約率</code>：root 用予約ブロックの割合（デフォルト5%）<br>
+          ・<code>-i バイト数</code>：inode 1つあたりのバイト数<br>
+          ・<code>-N inode数</code>：inode 数を直接指定<br>
+          ・<code>-E 拡張オプション</code>：拡張オプション（stride・stripe-width など）<br>
+          ・<code>-j</code>：ジャーナルを作成（ext3 互換）<br>
+          ・<code>-n</code>：実際には作成しない（ドライラン）`
+      },
+      ext2: {
+        title: 'mkfs.ext2 / mke2fs',
+        color: '#9b2335',
+        body: `ext2 ファイルシステムを作成します。ジャーナリング機能がないため、現在はほとんど使用されません。<br><br>
+          <strong>基本コマンド：</strong><br>
+          <code>sudo mkfs.ext2 /dev/sdb1</code><br>
+          <code>sudo mke2fs /dev/sdb1</code>（デフォルトは ext2）<br><br>
+          <strong>ext2 → ext3 → ext4 への変換：</strong><br>
+          <code>sudo tune2fs -j /dev/sdb1</code>（ext2 → ext3：ジャーナル追加）<br>
+          <code>sudo tune2fs -O extents,uninit_bg,dir_index /dev/sdb1</code>（ext3 → ext4）<br>
+          <code>sudo e2fsck -fD /dev/sdb1</code>（変換後に fsck を実行）`
+      },
+      xfs: {
+        title: 'mkfs.xfs',
+        color: '#1a4731',
+        body: `XFS ファイルシステムを作成します。RHEL/CentOS 7 以降の標準FSです。<br><br>
+          <strong>基本コマンド：</strong><br>
+          <code>sudo mkfs.xfs /dev/sdb1</code><br><br>
+          <strong>主なオプション：</strong><br>
+          ・<code>-L ラベル</code>：ラベルを設定<br>
+          ・<code>-b size=N</code>：ブロックサイズ（512〜65536）<br>
+          ・<code>-f</code>：既存のFSを強制的に上書き<br>
+          ・<code>-d agcount=N</code>：アロケーショングループ数<br>
+          ・<code>-i size=N</code>：inode サイズ（256/512）<br><br>
+          <strong>注意：</strong>XFS は縮小できません（拡張のみ可能）`
+      },
+      btrfs: {
+        title: 'mkfs.btrfs',
+        color: '#553c9a',
+        body: `Btrfs ファイルシステムを作成します。複数デバイスにまたがる RAID も作成できます。<br><br>
+          <strong>基本コマンド：</strong><br>
+          <code>sudo mkfs.btrfs /dev/sdb1</code><br><br>
+          <strong>主なオプション：</strong><br>
+          ・<code>-L ラベル</code>：ラベルを設定<br>
+          ・<code>-d raid1</code>：データを RAID1 で構成（2デバイス必要）<br>
+          ・<code>-m raid1</code>：メタデータを RAID1 で構成<br>
+          ・<code>--nodiscard</code>：TRIM/DISCARD を無効化<br><br>
+          <strong>複数デバイスへの作成：</strong><br>
+          <code>sudo mkfs.btrfs -d raid1 -m raid1 /dev/sdb1 /dev/sdc1</code>`
+      },
+      vfat: {
+        title: 'mkfs.vfat / mkfs.fat',
+        color: '#744210',
+        body: `FAT ファイルシステムを作成します。USB メモリや UEFI の ESP に使用します。<br><br>
+          <strong>基本コマンド：</strong><br>
+          <code>sudo mkfs.vfat /dev/sdb1</code><br>
+          <code>sudo mkfs.fat -F 32 /dev/sdb1</code>（FAT32 を明示）<br><br>
+          <strong>主なオプション：</strong><br>
+          ・<code>-F 32</code>：FAT32 を指定（12/16/32）<br>
+          ・<code>-n ラベル</code>：ボリュームラベルを設定<br>
+          ・<code>-s N</code>：クラスタあたりのセクタ数`
+      },
+      generic: {
+        title: 'mkfs -t FSタイプ（汎用フロントエンド）',
+        color: '#4a5568',
+        body: `<code>mkfs</code> は各ファイルシステム作成コマンドのフロントエンドです。<br><br>
+          <strong>使用例：</strong><br>
+          <code>sudo mkfs -t ext4 /dev/sdb1</code>（= <code>mkfs.ext4 /dev/sdb1</code>）<br>
+          <code>sudo mkfs -t xfs  /dev/sdb1</code>（= <code>mkfs.xfs /dev/sdb1</code>）<br>
+          <code>sudo mkfs -t vfat /dev/sdb1</code>（= <code>mkfs.vfat /dev/sdb1</code>）<br><br>
+          <strong>内部動作：</strong><br>
+          <code>mkfs -t ext4</code> は実際には <code>/sbin/mkfs.ext4</code> を呼び出しています。<br>
+          オプションは各 mkfs.* コマンドに渡されます。<br><br>
+          <strong>利用可能な FSタイプの確認：</strong><br>
+          <code>ls /sbin/mkfs.*</code>`
+      }
+    };
+
+    function showMkfs(key) {
+      const d = mkfsData[key];
+      const el = document.getElementById('mkfs-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display='none'; el.dataset.current=''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-family:'Consolas','Monaco',monospace; font-size:0.95em;">${d.title}</strong><br><br>${d.body}`;
+      el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：ext2/3/4 ファイルシステムの作成 -->
+<!-- ============================================================ -->
+<h2 id="ext4">② ext2 / ext3 / ext4 ファイルシステムの作成</h2>
+
+<div class="note">
+  <strong>重要ポイント②：mke2fs は ext2/3/4 を作成する共通コマンド。-t オプションでタイプを指定する。mkfs.ext4 は mke2fs -t ext4 の別名</strong>
+</div>
+
+<div class="demo-box">
+  <h3>mke2fs / mkfs.ext4 の使い方</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># ext4 ファイルシステムを作成（最もよく使う）</span>
+$ <span class="cmd">sudo mkfs.ext4</span> /dev/sdb1
+<span class="out">mke2fs 1.47.0 (5-Feb-2023)</span>
+<span class="out">Creating filesystem with 2621440 4k blocks and 655360 inodes</span>
+<span class="out">Filesystem UUID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</span>
+<span class="out">Superblock backups stored on blocks:</span>
+<span class="out">        32768, 98304, 163840, ...</span>
+<span class="out">Allocating group tables: done</span>
+<span class="out">Writing inode tables: done</span>
+<span class="out">Creating journal (16384 blocks): done</span>
+<span class="out">Writing superblocks and filesystem accounting information: done</span>
+
+<span class="comment"># mke2fs で同じ操作</span>
+$ <span class="cmd">sudo mke2fs</span> <span class="opt">-t</span> <span class="val">ext4</span> /dev/sdb1
+
+<span class="comment"># ラベルを付けて作成</span>
+$ <span class="cmd">sudo mkfs.ext4</span> <span class="opt">-L</span> <span class="val">"mydata"</span> /dev/sdb1
+
+<span class="comment"># ブロックサイズを指定（デフォルト4096）</span>
+$ <span class="cmd">sudo mkfs.ext4</span> <span class="opt">-b</span> <span class="val">4096</span> /dev/sdb1
+
+<span class="comment"># root 用予約ブロックを 1% に変更（デフォルト5%）</span>
+$ <span class="cmd">sudo mkfs.ext4</span> <span class="opt">-m</span> <span class="val">1</span> /dev/sdb1
+
+<span class="comment"># inode 数を指定（多数の小さいファイルを扱う場合）</span>
+$ <span class="cmd">sudo mkfs.ext4</span> <span class="opt">-i</span> <span class="val">4096</span> /dev/sdb1   <span class="comment"># 4096バイトごとに1 inode</span>
+
+<span class="comment"># ext2 の作成（ジャーナリングなし）</span>
+$ <span class="cmd">sudo mkfs.ext2</span> /dev/sdb1
+$ <span class="cmd">sudo mke2fs</span> /dev/sdb1              <span class="comment"># デフォルトは ext2</span>
+
+<span class="comment"># ext3 の作成（ジャーナリングあり）</span>
+$ <span class="cmd">sudo mkfs.ext3</span> /dev/sdb1
+$ <span class="cmd">sudo mke2fs</span> <span class="opt">-t</span> <span class="val">ext3</span> /dev/sdb1
+
+<span class="comment"># ドライラン（実際には作成しない）</span>
+$ <span class="cmd">sudo mke2fs</span> <span class="opt">-n</span> <span class="opt">-t</span> <span class="val">ext4</span> /dev/sdb1
+</pre>
+  </div>
+
+  <h3>tune2fs：ext2/3/4 の設定変更</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># スーパーブロック情報を表示</span>
+$ <span class="cmd">sudo tune2fs</span> <span class="opt">-l</span> /dev/sdb1
+<span class="out">Filesystem volume name:   mydata</span>
+<span class="out">Last mounted on:          /data</span>
+<span class="out">Filesystem UUID:          xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</span>
+<span class="out">Filesystem magic number:  0xEF53</span>
+<span class="out">Filesystem revision #:    1 (dynamic)</span>
+<span class="out">Filesystem features:      has_journal ext_attr resize_inode dir_index ...</span>
+<span class="out">Block count:              2621440</span>
+<span class="out">Reserved block count:     131072</span>
+<span class="out">Free blocks:              2345678</span>
+
+<span class="comment"># ラベルを変更</span>
+$ <span class="cmd">sudo tune2fs</span> <span class="opt">-L</span> <span class="val">"newlabel"</span> /dev/sdb1
+
+<span class="comment"># 予約ブロック率を変更</span>
+$ <span class="cmd">sudo tune2fs</span> <span class="opt">-m</span> <span class="val">1</span> /dev/sdb1
+
+<span class="comment"># マウント回数でのfsck間隔を設定（0=無効）</span>
+$ <span class="cmd">sudo tune2fs</span> <span class="opt">-c</span> <span class="val">0</span> /dev/sdb1
+
+<span class="comment"># ext2 に ext3 のジャーナルを追加（ext2→ext3 変換）</span>
+$ <span class="cmd">sudo tune2fs</span> <span class="opt">-j</span> /dev/sdb1
+
+<span class="comment"># UUID を新たに生成</span>
+$ <span class="cmd">sudo tune2fs</span> <span class="opt">-U</span> <span class="val">random</span> /dev/sdb1
+</pre>
+  </div>
+
+  <h3>ext2 / ext3 / ext4 の違い</h3>
+  <table class="ref-table">
+    <thead><tr><th>特徴</th><th>ext2</th><th>ext3</th><th>ext4</th></tr></thead>
+    <tbody>
+      <tr><td>ジャーナリング</td><td>❌ なし</td><td>✅ あり</td><td>✅ あり（改善）</td></tr>
+      <tr><td>最大ファイルサイズ</td><td>2TB</td><td>2TB</td><td>16TB</td></tr>
+      <tr><td>最大ボリュームサイズ</td><td>32TB</td><td>32TB</td><td>1EB</td></tr>
+      <tr><td>エクステント</td><td>❌</td><td>❌</td><td>✅（連続ブロック管理）</td></tr>
+      <tr><td>遅延アロケーション</td><td>❌</td><td>❌</td><td>✅</td></tr>
+      <tr><td>オンラインデフラグ</td><td>❌</td><td>❌</td><td>✅</td></tr>
+      <tr><td>現在の用途</td><td>ほぼ使用されない</td><td>レガシー</td><td>Linux 標準</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：XFS ファイルシステムの作成 -->
+<!-- ============================================================ -->
+<h2 id="xfs">③ XFS ファイルシステムの作成</h2>
+
+<div class="demo-box">
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># XFS ファイルシステムを作成</span>
+$ <span class="cmd">sudo mkfs.xfs</span> /dev/sdb1
+<span class="out">meta-data=/dev/sdb1              isize=512    agcount=4, agsize=655360 blks</span>
+<span class="out">         =                       sectsz=512   attr=2, projid32bit=1</span>
+<span class="out">         =                       crc=1        finobt=1, sparse=1, rmapbt=0</span>
+<span class="out">data     =                       bsize=4096   blocks=2621440, imaxpct=25</span>
+<span class="out">         =                       sunit=0      swidth=0 blks</span>
+<span class="out">naming   =version 2              bsize=4096   ascii-ci=0, ftype=1</span>
+<span class="out">log      =internal log           bsize=4096   blocks=2560, version=2</span>
+<span class="out">realtime =none                   extsz=4096   blocks=0, rtextents=0</span>
+
+<span class="comment"># ラベルを付けて作成</span>
+$ <span class="cmd">sudo mkfs.xfs</span> <span class="opt">-L</span> <span class="val">"xfsdata"</span> /dev/sdb1
+
+<span class="comment"># 既存の FS を強制上書き</span>
+$ <span class="cmd">sudo mkfs.xfs</span> <span class="opt">-f</span> /dev/sdb1
+
+<span class="comment"># ブロックサイズを指定</span>
+$ <span class="cmd">sudo mkfs.xfs</span> <span class="opt">-b</span> <span class="val">size=4096</span> /dev/sdb1
+
+<span class="comment"># XFS の情報表示</span>
+$ <span class="cmd">xfs_info</span> /dev/sdb1
+$ <span class="cmd">xfs_info</span> /mnt/xfsdata   <span class="comment"># マウント後はマウントポイントでも可</span>
+
+<span class="comment"># XFS ラベルの変更（マウント中でも可能）</span>
+$ <span class="cmd">sudo xfs_admin</span> <span class="opt">-L</span> <span class="val">"newlabel"</span> /dev/sdb1
+
+<span class="comment"># XFS UUID の変更</span>
+$ <span class="cmd">sudo xfs_admin</span> <span class="opt">-U</span> <span class="val">generate</span> /dev/sdb1
+
+<span class="comment"># XFS ファイルシステムの拡張（マウント中でも可能）</span>
+$ <span class="cmd">sudo xfs_growfs</span> /mnt/xfsdata
+</pre>
+  </div>
+
+  <div class="warn">
+    <strong>⚠️ XFS の重要な制限</strong><br>
+    ・XFS は<strong>縮小できません</strong>（拡張のみ可能）<br>
+    ・<code>xfs_repair</code> はアンマウント状態で実行する必要があります<br>
+    ・<code>xfsdump</code> / <code>xfsrestore</code> でバックアップ・リストアを行います
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 4：Btrfs ファイルシステムの作成 -->
+<!-- ============================================================ -->
+<h2 id="btrfs">④ Btrfs ファイルシステムの作成</h2>
+
+<div class="demo-box">
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># Btrfs ファイルシステムを作成</span>
+$ <span class="cmd">sudo mkfs.btrfs</span> /dev/sdb1
+<span class="out">btrfs-progs v6.2</span>
+<span class="out">See http://btrfs.wiki.kernel.org for more information.</span>
+<span class="out">Performing full device TRIM /dev/sdb1 ...</span>
+<span class="out">Label:              (null)</span>
+<span class="out">UUID:               xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</span>
+<span class="out">Node size:          16384</span>
+<span class="out">Sector size:        4096</span>
+<span class="out">Filesystem size:    10.00GiB</span>
+<span class="out">Block group profiles:</span>
+<span class="out">  Data:             single            8.00MiB</span>
+<span class="out">  Metadata:         DUP               1.00GiB</span>
+
+<span class="comment"># ラベルを付けて作成</span>
+$ <span class="cmd">sudo mkfs.btrfs</span> <span class="opt">-L</span> <span class="val">"btrfsdata"</span> /dev/sdb1
+
+<span class="comment"># 複数デバイスで RAID1 を構成</span>
+$ <span class="cmd">sudo mkfs.btrfs</span> <span class="opt">-d</span> <span class="val">raid1</span> <span class="opt">-m</span> <span class="val">raid1</span> /dev/sdb1 /dev/sdc1
+
+<span class="comment"># Btrfs サブボリュームの操作</span>
+$ <span class="cmd">sudo btrfs</span> subvolume create /mnt/btrfs/subvol1
+$ <span class="cmd">sudo btrfs</span> subvolume list /mnt/btrfs
+$ <span class="cmd">sudo btrfs</span> subvolume snapshot /mnt/btrfs/subvol1 /mnt/btrfs/snap1
+
+<span class="comment"># Btrfs ファイルシステムの情報</span>
+$ <span class="cmd">sudo btrfs</span> filesystem show /dev/sdb1
+$ <span class="cmd">sudo btrfs</span> filesystem df /mnt/btrfs
+
+<span class="comment"># Btrfs の圧縮を有効にしてマウント</span>
+$ <span class="cmd">sudo mount</span> <span class="opt">-o</span> <span class="val">compress=zstd</span> /dev/sdb1 /mnt/btrfs
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 5：mkfs コマンドによるファイルシステム作成（統合デモ） -->
+<!-- ============================================================ -->
+<h2 id="mkfs-demo">⑤ mkfs コマンドによるファイルシステム作成（インタラクティブ）</h2>
+
+<div class="demo-box">
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#744210; margin:0 0 12px;">
+      ファイルシステムタイプとオプションを選択してコマンド例を生成しましょう
+    </p>
+    <div class="slider-row">
+      <label>ファイルシステムタイプ</label>
+      <select id="fs-type-sel" onchange="generateMkfsCmd()">
+        <option value="">-- 選択してください --</option>
+        <option value="ext4">ext4</option>
+        <option value="ext3">ext3</option>
+        <option value="ext2">ext2</option>
+        <option value="xfs">XFS</option>
+        <option value="btrfs">Btrfs</option>
+        <option value="vfat">vfat（FAT32）</option>
+      </select>
+    </div>
+    <div class="slider-row">
+      <label>デバイス</label>
+      <select id="fs-dev-sel" onchange="generateMkfsCmd()">
+        <option value="/dev/sdb1">/dev/sdb1</option>
+        <option value="/dev/sdc1">/dev/sdc1</option>
+        <option value="/dev/nvme0n1p1">/dev/nvme0n1p1</option>
+      </select>
+    </div>
+    <div class="slider-row">
+      <label>ラベル（任意）</label>
+      <select id="fs-label-sel" onchange="generateMkfsCmd()">
+        <option value="">なし</option>
+        <option value="data">data</option>
+        <option value="backup">backup</option>
+        <option value="home">home</option>
+      </select>
+    </div>
+    <div class="output-display" id="mkfs-cmd-output" style="display:none;"></div>
+  </div>
+
+  <script>
+    function generateMkfsCmd() {
+      const fsType = document.getElementById('fs-type-sel').value;
+      const dev    = document.getElementById('fs-dev-sel').value;
+      const label  = document.getElementById('fs-label-sel').value;
+      const el     = document.getElementById('mkfs-cmd-output');
+      if (!fsType) { el.style.display='none'; return; }
+      el.style.display = 'block';
+
+      const labelOpt = {
+        ext4: label ? `-L "${label}" ` : '',
+        ext3: label ? `-L "${label}" ` : '',
+        ext2: label ? `-L "${label}" ` : '',
+        xfs:  label ? `-L "${label}" ` : '',
+        btrfs:label ? `-L "${label}" ` : '',
+        vfat: label ? `-n "${label.toUpperCase()}" ` : '',
+      };
+
+      const cmds = {
+        ext4: {
+          color: '#90cdf4',
+          text:
+`# ext4 ファイルシステムの作成
+$ sudo mkfs.ext4 ${labelOpt.ext4}${dev}
+# または
+$ sudo mke2fs -t ext4 ${labelOpt.ext4}${dev}
+
+# 作成後の確認
+$ sudo tune2fs -l ${dev} | grep -E "Filesystem|UUID|Block"
+
+# マウント
+$ sudo mkdir -p /mnt/${label||'data'}
+$ sudo mount -t ext4 ${dev} /mnt/${label||'data'}
+$ df -h /mnt/${label||'data'}`
+        },
+        ext3: {
+          color: '#90cdf4',
+          text:
+`# ext3 ファイルシステムの作成（ジャーナリングあり）
+$ sudo mkfs.ext3 ${labelOpt.ext3}${dev}
+# または
+$ sudo mke2fs -t ext3 ${labelOpt.ext3}${dev}
+
+# 作成後の確認
+$ sudo tune2fs -l ${dev}
+
+# マウント
+$ sudo mkdir -p /mnt/${label||'data'}
+$ sudo mount -t ext3 ${dev} /mnt/${label||'data'}`
+        },
+        ext2: {
+          color: '#fc8181',
+          text:
+`# ext2 ファイルシステムの作成（ジャーナリングなし）
+$ sudo mkfs.ext2 ${labelOpt.ext2}${dev}
+# または
+$ sudo mke2fs ${labelOpt.ext2}${dev}
+
+⚠️  ext2 はジャーナリングがないため、クラッシュ後の
+   回復に時間がかかります。現在は ext4 を推奨します。
+
+# ext2 → ext3 へのアップグレード（後からジャーナル追加）
+$ sudo tune2fs -j ${dev}`
+        },
+        xfs: {
+          color: '#68d391',
+          text:
+`# XFS ファイルシステムの作成
+$ sudo mkfs.xfs ${labelOpt.xfs}${dev}
+# 既存FSを強制上書きする場合
+$ sudo mkfs.xfs -f ${labelOpt.xfs}${dev}
+
+# 作成後の確認
+$ sudo xfs_info ${dev}
+
+# マウント
+$ sudo mkdir -p /mnt/${label||'xfsdata'}
+$ sudo mount -t xfs ${dev} /mnt/${label||'xfsdata'}
+$ df -Th /mnt/${label||'xfsdata'}
+
+# XFS は縮小不可・拡張のみ可能
+$ sudo xfs_growfs /mnt/${label||'xfsdata'}  # 拡張`
+        },
+        btrfs: {
+          color: '#b794f4',
+          text:
+`# Btrfs ファイルシステムの作成
+$ sudo mkfs.btrfs ${labelOpt.btrfs}${dev}
+
+# 作成後の確認
+$ sudo btrfs filesystem show ${dev}
+
+# マウント
+$ sudo mkdir -p /mnt/${label||'btrfsdata'}
+$ sudo mount -t btrfs ${dev} /mnt/${label||'btrfsdata'}
+
+# サブボリュームの作成
+$ sudo btrfs subvolume create /mnt/${label||'btrfsdata'}/subvol1
+
+# スナップショットの作成
+$ sudo btrfs subvolume snapshot \\
+    /mnt/${label||'btrfsdata'}/subvol1 \\
+    /mnt/${label||'btrfsdata'}/snap_$(date +%Y%m%d)`
+        },
+        vfat: {
+          color: '#fbd38d',
+          text:
+`# FAT32 ファイルシステムの作成
+$ sudo mkfs.vfat -F 32 ${labelOpt.vfat}${dev}
+# または
+$ sudo mkfs.fat -F 32 ${labelOpt.vfat}${dev}
+
+# 作成後の確認
+$ sudo fsck.vfat -n ${dev}
+
+# マウント
+$ sudo mkdir -p /mnt/${label||'usb'}
+$ sudo mount -t vfat ${dev} /mnt/${label||'usb'}
+
+# 注意：FAT32 は最大ファイルサイズ 4GB の制限があります
+# UEFI の EFI システムパーティション（ESP）にも使用されます`
+        }
+      };
+
+      const d = cmds[fsType];
+      el.style.color = d.color;
+      el.textContent = d.text;
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 6：CD/DVD の作成 -->
+<!-- ============================================================ -->
+<h2 id="cdrom">⑥ CD/DVD の作成</h2>
+
+<div class="note">
+  <strong>重要ポイント③：mkisofs（またはgenisoimage）でISOイメージを作成し、cdrecord（またはwodim）でCD/DVDに書き込む</strong>
+</div>
+
+<div class="demo-box">
+  <h3>ISO イメージの作成と書き込み（タブで切り替え）</h3>
+  <div class="tab-wrap">
+    <div class="tab-btns">
+      <button class="tab-btn active" onclick="switchTab(this,'tab-mkiso')">mkisofs / genisoimage</button>
+      <button class="tab-btn" onclick="switchTab(this,'tab-cdrecord')">cdrecord / wodim</button>
+      <button class="tab-btn" onclick="switchTab(this,'tab-isoinfo')">ISO 情報確認</button>
+    </div>
+
+    <!-- mkisofs -->
+    <div class="tab-content active" id="tab-mkiso">
+      <h3 style="margin-top:0; color:#744210;">mkisofs / genisoimage による ISO イメージ作成</h3>
+      <div class="pre-wrap">
+        <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># 基本的な ISO イメージの作成</span>
+$ <span class="cmd">mkisofs</span> <span class="opt">-o</span> output.iso /path/to/source/
+
+<span class="comment"># genisoimage（mkisofs の後継・互換コマンド）</span>
+$ <span class="cmd">genisoimage</span> <span class="opt">-o</span> output.iso /path/to/source/
+
+<span class="comment"># ボリュームラベルを付けて作成</span>
+$ <span class="cmd">mkisofs</span> <span class="opt">-o</span> output.iso <span class="opt">-V</span> <span class="val">"MY_DISC"</span> /path/to/source/
+
+<span class="comment"># Rock Ridge 拡張（Linux のパーミッション・シンボリックリンクを保持）</span>
+$ <span class="cmd">mkisofs</span> <span class="opt">-o</span> output.iso <span class="opt">-R</span> /path/to/source/
+
+<span class="comment"># Joliet 拡張（Windows の長いファイル名に対応）</span>
+$ <span class="cmd">mkisofs</span> <span class="opt">-o</span> output.iso <span class="opt">-J</span> /path/to/source/
+
+<span class="comment"># Rock Ridge + Joliet（両方に対応）</span>
+$ <span class="cmd">mkisofs</span> <span class="opt">-o</span> output.iso <span class="opt">-R</span> <span class="opt">-J</span> <span class="opt">-V</span> <span class="val">"MY_DISC"</span> /path/to/source/
+
+<span class="comment"># ブータブル ISO の作成（ISOLINUX を使用）</span>
+$ <span class="cmd">mkisofs</span> <span class="opt">-o</span> bootable.iso \
+    <span class="opt">-b</span> <span class="val">isolinux/isolinux.bin</span> \
+    <span class="opt">-c</span> <span class="val">isolinux/boot.cat</span> \
+    <span class="opt">-no-emul-boot</span> \
+    <span class="opt">-boot-load-size</span> <span class="val">4</span> \
+    <span class="opt">-boot-info-table</span> \
+    <span class="opt">-R</span> <span class="opt">-J</span> <span class="opt">-V</span> <span class="val">"BOOTDISC"</span> \
+    /path/to/source/
+
+<span class="comment"># ISO イメージをループマウントして確認</span>
+$ <span class="cmd">sudo mount</span> <span class="opt">-o</span> <span class="val">loop</span> output.iso /mnt/iso
+$ <span class="cmd">ls</span> /mnt/iso
+$ <span class="cmd">sudo umount</span> /mnt/iso
+</pre>
+      </div>
+
+      <h3>mkisofs の主要オプション</h3>
+      <table class="ref-table">
+        <thead><tr><th>オプション</th><th>説明</th></tr></thead>
+        <tbody>
+          <tr><td><code>-o ファイル名</code></td><td>出力 ISO ファイル名を指定</td></tr>
+          <tr><td><code>-V ラベル</code></td><td>ボリュームラベルを設定（最大32文字）</td></tr>
+          <tr><td><code>-R</code></td><td>Rock Ridge 拡張（Linux パーミッション保持）</td></tr>
+          <tr><td><code>-J</code></td><td>Joliet 拡張（Windows 長いファイル名対応）</td></tr>
+          <tr><td><code>-r</code></td><td>Rock Ridge（パーミッションをリセット）</td></tr>
+          <tr><td><code>-b ファイル</code></td><td>ブートイメージファイルを指定</td></tr>
+          <tr><td><code>-c ファイル</code></td><td>ブートカタログファイルを指定</td></tr>
+          <tr><td><code>-no-emul-boot</code></td><td>ディスクエミュレーションなしで起動</td></tr>
+          <tr><td><code>-boot-load-size N</code></td><td>ブートセクタのロードサイズ</td></tr>
+          <tr><td><code>-boot-info-table</code></td><td>ブート情報テーブルを ISO に埋め込む</td></tr>
+          <tr><td><code>-f</code></td><td>シンボリックリンクをたどる</td></tr>
+          <tr><td><code>-l</code></td><td>31文字を超えるファイル名を許可</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- cdrecord -->
+    <div class="tab-content" id="tab-cdrecord">
+      <h3 style="margin-top:0; color:#744210;">cdrecord / wodim による CD/DVD 書き込み</h3>
+      <div class="pre-wrap">
+        <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># cdrecord（Debian/Ubuntu では wodim が代替）</span>
+<span class="comment"># インストール</span>
+$ <span class="cmd">sudo apt install</span> wodim cdrecord
+
+<span class="comment"># 書き込みデバイスの確認</span>
+$ <span class="cmd">cdrecord</span> <span class="opt">--devices</span>
+$ <span class="cmd">wodim</span> <span class="opt">--devices</span>
+<span class="out">wodim: Overview of accessible drives (1 found) :</span>
+<span class="out">-------------------------------------------------------------------------</span>
+<span class="out"> 0  dev='/dev/sr0'    rwrw-- : 'ASUS' 'DRW-24D5MT'</span>
+
+<span class="comment"># ISO イメージを CD に書き込む</span>
+$ <span class="cmd">cdrecord</span> <span class="opt">-v</span> <span class="opt">dev</span>=/dev/sr0 output.iso
+$ <span class="cmd">wodim</span> <span class="opt">-v</span> <span class="opt">dev</span>=/dev/sr0 output.iso
+
+<span class="comment"># 書き込み速度を指定</span>
+$ <span class="cmd">cdrecord</span> <span class="opt">-v</span> <span class="opt">speed=8</span> <span class="opt">dev</span>=/dev/sr0 output.iso
+
+<span class="comment"># DVD に書き込む（growisofs を使用）</span>
+$ <span class="cmd">sudo apt install</span> dvd+rw-tools
+$ <span class="cmd">growisofs</span> <span class="opt">-dvd-compat</span> <span class="opt">-Z</span> /dev/sr0=output.iso
+
+<span class="comment"># CD-RW を消去してから書き込む</span>
+$ <span class="cmd">cdrecord</span> <span class="opt">-v</span> <span class="opt">blank=fast</span> <span class="opt">dev</span>=/dev/sr0
+$ <span class="cmd">cdrecord</span> <span class="opt">-v</span> <span class="opt">dev</span>=/dev/sr0 output.iso
+
+<span class="comment"># CD の内容を ISO イメージとして読み込む</span>
+$ <span class="cmd">dd</span> <span class="opt">if</span>=/dev/sr0 <span class="opt">of</span>=backup.iso <span class="opt">bs</span>=2048
+</pre>
+      </div>
+    </div>
+
+    <!-- ISO 情報確認 -->
+    <div class="tab-content" id="tab-isoinfo">
+      <h3 style="margin-top:0; color:#744210;">ISO イメージの情報確認</h3>
+      <div class="pre-wrap">
+        <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># isoinfo で ISO の情報を確認</span>
+$ <span class="cmd">isoinfo</span> <span class="opt">-d</span> <span class="opt">-i</span> output.iso
+<span class="out">CD-ROM is in ISO 9660 format</span>
+<span class="out">System id: LINUX</span>
+<span class="out">Volume id: MY_DISC</span>
+<span class="out">Volume set id:</span>
+<span class="out">Publisher id:</span>
+<span class="out">Data preparer id:</span>
+<span class="out">Application id: GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR</span>
+<span class="out">Copyright File id:</span>
+<span class="out">Logical block size is: 2048</span>
+<span class="out">Volume size is: 12345</span>
+
+<span class="comment"># ISO 内のファイル一覧を表示</span>
+$ <span class="cmd">isoinfo</span> <span class="opt">-l</span> <span class="opt">-i</span> output.iso
+
+<span class="comment"># ISO の MD5 チェックサムを確認</span>
+$ <span class="cmd">md5sum</span> output.iso
+$ <span class="cmd">sha256sum</span> output.iso
+
+<span class="comment"># ループマウントで内容を確認</span>
+$ <span class="cmd">sudo mount</span> <span class="opt">-t</span> <span class="val">iso9660</span> <span class="opt">-o</span> <span class="val">loop,ro</span> output.iso /mnt/iso
+$ <span class="cmd">ls</span> <span class="opt">-la</span> /mnt/iso/
+$ <span class="cmd">sudo umount</span> /mnt/iso
+</pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(btn, id) {
+      btn.closest('.tab-wrap').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.closest('.tab-wrap').querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(id).classList.add('active');
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 7：暗号化ファイルシステムの作成（LUKS） -->
+<!-- ============================================================ -->
+<h2 id="luks">⑦ 暗号化ファイルシステムの作成（LUKS）</h2>
+
+<div class="note">
+  <strong>重要ポイント④：LUKS（Linux Unified Key Setup）は Linux 標準の暗号化方式。cryptsetup コマンドで管理する</strong><br>
+  パーティション全体を暗号化し、正しいパスフレーズを入力しないとデータにアクセスできません。
+</div>
+
+<div class="demo-box">
+  <h3>LUKS の仕組み</h3>
+  <div style="background:#1a202c; border-radius:8px; padding:16px 20px; font-family:'Consolas','Monaco',monospace; font-size:0.85em; line-height:2; color:#e2e8f0; margin:14px 0;">
+    <div style="color:#b794f4; font-weight:bold;">【LUKS の構造】</div>
+    <div>
+      <span style="color:#f6ad55;">/dev/sdb1</span>
+      <span style="color:#718096;"> → </span>
+      <span style="color:#90cdf4;">LUKS ヘッダー（暗号化キー・メタデータ）</span>
+      <span style="color:#718096;"> + </span>
+      <span style="color:#68d391;">暗号化されたデータ領域</span>
+    </div>
+    <div style="color:#718096; margin-top:4px;">
+      ↓ cryptsetup luksOpen（パスフレーズ入力）
+    </div>
+    <div>
+      <span style="color:#f6ad55;">/dev/mapper/mydata</span>
+      <span style="color:#718096;"> → </span>
+      <span style="color:#68d391;">復号化された仮想デバイス（通常のデバイスとして使用可能）</span>
+    </div>
+    <div style="color:#718096; margin-top:4px;">
+      ↓ mkfs.ext4 / mount
+    </div>
+    <div>
+      <span style="color:#fbd38d;">/mnt/encrypted</span>
+      <span style="color:#718096;"> → </span>
+      <span style="color:#68d391;">通常のファイルシステムとしてアクセス可能</span>
+    </div>
+  </div>
+
+  <h3>LUKS 暗号化ファイルシステムの作成手順</h3>
+  <div class="luks-flow">
+
+    <div class="luks-step">
+      <div class="luks-num">
+        <div class="luks-circle" style="background:#9b2335; color:#fff;">1</div>
+        <div class="luks-line" style="background:#fbd38d;"></div>
+      </div>
+      <div class="luks-body" style="background:#fff5f5; border-color:#fc8181;">
+        <h4 style="color:#9b2335;">🔐 LUKS コンテナの作成（フォーマット）</h4>
+        <p>パーティションを LUKS コンテナとして初期化する</p>
+      </div>
+    </div>
+
+    <div class="luks-step">
+      <div class="luks-num">
+        <div class="luks-circle" style="background:#553c9a; color:#fff;">2</div>
+        <div class="luks-line" style="background:#fbd38d;"></div>
+      </div>
+      <div class="luks-body" style="background:#faf5ff; border-color:#b794f4;">
+        <h4 style="color:#553c9a;">🔓 LUKS コンテナを開く（マッピング）</h4>
+        <p>パスフレーズを入力して /dev/mapper/ に仮想デバイスを作成</p>
+      </div>
+    </div>
+
+    <div class="luks-step">
+      <div class="luks-num">
+        <div class="luks-circle" style="background:#2b4c7e; color:#fff;">3</div>
+        <div class="luks-line" style="background:#fbd38d;"></div>
+      </div>
+      <div class="luks-body" style="background:#ebf8ff; border-color:#90cdf4;">
+        <h4 style="color:#2b4c7e;">🔨 ファイルシステムの作成</h4>
+        <p>仮想デバイスに通常のファイルシステムを作成</p>
+      </div>
+    </div>
+
+    <div class="luks-step">
+      <div class="luks-num">
+        <div class="luks-circle" style="background:#1a4731; color:#fff;">4</div>
+        <div class="luks-line" style="background:#fbd38d;"></div>
+      </div>
+      <div class="luks-body" style="background:#f0fff4; border-color:#68d391;">
+        <h4 style="color:#1a4731;">📁 マウントして使用</h4>
+        <p>通常のファイルシステムと同様にマウントして使用</p>
+      </div>
+    </div>
+
+    <div class="luks-step">
+      <div class="luks-num">
+        <div class="luks-circle" style="background:#744210; color:#fff;">5</div>
+        <div class="luks-line" style="background:#fbd38d;"></div>
+      </div>
+      <div class="luks-body" style="background:#fffaf0; border-color:#f6ad55;">
+        <h4 style="color:#744210;">🔒 使用後はアンマウントして閉じる</h4>
+        <p>umount → cryptsetup luksClose でデータを保護</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># cryptsetup のインストール</span>
+$ <span class="cmd">sudo apt install</span> cryptsetup
+
+<span class="comment">## ステップ1：LUKS コンテナの作成（フォーマット）</span>
+$ <span class="cmd">sudo cryptsetup</span> <span class="opt">luksFormat</span> /dev/sdb1
+<span class="out">WARNING!</span>
+<span class="out">========</span>
+<span class="out">This will overwrite data on /dev/sdb1 irrevocably.</span>
+<span class="out">Are you sure? (Type 'yes' in capital letters): YES</span>
+<span class="out">Enter passphrase for /dev/sdb1: </span>
+<span class="out">Verify passphrase: </span>
+
+<span class="comment"># 暗号化アルゴリズムを指定して作成（デフォルト：aes-xts-plain64）</span>
+$ <span class="cmd">sudo cryptsetup</span> <span class="opt">luksFormat</span> <span class="opt">--cipher</span> <span class="val">aes-xts-plain64</span> \
+    <span class="opt">--key-size</span> <span class="val">512</span> <span class="opt">--hash</span> <span class="val">sha512</span> /dev/sdb1
+
+<span class="comment">## ステップ2：LUKS コンテナを開く</span>
+$ <span class="cmd">sudo cryptsetup</span> <span class="opt">luksOpen</span> /dev/sdb1 <span class="val">mydata</span>
+<span class="comment">#                              ↑デバイス  ↑マッピング名（任意）</span>
+<span class="out">Enter passphrase for /dev/sdb1: </span>
+
+<span class="comment"># 仮想デバイスが作成されたことを確認</span>
+$ <span class="cmd">ls</span> /dev/mapper/
+<span class="hl">control  mydata</span>
+
+<span class="comment">## ステップ3：ファイルシステムの作成</span>
+$ <span class="cmd">sudo mkfs.ext4</span> /dev/mapper/mydata
+
+<span class="comment">## ステップ4：マウントして使用</span>
+$ <span class="cmd">sudo mkdir</span> /mnt/encrypted
+$ <span class="cmd">sudo mount</span> /dev/mapper/mydata /mnt/encrypted
+$ <span class="cmd">df</span> <span class="opt">-h</span> /mnt/encrypted
+
+<span class="comment">## ステップ5：使用後はアンマウントして閉じる</span>
+$ <span class="cmd">sudo umount</span> /mnt/encrypted
+$ <span class="cmd">sudo cryptsetup</span> <span class="opt">luksClose</span> <span class="val">mydata</span>
+<span class="comment"># または</span>
+$ <span class="cmd">sudo cryptsetup</span> <span class="opt">close</span> <span class="val">mydata</span>
+</pre>
+  </div>
+
+  <h3>LUKS の管理コマンド</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># LUKS ヘッダー情報を表示</span>
+$ <span class="cmd">sudo cryptsetup</span> <span class="opt">luksDump</span> /dev/sdb1
+<span class="out">LUKS header information for /dev/sdb1</span>
+<span class="out">Version:        2</span>
+<span class="out">Epoch:          3</span>
+<span class="out">Metadata area:  16384 [bytes]</span>
+<span class="out">Keyslots area:  16744448 [bytes]</span>
+<span class="out">UUID:           xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</span>
+<span class="out">Label:          (no label)</span>
+<span class="out">Subsystem:      (no subsystem)</span>
+<span class="out">Flags:          (no flags)</span>
+
+<span class="comment"># LUKS デバイスかどうか確認</span>
+$ <span class="cmd">sudo cryptsetup</span> <span class="opt">isLuks</span> /dev/sdb1 && <span class="cmd">echo</span> <span class="val">"LUKS device"</span>
+
+<span class="comment"># パスフレーズを追加（最大8つのキースロット）</span>
+$ <span class="cmd">sudo cryptsetup</span> <span class="opt">luksAddKey</span> /dev/sdb1
+
+<span class="comment"># パスフレーズを削除</span>
+$ <span class="cmd">sudo cryptsetup</span> <span class="opt">luksRemoveKey</span> /dev/sdb1
+
+<span class="comment"># キーファイルを使った暗号化（パスフレーズの代わり）</span>
+$ <span class="cmd">sudo dd</span> <span class="opt">if</span>=/dev/urandom <span class="opt">of</span>=/root/keyfile <span class="opt">bs</span>=4096 <span class="opt">count</span>=1
+$ <span class="cmd">sudo chmod</span> <span class="val">400</span> /root/keyfile
+$ <span class="cmd">sudo cryptsetup</span> <span class="opt">luksAddKey</span> /dev/sdb1 /root/keyfile
+$ <span class="cmd">sudo cryptsetup</span> <span class="opt">luksOpen</span> /dev/sdb1 mydata <span class="opt">--key-file</span> /root/keyfile
+
+<span class="comment"># /etc/crypttab で起動時の自動マッピング設定</span>
+<span class="comment"># 書式：名前  デバイス  キーファイル  オプション</span>
+$ <span class="cmd">cat</span> /etc/crypttab
+<span class="out">mydata  UUID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx  none  luks</span>
+<span class="out">mydata2 /dev/sdb2  /root/keyfile  luks</span>
+</pre>
+  </div>
+
+  <h3>cryptsetup の主要コマンド一覧</h3>
+  <table class="ref-table">
+    <thead><tr><th>コマンド</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td><code>cryptsetup luksFormat デバイス</code></td><td>LUKS コンテナを作成（フォーマット）</td></tr>
+      <tr><td><code>cryptsetup luksOpen デバイス 名前</code></td><td>LUKS コンテナを開いて /dev/mapper/名前 を作成</td></tr>
+      <tr><td><code>cryptsetup luksClose 名前</code></td><td>LUKS コンテナを閉じる</td></tr>
+      <tr><td><code>cryptsetup luksDump デバイス</code></td><td>LUKS ヘッダー情報を表示</td></tr>
+      <tr><td><code>cryptsetup isLuks デバイス</code></td><td>LUKS デバイスかどうか確認</td></tr>
+      <tr><td><code>cryptsetup luksAddKey デバイス</code></td><td>新しいパスフレーズを追加</td></tr>
+      <tr><td><code>cryptsetup luksRemoveKey デバイス</code></td><td>パスフレーズを削除</td></tr>
+      <tr><td><code>cryptsetup status 名前</code></td><td>マッピングの状態を表示</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- まとめ表 -->
+<!-- ============================================================ -->
+<h2>📌 まとめ一覧</h2>
+<div class="demo-box">
+  <table class="ref-table">
+    <thead><tr><th>カテゴリ</th><th>コマンド</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td colspan="3" style="background:#fefcbf; color:#744210; font-weight:bold; font-size:0.88em;">▼ ext2/3/4 の作成</td></tr>
+      <tr><td>ext4 作成</td><td><code>mkfs.ext4 デバイス</code> / <code>mke2fs -t ext4 デバイス</code></td><td>ext4 ファイルシステムを作成</td></tr>
+      <tr><td>ext3 作成</td><td><code>mkfs.ext3 デバイス</code> / <code>mke2fs -t ext3 デバイス</code></td><td>ext3 ファイルシステムを作成</td></tr>
+      <tr><td>ext2 作成</td><td><code>mkfs.ext2 デバイス</code> / <code>mke2fs デバイス</code></td><td>ext2 ファイルシステムを作成</td></tr>
+      <tr><td>設定変更</td><td><code>tune2fs -l デバイス</code></td><td>スーパーブロック情報の表示・変更</td></tr>
+      <tr><td colspan="3" style="background:#fefcbf; color:#744210; font-weight:bold; font-size:0.88em;">▼ XFS・Btrfs の作成</td></tr>
+      <tr><td>XFS 作成</td><td><code>mkfs.xfs デバイス</code></td><td>XFS ファイルシステムを作成</td></tr>
+      <tr><td>XFS 情報</td><td><code>xfs_info デバイス</code></td><td>XFS の詳細情報を表示</td></tr>
+      <tr><td>Btrfs 作成</td><td><code>mkfs.btrfs デバイス</code></td><td>Btrfs ファイルシステムを作成</td></tr>
+      <tr><td colspan="3" style="background:#fefcbf; color:#744210; font-weight:bold; font-size:0.88em;">▼ CD/DVD の作成</td></tr>
+      <tr><td>ISO 作成</td><td><code>mkisofs -o 出力.iso ソースディレクトリ</code></td><td>ISO 9660 イメージを作成</td></tr>
+      <tr><td>Rock Ridge</td><td><code>mkisofs -R -o 出力.iso ソース</code></td><td>Linux パーミッション保持</td></tr>
+      <tr><td>Joliet</td><td><code>mkisofs -J -o 出力.iso ソース</code></td><td>Windows 長いファイル名対応</td></tr>
+      <tr><td>CD 書き込み</td><td><code>cdrecord -v dev=/dev/sr0 出力.iso</code></td><td>ISO を CD に書き込む</td></tr>
+      <tr><td colspan="3" style="background:#fefcbf; color:#744210; font-weight:bold; font-size:0.88em;">▼ 暗号化（LUKS）</td></tr>
+      <tr><td>LUKS 作成</td><td><code>cryptsetup luksFormat デバイス</code></td><td>LUKS コンテナを作成</td></tr>
+      <tr><td>LUKS 開く</td><td><code>cryptsetup luksOpen デバイス 名前</code></td><td>/dev/mapper/名前 を作成</td></tr>
+      <tr><td>LUKS 閉じる</td><td><code>cryptsetup luksClose 名前</code></td><td>マッピングを削除</td></tr>
+      <tr><td>LUKS 情報</td><td><code>cryptsetup luksDump デバイス</code></td><td>ヘッダー情報を表示</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 穴埋め問題</h3>
+    <p>以下の説明に合うコマンドを入力してください。</p>
+    <label>① /dev/sdb1 に ext4 ファイルシステムを作成するコマンド（mkfs.ext4 以外の方法）：</label>
+    <input type="text" id="q1a" placeholder="コマンド -t ext4 /dev/sdb1">
+    <label>② /dev/sdb1 に XFS ファイルシステムを作成するコマンド：</label>
+    <input type="text" id="q1b" placeholder="コマンド /dev/sdb1">
+    <label>③ ISO イメージを作成するコマンド（Rock Ridge + Joliet 拡張付き）：</label>
+    <input type="text" id="q1c" placeholder="コマンド -R -J -o out.iso /src">
+    <label>④ LUKS コンテナを作成するコマンド（/dev/sdb1 に対して）：</label>
+    <input type="text" id="q1d" placeholder="cryptsetup ... /dev/sdb1">
+    <label>⑤ LUKS コンテナを開いて /dev/mapper/mydata を作成するコマンド：</label>
+    <input type="text" id="q1e" placeholder="cryptsetup ... /dev/sdb1 mydata">
+    <br>
+    <button class="btn btn-amber" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const a = document.getElementById('q1a').value.trim().toLowerCase().replace(/\s+/g,'');
+        const b = document.getElementById('q1b').value.trim().toLowerCase().replace(/\s+/g,'');
+        const c = document.getElementById('q1c').value.trim().toLowerCase().replace(/\s+/g,'');
+        const d = document.getElementById('q1d').value.trim().toLowerCase().replace(/\s+/g,'');
+        const e = document.getElementById('q1e').value.trim().toLowerCase().replace(/\s+/g,'');
+        const r = document.getElementById('q1-result');
+        const ca = a === 'mke2fs-text4/dev/sdb1' || a === 'mkfs-text4/dev/sdb1';
+        const cb = b === 'mkfs.xfs/dev/sdb1';
+        const cc = c === 'mkisofs-r-j-oout.iso/src' || c === 'mkisofs-j-r-oout.iso/src' ||
+                   c === 'genisoimage-r-j-oout.iso/src';
+        const cd = d === 'cryptsetupluksformat/dev/sdb1';
+        const ce = e === 'cryptsetupluks open/dev/sdb1mydata' ||
+                   e === 'cryptsetupluksopen/dev/sdb1mydata';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ mke2fs -t ext4 /dev/sdb1（または mkfs -t ext4 /dev/sdb1）'}　` +
+            `② ${cb?'✅':'❌ mkfs.xfs /dev/sdb1'}　` +
+            `③ ${cc?'✅':'❌ mkisofs -R -J -o out.iso /src'}　` +
+            `④ ${cd?'✅':'❌ cryptsetup luksFormat /dev/sdb1'}　` +
+            `⑤ ${ce?'✅':'❌ cryptsetup luksOpen /dev/sdb1 mydata'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 選択問題</h3>
+    <p>
+      <code>mkisofs</code> コマンドで <code>-R</code> オプションを指定する目的として正しいものはどれですか？
+    </p>
+    <select id="q2">
+      <option value="">-- 選択してください --</option>
+      <option value="a">ISO イメージを読み取り専用（Read-only）で作成する</option>
+      <option value="b">Rock Ridge 拡張を有効にして Linux のパーミッション・シンボリックリンクを保持する</option>
+      <option value="c">RAID 構成でイメージを作成する</option>
+      <option value="d">Windows の長いファイル名（Joliet）に対応する</option>
+    </select>
+    <br>
+    <button class="btn btn-amber" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const v = document.getElementById('q2').value;
+        const r = document.getElementById('q2-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>mkisofs の主要拡張オプション：</strong><br>' +
+            '・<code>-R</code>：<strong>Rock Ridge</strong> 拡張 → Linux のパーミッション・所有者・シンボリックリンクを保持<br>' +
+            '・<code>-J</code>：<strong>Joliet</strong> 拡張 → Windows の長いファイル名（最大64文字）に対応<br>' +
+            '・<code>-r</code>：Rock Ridge（パーミッションをリセットして全ユーザーが読み取り可能にする）<br><br>' +
+            'Linux 環境向けの ISO を作成する場合は <code>-R</code>、<br>' +
+            'Windows/Linux 両対応の場合は <code>-R -J</code> を組み合わせます。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '<code>-R</code> は <strong>Rock Ridge 拡張</strong>を有効にするオプションです。<br>' +
+            'Linux のパーミッション・シンボリックリンク・デバイスファイルなどの情報を ISO に保持します。<br>' +
+            'Windows の長いファイル名対応は <code>-J</code>（Joliet）です。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① <code>mkfs.ext4</code> と <code>mke2fs -t ext4</code> は同等のコマンドである
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② XFS ファイルシステムは作成後に縮小することができる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ LUKS で暗号化したデバイスは <code>cryptsetup luksOpen</code> で開いた後、通常のデバイスと同様に mkfs でフォーマットできる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ <code>tune2fs -j</code> は ext2 ファイルシステムにジャーナルを追加して ext3 に変換する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ <code>mkfs.btrfs</code> は複数のデバイスを指定して RAID 構成のファイルシステムを作成できる
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ <code>cryptsetup luksFormat</code> は既存のデータを保持したまま暗号化を追加する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ <code>mkfs -t ext4 /dev/sdb1</code> は <code>mkfs.ext4 /dev/sdb1</code> と同じ動作をする
+    </label>
+    <br>
+    <button class="btn btn-amber" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：①③④⑤⑦（a,c,d,e,g）
+        // ② XFS は縮小不可（拡張のみ）
+        // ⑥ luksFormat はデータを上書きする（既存データは消える）
+        const correct = { a:true, b:false, c:true, d:true, e:true, f:false, g:true };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>①③④⑤⑦<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・② XFS は<strong>縮小できません</strong>（拡張のみ可能）。<code>xfs_growfs</code> で拡張します<br>' +
+            '・⑥ <code>cryptsetup luksFormat</code> は<strong>既存のデータを上書き</strong>します。' +
+            'データを保持したまま暗号化を追加することはできません（事前にバックアップが必要）';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. 手順並べ替え問題</h3>
+    <p>
+      <code>/dev/sdb1</code> に LUKS 暗号化 ext4 ファイルシステムを作成して
+      <code>/mnt/secret</code> にマウントするまでの手順を正しい順序に並べてください。
+    </p>
+    <div style="background:#ebf8ff; border:1px solid #90cdf4; border-radius:6px; padding:12px 16px; margin:10px 0; font-size:0.88em;">
+      <div>A. <code>sudo mkfs.ext4 /dev/mapper/secret</code></div>
+      <div>B. <code>sudo cryptsetup luksOpen /dev/sdb1 secret</code></div>
+      <div>C. <code>sudo mount /dev/mapper/secret /mnt/secret</code></div>
+      <div>D. <code>sudo cryptsetup luksFormat /dev/sdb1</code></div>
+      <div>E. <code>sudo mkdir /mnt/secret</code></div>
+    </div>
+    <label>正しい順序（例：D→B→... の形式で入力）：</label>
+    <input type="text" id="q4" placeholder="X→X→X→X→X">
+    <br>
+    <button class="btn btn-amber" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const v = document.getElementById('q4').value.trim().toUpperCase()
+                    .replace(/[^A-E→>-]/g,'').replace(/[-›>]+/g,'→');
+        const r = document.getElementById('q4-result');
+        if (v === 'D→B→A→E→C' || v === 'D→B→E→A→C') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>正しい手順：</strong><br>' +
+            '① D：<code>cryptsetup luksFormat</code>（LUKS コンテナを作成）<br>' +
+            '② B：<code>cryptsetup luksOpen</code>（コンテナを開いて /dev/mapper/secret を作成）<br>' +
+            '③ A：<code>mkfs.ext4 /dev/mapper/secret</code>（仮想デバイスに ext4 を作成）<br>' +
+            '④ E：<code>mkdir /mnt/secret</code>（マウントポイントを作成）<br>' +
+            '⑤ C：<code>mount /dev/mapper/secret /mnt/secret</code>（マウント）';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ 不正解。あなたの回答：${v || '（未入力）'}<br><br>` +
+            '<strong>正しい順序：D→B→A→E→C（または D→B→E→A→C）</strong><br>' +
+            '① D：luksFormat（LUKS コンテナ作成）<br>' +
+            '② B：luksOpen（コンテナを開く）<br>' +
+            '③ A：mkfs.ext4（ファイルシステム作成）<br>' +
+            '④ E：mkdir（マウントポイント作成）<br>' +
+            '⑤ C：mount（マウント）';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-block">
+    <h3>Q5. 選択問題</h3>
+    <p>
+      <code>mke2fs</code> コマンドでデフォルトのファイルシステムタイプはどれですか？
+    </p>
+    <select id="q5">
+      <option value="">-- 選択してください --</option>
+      <option value="a">ext4</option>
+      <option value="b">ext3</option>
+      <option value="c">ext2</option>
+      <option value="d">xfs</option>
+    </select>
+    <br>
+    <button class="btn btn-amber" onclick="checkQ5()">答え合わせ</button>
+    <div class="result-msg" id="q5-result"></div>
+    <script>
+      function checkQ5() {
+        const v = document.getElementById('q5').value;
+        const r = document.getElementById('q5-result');
+        if (v === 'c') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<code>mke2fs</code> のデフォルトは <strong>ext2</strong> です。<br><br>' +
+            '<strong>各タイプの指定方法：</strong><br>' +
+            '・<code>mke2fs</code>（オプションなし）→ ext2<br>' +
+            '・<code>mke2fs -t ext3</code> → ext3<br>' +
+            '・<code>mke2fs -t ext4</code> → ext4<br><br>' +
+            'ただし、現代のシステムでは直接 <code>mkfs.ext4</code> を使うことが多いです。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '<code>mke2fs</code> のデフォルトは <strong>ext2</strong> です。<br>' +
+            'ext3 や ext4 を作成するには <code>-t</code> オプションでタイプを指定する必要があります。';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 「ファイルシステムの作成」の学習が完了したら記録しましょう！</p>
+  <button class="btn btn-done" onclick="markComplete()">✅ このセクションを完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch4', '40');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  if (parseInt(localStorage.getItem('lpic201_ch4') || '0') >= 40) {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="index.html">← ファイルシステムの操作</a>
+  <a class="home" href="../index.html">🏠 目次へ</a>
+  <a class="next" href="03_lvm.html">次へ：LVM の管理 →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
