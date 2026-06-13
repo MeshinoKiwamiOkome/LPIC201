@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>記憶装置へのアクセス ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em; color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #2c5282; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #1a365d, #2c5282);
+      border-radius: 12px; padding: 32px 32px 24px;
+      margin-bottom: 32px; color: #fff;
+      box-shadow: 0 4px 18px rgba(44,82,130,0.35);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em; font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85; letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .chapter-header h1 { margin: 0 0 10px; font-size: 1.6em; color: #fff; border: none; padding: 0; }
+    .chapter-header p  { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px; padding: 3px 12px;
+      font-size: 0.76em; font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 { color: #1a365d; margin-top: 48px; border-left: 5px solid #2c5282; padding-left: 12px; }
+    h3 { color: #276749; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7; padding: 2px 6px;
+      border-radius: 4px; font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c; color: #e2e8f0;
+      padding: 18px 20px; border-radius: 8px;
+      overflow-x: auto; font-size: 0.88em;
+      line-height: 1.7; font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+    pre .err     { color: #fc8181; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #4a5568; color: #e2e8f0;
+      border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 0.75em;
+      cursor: pointer; font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s; z-index: 1;
+    }
+    .copy-btn:hover { background: #2c5282; }
+
+    /* ボックス */
+    .note {
+      background: #fff; border: 1px dashed #90cdf4;
+      border-radius: 6px; padding: 14px 18px;
+      font-size: 0.93em; color: #4a5568; margin: 14px 0;
+    }
+    .note strong { color: #1a365d; }
+    .warn {
+      background: #fffaf0; border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #744210; margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4; border: 1px solid #68d391;
+      border-left: 5px solid #48bb78; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #276749; margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff; border: 1px solid #bee3f8;
+      border-radius: 8px; padding: 20px 24px;
+      margin: 12px 0 28px; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff; border: 1px solid #bee3f8;
+      border-radius: 10px; padding: 18px 22px;
+      margin-bottom: 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 { margin: 0 0 12px; font-size: 0.92em; color: #1a365d; border: none; padding: 0; }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #2c5282; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #1a365d; font-weight: bold; }
+
+    /* デバイス命名カード */
+    .dev-naming-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px; margin: 14px 0;
+    }
+    .dev-naming-card {
+      border-radius: 8px; padding: 14px 16px;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .dev-naming-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+    .dev-naming-card .dn-type {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.95em; font-weight: bold; margin-bottom: 6px;
+    }
+    .dev-naming-card .dn-example {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.82em; margin-bottom: 4px;
+    }
+    .dev-naming-card .dn-desc {
+      font-size: 0.82em; color: #4a5568; line-height: 1.6;
+    }
+
+    /* iSCSI フロー */
+    .iscsi-flow {
+      display: flex; align-items: center;
+      gap: 8px; flex-wrap: wrap;
+      justify-content: center; margin: 16px 0;
+    }
+    .iscsi-box {
+      border-radius: 8px; padding: 14px 16px;
+      text-align: center; font-size: 0.85em;
+      font-weight: bold; min-width: 120px;
+    }
+    .iscsi-arrow { font-size: 1.4em; color: #718096; }
+
+    /* インタラクティブデモ */
+    .interactive-demo {
+      background: #ebf8ff; border: 1px solid #bee3f8;
+      border-radius: 8px; padding: 16px 20px; margin: 14px 0;
+    }
+    .slider-row {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em; font-weight: bold;
+      min-width: 180px; color: #1a365d;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row select {
+      border: 2px solid #bee3f8; border-radius: 6px;
+      padding: 6px 10px; font-size: 0.88em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #2d3748; background: #fff;
+      cursor: pointer; flex: 1;
+    }
+    .slider-row select:focus { border-color: #2c5282; outline: none; }
+    .output-display {
+      background: #1a202c; color: #68d391;
+      border-radius: 6px; padding: 12px 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em; margin-top: 10px;
+      white-space: pre; overflow-x: auto; line-height: 1.7;
+    }
+
+    /* タブ */
+    .tab-wrap { margin: 14px 0; }
+    .tab-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: -1px; }
+    .tab-btn {
+      padding: 8px 18px; border: 1px solid #bee3f8;
+      border-bottom: none; border-radius: 6px 6px 0 0;
+      background: #edf2f7; color: #1a365d;
+      font-size: 0.85em; font-weight: bold;
+      font-family: 'Consolas', 'Monaco', monospace;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .tab-btn.active { background: #fff; border-bottom: 1px solid #fff; }
+    .tab-btn:hover:not(.active) { background: #bee3f8; }
+    .tab-content {
+      display: none; background: #fff;
+      border: 1px solid #bee3f8;
+      border-radius: 0 6px 6px 6px; padding: 18px 20px;
+    }
+    .tab-content.active { display: block; }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse; width: 100%;
+      background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0; font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #bee3f8; padding: 10px 14px; text-align: left;
+    }
+    table.ref-table thead tr { background: #1a365d; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #ebf8ff; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0; border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0; padding: 24px 28px; margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 18px 22px; margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 8px 12px; font-size: 0.95em;
+      width: 100%; max-width: 440px; margin: 6px 0;
+      outline: none; font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus { border-color: #f6ad55; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block; padding: 9px 20px;
+      border-radius: 6px; border: none; cursor: pointer;
+      font-size: 0.95em; font-weight: bold;
+      transition: opacity 0.2s; margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-blue { background: #2c5282; color: #fff; }
+    .btn-done { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px; padding: 10px 14px;
+      border-radius: 6px; font-weight: bold; display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #bee3f8; color: #1a365d; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 48px;
+      padding-top: 20px; border-top: 2px solid #bee3f8;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block; padding: 10px 20px;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.9em; transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #2c5282; color: #fff; }
+    .page-nav .home { background: #fff; color: #2c5282; border: 2px solid #2c5282; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4; border: 2px solid #48bb78;
+      border-radius: 10px; padding: 20px 24px;
+      margin-top: 40px; text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 2px solid #bee3f8;
+      font-size: 0.82em; color: #a0aec0; text-align: center;
+    }
+    footer a { color: #2c5282; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .dev-naming-grid { grid-template-columns: 1fr; }
+      .iscsi-flow { gap: 4px; }
+      .iscsi-box { min-width: 90px; font-size: 0.78em; padding: 10px; }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  <a href="index.html">第5章：高度なストレージ管理</a> ›
+  記憶装置へのアクセス
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 05 › SECTION 03</div>
+  <h1>🔌 記憶装置へのアクセス</h1>
+  <p>デバイスファイルの命名規則、HDD・SSD の管理コマンド（hdparm・sdparm）、
+  SSD の TRIM 機能、そして iSCSI によるネットワークストレージの構築を学びます。</p>
+  <div class="badge-row">
+    <span class="badge">hdparm</span>
+    <span class="badge">sdparm</span>
+    <span class="badge">fdisk</span>
+    <span class="badge">parted</span>
+    <span class="badge">fstrim</span>
+    <span class="badge">iscsiadm</span>
+    <span class="badge">iSCSI</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第5章のセクション</h2>
+  <ol>
+    <li><a href="index.html">RAID</a></li>
+    <li><a href="02_lvm.html">LVM の管理</a></li>
+    <li class="current"><a href="03_storage.html">記憶装置へのアクセス</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：デバイスファイル -->
+<!-- ============================================================ -->
+<h2 id="devfile">① デバイスファイルの命名規則</h2>
+
+<div class="note">
+  <strong>重要ポイント①：Linux のストレージデバイスは /dev/ 以下のデバイスファイルとして表現される。接続インターフェースによって命名規則が異なる</strong><br>
+  udev が自動的にデバイスファイルを作成・管理します。
+</div>
+
+<div class="demo-box">
+  <h3>ストレージデバイスの命名規則（クリックで詳細）</h3>
+  <div class="dev-naming-grid">
+
+    <div class="dev-naming-card" style="background:#ebf8ff; border:2px solid #90cdf4;"
+         onclick="showDevNaming('sata')">
+      <div class="dn-type" style="color:#2b4c7e;">SATA / SCSI / USB</div>
+      <div class="dn-example" style="color:#2b4c7e;">/dev/sda, /dev/sdb, /dev/sdc...</div>
+      <div class="dn-desc">sd + アルファベット順。パーティションは数字を付加</div>
+    </div>
+
+    <div class="dev-naming-card" style="background:#f0fff4; border:2px solid #68d391;"
+         onclick="showDevNaming('nvme')">
+      <div class="dn-type" style="color:#1a4731;">NVMe SSD</div>
+      <div class="dn-example" style="color:#1a4731;">/dev/nvme0n1, /dev/nvme0n1p1...</div>
+      <div class="dn-desc">nvme + コントローラ番号 + n + ネームスペース番号</div>
+    </div>
+
+    <div class="dev-naming-card" style="background:#faf5ff; border:2px solid #b794f4;"
+         onclick="showDevNaming('virtio')">
+      <div class="dn-type" style="color:#553c9a;">仮想ディスク（virtio）</div>
+      <div class="dn-example" style="color:#553c9a;">/dev/vda, /dev/vdb...</div>
+      <div class="dn-desc">KVM/QEMU 仮想マシンの virtio ブロックデバイス</div>
+    </div>
+
+    <div class="dev-naming-card" style="background:#fffaf0; border:2px solid #f6ad55;"
+         onclick="showDevNaming('loop')">
+      <div class="dn-type" style="color:#744210;">ループデバイス</div>
+      <div class="dn-example" style="color:#744210;">/dev/loop0, /dev/loop1...</div>
+      <div class="dn-desc">ISO イメージなどのファイルをブロックデバイスとして扱う</div>
+    </div>
+
+    <div class="dev-naming-card" style="background:#fff5f5; border:2px solid #fc8181;"
+         onclick="showDevNaming('mmc')">
+      <div class="dn-type" style="color:#9b2335;">MMC / SD カード</div>
+      <div class="dn-example" style="color:#9b2335;">/dev/mmcblk0, /dev/mmcblk0p1...</div>
+      <div class="dn-desc">eMMC・SD カードなどのマルチメディアカード</div>
+    </div>
+
+    <div class="dev-naming-card" style="background:#edf2f7; border:2px solid #a0aec0;"
+         onclick="showDevNaming('ide')">
+      <div class="dn-type" style="color:#4a5568;">IDE / PATA（旧来）</div>
+      <div class="dn-example" style="color:#4a5568;">/dev/hda, /dev/hdb...</div>
+      <div class="dn-desc">旧来の IDE ディスク（現在はほぼ使用されない）</div>
+    </div>
+
+  </div>
+
+  <!-- デバイス命名詳細 -->
+  <div id="dev-naming-detail" style="display:none; margin-top:12px; background:#fff; border:1px solid #bee3f8; border-left:5px solid #2c5282; border-radius:0 8px 8px 0; padding:14px 18px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const devNamings = {
+      sata: {
+        title: 'SATA / SCSI / USB ストレージ（/dev/sd*）',
+        color: '#2b4c7e',
+        body: `最も一般的なストレージデバイスの命名規則です。<br><br>
+          <strong>命名規則：</strong><br>
+          ・<code>/dev/sda</code>：1番目のディスク全体<br>
+          ・<code>/dev/sdb</code>：2番目のディスク全体<br>
+          ・<code>/dev/sda1</code>：sda の1番目のパーティション<br>
+          ・<code>/dev/sda2</code>：sda の2番目のパーティション<br>
+          ・<code>/dev/sda5</code>：sda の1番目の論理パーティション（5以降が論理）<br><br>
+          <strong>注意：</strong><br>
+          デバイス名（sda/sdb）は起動順序や接続順序によって変わる可能性があります。<br>
+          <code>/etc/fstab</code> では UUID を使用することを推奨します。`
+      },
+      nvme: {
+        title: 'NVMe SSD（/dev/nvme*）',
+        color: '#1a4731',
+        body: `NVMe（Non-Volatile Memory Express）インターフェースの SSD の命名規則です。<br><br>
+          <strong>命名規則：</strong><br>
+          ・<code>/dev/nvme0</code>：1番目の NVMe コントローラ<br>
+          ・<code>/dev/nvme0n1</code>：1番目のコントローラの1番目のネームスペース（ディスク全体）<br>
+          ・<code>/dev/nvme0n1p1</code>：nvme0n1 の1番目のパーティション<br>
+          ・<code>/dev/nvme1n1</code>：2番目のコントローラの1番目のネームスペース<br><br>
+          <strong>特徴：</strong><br>
+          ・PCIe バス接続で SATA より大幅に高速<br>
+          ・読み取り速度：最大 7,000MB/s（Gen4）`
+      },
+      virtio: {
+        title: '仮想ディスク（/dev/vd*）',
+        color: '#553c9a',
+        body: `KVM/QEMU 仮想マシンで使用される virtio ブロックデバイスの命名規則です。<br><br>
+          <strong>命名規則：</strong><br>
+          ・<code>/dev/vda</code>：1番目の仮想ディスク<br>
+          ・<code>/dev/vdb</code>：2番目の仮想ディスク<br>
+          ・<code>/dev/vda1</code>：vda の1番目のパーティション<br><br>
+          <strong>特徴：</strong><br>
+          ・準仮想化ドライバにより高いI/O性能<br>
+          ・クラウド環境（AWS・GCP・Azure）でも使用される`
+      },
+      loop: {
+        title: 'ループデバイス（/dev/loop*）',
+        color: '#744210',
+        body: `ファイルをブロックデバイスとして扱うための仮想デバイスです。<br><br>
+          <strong>命名規則：</strong><br>
+          ・<code>/dev/loop0</code>〜<code>/dev/loop7</code>（デフォルト）<br><br>
+          <strong>主な用途：</strong><br>
+          ・ISO イメージのマウント：<code>mount -o loop ubuntu.iso /mnt/iso</code><br>
+          ・ファイルベースのディスクイメージのマウント<br>
+          ・Snap パッケージ（<code>/dev/loop*</code> を大量に使用）<br><br>
+          <strong>確認コマンド：</strong><br>
+          <code>losetup -l</code>（現在使用中のループデバイス一覧）`
+      },
+      mmc: {
+        title: 'MMC / SD カード（/dev/mmcblk*）',
+        color: '#9b2335',
+        body: `eMMC（組み込み MMC）や SD カードの命名規則です。<br><br>
+          <strong>命名規則：</strong><br>
+          ・<code>/dev/mmcblk0</code>：1番目の MMC デバイス全体<br>
+          ・<code>/dev/mmcblk0p1</code>：mmcblk0 の1番目のパーティション<br>
+          ・<code>/dev/mmcblk1</code>：2番目の MMC デバイス<br><br>
+          <strong>主な用途：</strong><br>
+          ・Raspberry Pi などの組み込みボードのブートデバイス<br>
+          ・ノートPC の内蔵ストレージ（eMMC）`
+      },
+      ide: {
+        title: 'IDE / PATA（/dev/hd*）',
+        color: '#4a5568',
+        body: `旧来の IDE（ATA）インターフェースのディスクの命名規則です。現在はほぼ使用されません。<br><br>
+          <strong>命名規則：</strong><br>
+          ・<code>/dev/hda</code>：プライマリマスター<br>
+          ・<code>/dev/hdb</code>：プライマリスレーブ<br>
+          ・<code>/dev/hdc</code>：セカンダリマスター<br>
+          ・<code>/dev/hdd</code>：セカンダリスレーブ<br>
+          ・<code>/dev/hda1</code>：hda の1番目のパーティション<br><br>
+          現代の Linux では IDE ディスクも <code>/dev/sd*</code> として認識されることが多い。`
+      }
+    };
+
+    function showDevNaming(key) {
+      const d = devNamings[key];
+      const el = document.getElementById('dev-naming-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display='none'; el.dataset.current=''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-size:0.95em;">${d.title}</strong><br><br>${d.body}`;
+      el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+  </script>
+
+  <h3>パーティション操作コマンド</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># ブロックデバイスの一覧表示</span>
+$ <span class="cmd">lsblk</span>
+<span class="out">NAME        MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS</span>
+<span class="out">sda           8:0    0   500G  0 disk</span>
+<span class="out">├─sda1        8:1    0   512M  0 part /boot/efi</span>
+<span class="out">├─sda2        8:2    0     1G  0 part /boot</span>
+<span class="out">└─sda3        8:3    0 498.5G  0 part</span>
+<span class="out">  └─vg0-lv0 253:0    0 498.5G  0 lvm  /</span>
+<span class="out">nvme0n1     259:0    0     1T  0 disk</span>
+<span class="out">└─nvme0n1p1 259:1    0     1T  0 part /data</span>
+
+<span class="comment"># fdisk：MBR パーティションの操作（対話式）</span>
+$ <span class="cmd">sudo fdisk</span> /dev/sdb
+<span class="comment"># m：ヘルプ  n：新規  d：削除  p：一覧  t：タイプ変更  w：書き込み  q：終了</span>
+
+<span class="comment"># fdisk でパーティション一覧を表示</span>
+$ <span class="cmd">sudo fdisk</span> <span class="opt">-l</span> /dev/sda
+<span class="out">Disk /dev/sda: 500 GiB, 536870912000 bytes, 1048576000 sectors</span>
+<span class="out">Device     Boot   Start       End   Sectors   Size Id Type</span>
+<span class="out">/dev/sda1  *       2048   1050623   1048576   512M  b W95 FAT32</span>
+<span class="out">/dev/sda2       1050624   3147775   2097152     1G 83 Linux</span>
+<span class="out">/dev/sda3       3147776 1048575999 1045428224 498.5G 8e Linux LVM</span>
+
+<span class="comment"># parted：GPT パーティションの操作（MBR にも対応）</span>
+$ <span class="cmd">sudo parted</span> /dev/sdb
+<span class="comment"># (parted) print  → パーティション一覧</span>
+<span class="comment"># (parted) mklabel gpt  → GPT パーティションテーブルを作成</span>
+<span class="comment"># (parted) mkpart primary ext4 0% 100%  → パーティション作成</span>
+<span class="comment"># (parted) quit  → 終了</span>
+
+<span class="comment"># gdisk：GPT 専用のパーティション操作ツール</span>
+$ <span class="cmd">sudo gdisk</span> /dev/sdb
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：ハードディスクの管理 -->
+<!-- ============================================================ -->
+<h2 id="hdd">② ハードディスクの管理</h2>
+
+<div class="note">
+  <strong>重要ポイント②：hdparm は ATA/SATA ディスクのパラメータを表示・変更するコマンド。ディスクの情報確認やパフォーマンスチューニングに使用する</strong>
+</div>
+
+<div class="demo-box">
+  <h3>hdparm コマンド</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># hdparm のインストール</span>
+$ <span class="cmd">sudo apt install</span> hdparm
+
+<span class="comment"># ディスクの情報を表示（-I = Identity）</span>
+$ <span class="cmd">sudo hdparm</span> <span class="opt">-I</span> /dev/sda
+<span class="out">/dev/sda:</span>
+<span class="out">ATA device, with non-removable media</span>
+<span class="out">        Model Number:       SAMSUNG MZNLN256HAJQ-000H1</span>
+<span class="out">        Serial Number:      S3EVNX0K123456</span>
+<span class="out">        Firmware Revision:  MAV21H3Q</span>
+<span class="out">        Transport:          Serial, ATA8-AST, SATA 1.0a, SATA II Extensions</span>
+<span class="out">Standards:</span>
+<span class="out">        Supported: 9 8 7 6 5</span>
+<span class="out">        Likely used: 9</span>
+<span class="out">Configuration:</span>
+<span class="out">        Logical         max     current</span>
+<span class="out">        cylinders       16383   16383</span>
+<span class="out">        heads           16      16</span>
+<span class="out">        sectors/track   63      63</span>
+<span class="out">Capabilities:</span>
+<span class="hl">        LBA, IORDY(can be disabled)</span>
+<span class="hl">        Queue depth: 32</span>
+
+<span class="comment"># ディスクの読み取り速度をテスト（-t = timing）</span>
+$ <span class="cmd">sudo hdparm</span> <span class="opt">-t</span> /dev/sda
+<span class="out">/dev/sda:</span>
+<span class="out"> Timing buffered disk reads: 1234 MB in  3.00 seconds = 411.33 MB/sec</span>
+
+<span class="comment"># キャッシュ読み取り速度をテスト（-T = Timing cache）</span>
+$ <span class="cmd">sudo hdparm</span> <span class="opt">-T</span> /dev/sda
+<span class="out">/dev/sda:</span>
+<span class="out"> Timing cached reads:   12345 MB in  2.00 seconds = 6172.50 MB/sec</span>
+
+<span class="comment"># 両方同時にテスト</span>
+$ <span class="cmd">sudo hdparm</span> <span class="opt">-Tt</span> /dev/sda
+
+<span class="comment"># ディスクのパラメータを表示（-g = geometry）</span>
+$ <span class="cmd">sudo hdparm</span> <span class="opt">-g</span> /dev/sda
+<span class="out"> geometry      = 60801/255/63, sectors = 976773168, start = 0</span>
+
+<span class="comment"># S.M.A.R.T. の有効化</span>
+$ <span class="cmd">sudo hdparm</span> <span class="opt">-s</span> <span class="val">1</span> /dev/sda   <span class="comment"># スタンバイタイムアウトを設定</span>
+
+<span class="comment"># ディスクのスリープ状態を確認（-C = Check power）</span>
+$ <span class="cmd">sudo hdparm</span> <span class="opt">-C</span> /dev/sda
+<span class="out"> drive state is:  active/idle</span>
+
+<span class="comment"># ディスクをスリープ状態にする（-y = sleep）</span>
+$ <span class="cmd">sudo hdparm</span> <span class="opt">-y</span> /dev/sda
+
+<span class="comment"># DMA（Direct Memory Access）を有効化</span>
+$ <span class="cmd">sudo hdparm</span> <span class="opt">-d</span> <span class="val">1</span> /dev/sda
+</pre>
+  </div>
+
+  <h3>sdparm コマンド（SCSI デバイス）</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># sdparm のインストール</span>
+$ <span class="cmd">sudo apt install</span> sdparm
+
+<span class="comment"># SCSI デバイスのパラメータを表示</span>
+$ <span class="cmd">sudo sdparm</span> /dev/sda
+<span class="out">    /dev/sda: ATA       SAMSUNG MZNLN256  2H3Q</span>
+<span class="out">Read write error recovery mode page:</span>
+<span class="out">  AWRE          1  [cha: n, def:  1]</span>
+<span class="out">  ARRE          0  [cha: n, def:  0]</span>
+<span class="out">  PER           0  [cha: n, def:  0]</span>
+
+<span class="comment"># デバイスの識別情報を表示</span>
+$ <span class="cmd">sudo sdparm</span> <span class="opt">-i</span> /dev/sda
+
+<span class="comment"># キャッシュモードページを表示</span>
+$ <span class="cmd">sudo sdparm</span> <span class="opt">-p</span> <span class="val">ca</span> /dev/sda
+
+<span class="comment"># ライトキャッシュを有効化</span>
+$ <span class="cmd">sudo sdparm</span> <span class="opt">--set</span>=<span class="val">WCE</span> /dev/sda
+</pre>
+  </div>
+
+  <h3>hdparm の主要オプション一覧</h3>
+  <table class="ref-table">
+    <thead><tr><th>オプション</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td><code>-I</code></td><td>ディスクの詳細情報（Identity）を表示</td></tr>
+      <tr><td><code>-t</code></td><td>バッファリングなしの読み取り速度をテスト</td></tr>
+      <tr><td><code>-T</code></td><td>キャッシュ読み取り速度をテスト</td></tr>
+      <tr><td><code>-g</code></td><td>ディスクのジオメトリ情報を表示</td></tr>
+      <tr><td><code>-C</code></td><td>ディスクの電源状態を確認</td></tr>
+      <tr><td><code>-y</code></td><td>ディスクをスリープ（standby）状態にする</td></tr>
+      <tr><td><code>-Y</code></td><td>ディスクをスリープ（sleep）状態にする</td></tr>
+      <tr><td><code>-d 1/0</code></td><td>DMA を有効化（1）/ 無効化（0）</td></tr>
+      <tr><td><code>-W 1/0</code></td><td>ライトキャッシュを有効化（1）/ 無効化（0）</td></tr>
+      <tr><td><code>-S N</code></td><td>スタンバイタイムアウトを設定</td></tr>
+      <tr><td><code>-a N</code></td><td>先読みセクタ数を設定</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：SSD の管理 -->
+<!-- ============================================================ -->
+<h2 id="ssd">③ SSD の管理</h2>
+
+<div class="note">
+  <strong>重要ポイント③：SSD は HDD と異なる特性を持つ。TRIM（fstrim）によって削除済みブロックを SSD に通知してパフォーマンスを維持する</strong><br>
+  SSD ではランダムアクセスが高速で、デフラグは不要（むしろ有害）です。
+</div>
+
+<div class="demo-box">
+  <h3>SSD と HDD の違い</h3>
+  <table class="ref-table">
+    <thead><tr><th>特性</th><th>HDD</th><th>SSD</th></tr></thead>
+    <tbody>
+      <tr><td>読み取り速度</td><td>100〜200 MB/s</td><td>500MB/s〜7,000MB/s（NVMe）</td></tr>
+      <tr><td>書き込み速度</td><td>100〜200 MB/s</td><td>400MB/s〜6,000MB/s（NVMe）</td></tr>
+      <tr><td>ランダムアクセス</td><td>遅い（ヘッドの移動が必要）</td><td>高速（電気的アクセス）</td></tr>
+      <tr><td>デフラグ</td><td>有効（断片化を解消）</td><td>不要・有害（書き込み回数を消費）</td></tr>
+      <tr><td>TRIM</td><td>不要</td><td>必要（削除済みブロックの通知）</td></tr>
+      <tr><td>書き込み寿命</td><td>ほぼ無制限</td><td>TBW（書き込み総量）で管理</td></tr>
+      <tr><td>noatime</td><td>推奨</td><td>強く推奨（書き込み回数削減）</td></tr>
+      <tr><td>マウントオプション</td><td>defaults</td><td>noatime, discard（TRIM）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>TRIM の設定と実行</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># SSD が TRIM に対応しているか確認</span>
+$ <span class="cmd">sudo hdparm</span> <span class="opt">-I</span> /dev/sda | <span class="cmd">grep</span> <span class="opt">-i</span> <span class="val">trim</span>
+<span class="hl">           *    Data Set Management TRIM supported (limit 8 blocks)</span>
+<span class="comment"># * が付いていれば TRIM 対応</span>
+
+<span class="comment"># lsblk で DISC-GRAN（TRIM のグラニュラリティ）を確認</span>
+$ <span class="cmd">lsblk</span> <span class="opt">-D</span>
+<span class="out">NAME    DISC-ALN DISC-GRAN DISC-MAX DISC-ZERO</span>
+<span class="hl">sda            0      512B       2G         0</span>
+<span class="comment"># DISC-GRAN が 0 でなければ TRIM 対応</span>
+
+<span class="comment">## 方法1：手動 TRIM（fstrim）</span>
+<span class="comment"># マウント中のファイルシステムに TRIM を実行</span>
+$ <span class="cmd">sudo fstrim</span> /
+$ <span class="cmd">sudo fstrim</span> <span class="opt">-v</span> /          <span class="comment"># 詳細表示</span>
+<span class="out">/: 15.6 GiB (16756506624 bytes) trimmed</span>
+
+<span class="comment"># すべてのマウント済みファイルシステムに TRIM を実行</span>
+$ <span class="cmd">sudo fstrim</span> <span class="opt">-av</span>
+<span class="out">/boot/efi: 491.5 MiB (515530752 bytes) trimmed</span>
+<span class="out">/boot: 874.2 MiB (916520960 bytes) trimmed</span>
+<span class="out">/: 15.6 GiB (16756506624 bytes) trimmed</span>
+
+<span class="comment">## 方法2：定期的な自動 TRIM（systemd timer）</span>
+<span class="comment"># fstrim.timer を有効化（週1回自動実行）</span>
+$ <span class="cmd">sudo systemctl</span> enable --now fstrim.timer
+$ <span class="cmd">sudo systemctl</span> status fstrim.timer
+<span class="out">● fstrim.timer - Discard unused blocks once a week</span>
+<span class="out">     Loaded: loaded (/lib/systemd/system/fstrim.timer; enabled)</span>
+<span class="out">     Active: active (waiting)</span>
+<span class="out">    Trigger: Mon 2026-06-16 00:00:00 JST</span>
+
+<span class="comment">## 方法3：マウント時に discard オプション（継続的 TRIM）</span>
+<span class="comment"># /etc/fstab に discard オプションを追加</span>
+<span class="out">UUID=xxxx  /  ext4  defaults,noatime,discard  0 1</span>
+<span class="comment"># ⚠️  discard オプションは I/O 性能に影響する場合がある</span>
+<span class="comment"># 定期的な fstrim の方が推奨されることが多い</span>
+</pre>
+  </div>
+
+  <h3>SSD 最適化のマウントオプション</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># SSD 向けの /etc/fstab 設定例</span>
+<span class="comment"># noatime：アクセス時刻の更新を無効化（書き込み回数削減）</span>
+<span class="comment"># discard：削除時に即座に TRIM を実行</span>
+<span class="hdr">UUID=xxxx  /       ext4  defaults,noatime,discard  0 1</span>
+<span class="hdr">UUID=yyyy  /home   ext4  defaults,noatime,discard  0 2</span>
+<span class="hdr">UUID=zzzz  /data   xfs   defaults,noatime,discard  0 2</span>
+
+<span class="comment"># SSD の書き込み寿命を確認（smartctl）</span>
+$ <span class="cmd">sudo smartctl</span> <span class="opt">-a</span> /dev/sda | <span class="cmd">grep</span> <span class="opt">-E</span> <span class="val">"Wear|Written|TBW"</span>
+<span class="out">177 Wear_Leveling_Count     0x0013   097   097   000  Pre-fail  Always  -  97</span>
+<span class="out">241 Total_LBAs_Written      0x0032   099   099   000  Old_age   Always  -  12345678</span>
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 4：iSCSI -->
+<!-- ============================================================ -->
+<h2 id="iscsi">④ iSCSI</h2>
+
+<div class="note">
+  <strong>重要ポイント④：iSCSI（Internet Small Computer System Interface）は TCP/IP ネットワーク経由で SCSI コマンドを転送してリモートストレージをローカルディスクとして使用する技術</strong><br>
+  iSCSI イニシエータ（クライアント）が iSCSI ターゲット（サーバー）に接続します。
+</div>
+
+<div class="demo-box">
+  <h3>iSCSI の構成</h3>
+  <div class="iscsi-flow">
+    <div class="iscsi-box" style="background:#1a202c; color:#e2e8f0; border:2px solid #4a5568;">
+      💻 iSCSI イニシエータ<br>
+      <span style="font-size:0.8em; font-weight:normal;">（クライアント）<br>iscsiadm コマンド</span>
+    </div>
+    <div class="iscsi-arrow">⇄</div>
+    <div class="iscsi-box" style="background:#1a365d; color:#bee3f8; border:2px solid #2c5282;">
+      🌐 TCP/IP ネットワーク<br>
+      <span style="font-size:0.8em; font-weight:normal;">ポート 3260<br>（iSCSI 標準ポート）</span>
+    </div>
+    <div class="iscsi-arrow">⇄</div>
+    <div class="iscsi-box" style="background:#1a4731; color:#fff; border:2px solid #2f855a;">
+      🗄️ iSCSI ターゲット<br>
+      <span style="font-size:0.8em; font-weight:normal;">（ストレージサーバー）<br>tgtd / targetcli</span>
+    </div>
+  </div>
+
+  <h3>iSCSI の用語</h3>
+  <table class="ref-table">
+    <thead><tr><th>用語</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td><strong>イニシエータ</strong></td><td>iSCSI クライアント。ストレージにアクセスするホスト</td></tr>
+      <tr><td><strong>ターゲット</strong></td><td>iSCSI サーバー。ストレージを提供するホスト</td></tr>
+      <tr><td><strong>IQN</strong></td><td>iSCSI Qualified Name。iSCSI デバイスの一意な識別子<br>例：<code>iqn.2026-01.com.example:storage1</code></td></tr>
+      <tr><td><strong>LUN</strong></td><td>Logical Unit Number。ターゲットが提供するストレージの単位</td></tr>
+      <tr><td><strong>ポータル</strong></td><td>ターゲットの IP アドレスとポート番号の組み合わせ</td></tr>
+      <tr><td><strong>セッション</strong></td><td>イニシエータとターゲット間の接続</td></tr>
+      <tr><td><strong>CHAP</strong></td><td>Challenge-Handshake Authentication Protocol。iSCSI の認証方式</td></tr>
+    </tbody>
+  </table>
+
+  <h3>iSCSI イニシエータの設定（タブで切り替え）</h3>
+  <div class="tab-wrap">
+    <div class="tab-btns">
+      <button class="tab-btn active" onclick="switchTab(this,'tab-initiator')">イニシエータの設定</button>
+      <button class="tab-btn" onclick="switchTab(this,'tab-discovery')">ターゲットの検出</button>
+      <button class="tab-btn" onclick="switchTab(this,'tab-connect')">接続と使用</button>
+      <button class="tab-btn" onclick="switchTab(this,'tab-target')">ターゲットの設定</button>
+    </div>
+
+    <!-- イニシエータの設定 -->
+    <div class="tab-content active" id="tab-initiator">
+      <h3 style="margin-top:0; color:#1a365d;">iSCSI イニシエータのインストールと設定</h3>
+      <div class="pre-wrap">
+        <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># iSCSI イニシエータのインストール</span>
+$ <span class="cmd">sudo apt install</span> open-iscsi
+
+<span class="comment"># イニシエータ名（IQN）の確認</span>
+$ <span class="cmd">cat</span> /etc/iscsi/initiatorname.iscsi
+<span class="out">InitiatorName=iqn.1993-08.org.debian:01:xxxxxxxxxx</span>
+
+<span class="comment"># イニシエータ名を変更（任意）</span>
+$ <span class="cmd">sudo vi</span> /etc/iscsi/initiatorname.iscsi
+<span class="out">InitiatorName=iqn.2026-01.com.example:client1</span>
+
+<span class="comment"># iscsid の設定ファイル</span>
+$ <span class="cmd">cat</span> /etc/iscsi/iscsid.conf
+<span class="comment"># CHAP 認証を設定する場合</span>
+<span class="out">node.session.auth.authmethod = CHAP</span>
+<span class="out">node.session.auth.username = username</span>
+<span class="out">node.session.auth.password = password</span>
+
+<span class="comment"># iscsid デーモンを起動</span>
+$ <span class="cmd">sudo systemctl</span> enable --now iscsid
+</pre>
+      </div>
+    </div>
+
+    <!-- ターゲットの検出 -->
+    <div class="tab-content" id="tab-discovery">
+      <h3 style="margin-top:0; color:#1a365d;">iSCSI ターゲットの検出</h3>
+      <div class="pre-wrap">
+        <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># ターゲットを検出（iSNS または SendTargets）</span>
+$ <span class="cmd">sudo iscsiadm</span> <span class="opt">--mode</span> <span class="val">discovery</span> \
+    <span class="opt">--type</span> <span class="val">sendtargets</span> \
+    <span class="opt">--portal</span> <span class="val">192.168.1.100</span>
+<span class="out">192.168.1.100:3260,1 iqn.2026-01.com.example:storage1</span>
+<span class="out">192.168.1.100:3260,1 iqn.2026-01.com.example:storage2</span>
+
+<span class="comment"># 省略形</span>
+$ <span class="cmd">sudo iscsiadm</span> <span class="opt">-m</span> <span class="val">discovery</span> <span class="opt">-t</span> <span class="val">st</span> <span class="opt">-p</span> <span class="val">192.168.1.100</span>
+
+<span class="comment"># 検出されたターゲットの一覧を表示</span>
+$ <span class="cmd">sudo iscsiadm</span> <span class="opt">-m</span> <span class="val">node</span>
+<span class="out">192.168.1.100:3260,1 iqn.2026-01.com.example:storage1</span>
+
+<span class="comment"># ノード（ターゲット）の詳細情報を表示</span>
+$ <span class="cmd">sudo iscsiadm</span> <span class="opt">-m</span> <span class="val">node</span> <span class="opt">-o</span> <span class="val">show</span>
+</pre>
+      </div>
+    </div>
+
+    <!-- 接続と使用 -->
+    <div class="tab-content" id="tab-connect">
+      <h3 style="margin-top:0; color:#1a365d;">iSCSI ターゲットへの接続と使用</h3>
+      <div class="pre-wrap">
+        <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># ターゲットにログイン（接続）</span>
+$ <span class="cmd">sudo iscsiadm</span> <span class="opt">-m</span> <span class="val">node</span> \
+    <span class="opt">--targetname</span> <span class="val">iqn.2026-01.com.example:storage1</span> \
+    <span class="opt">--portal</span> <span class="val">192.168.1.100:3260</span> \
+    <span class="opt">--login</span>
+<span class="out">Logging in to [iface: default, target: iqn.2026-01.com.example:storage1, portal: 192.168.1.100,3260]</span>
+<span class="out">Login to [iface: default, target: iqn.2026-01.com.example:storage1, portal: 192.168.1.100,3260]: successful</span>
+
+<span class="comment"># すべてのターゲットにログイン</span>
+$ <span class="cmd">sudo iscsiadm</span> <span class="opt">-m</span> <span class="val">node</span> <span class="opt">--loginall</span>=<span class="val">all</span>
+
+<span class="comment"># 接続後：新しいブロックデバイスが作成される</span>
+$ <span class="cmd">lsblk</span>
+<span class="hl">sdb      8:16   0  100G  0 disk   ← iSCSI ディスクとして認識</span>
+
+<span class="comment"># 通常のディスクと同様に使用可能</span>
+$ <span class="cmd">sudo fdisk</span> /dev/sdb
+$ <span class="cmd">sudo mkfs.ext4</span> /dev/sdb1
+$ <span class="cmd">sudo mount</span> /dev/sdb1 /mnt/iscsi
+
+<span class="comment"># 現在のセッションを確認</span>
+$ <span class="cmd">sudo iscsiadm</span> <span class="opt">-m</span> <span class="val">session</span>
+<span class="out">tcp: [1] 192.168.1.100:3260,1 iqn.2026-01.com.example:storage1 (non-flash)</span>
+
+<span class="comment"># ターゲットからログアウト（切断）</span>
+$ <span class="cmd">sudo umount</span> /mnt/iscsi
+$ <span class="cmd">sudo iscsiadm</span> <span class="opt">-m</span> <span class="val">node</span> \
+    <span class="opt">--targetname</span> <span class="val">iqn.2026-01.com.example:storage1</span> \
+    <span class="opt">--portal</span> <span class="val">192.168.1.100:3260</span> \
+    <span class="opt">--logout</span>
+
+<span class="comment"># 起動時に自動ログインを設定</span>
+$ <span class="cmd">sudo iscsiadm</span> <span class="opt">-m</span> <span class="val">node</span> \
+    <span class="opt">--targetname</span> <span class="val">iqn.2026-01.com.example:storage1</span> \
+    <span class="opt">-o</span> <span class="val">update</span> \
+    <span class="opt">-n</span> <span class="val">node.startup</span> \
+    <span class="opt">-v</span> <span class="val">automatic</span>
+</pre>
+      </div>
+    </div>
+
+    <!-- ターゲットの設定 -->
+    <div class="tab-content" id="tab-target">
+      <h3 style="margin-top:0; color:#1a365d;">iSCSI ターゲットの設定（サーバー側）</h3>
+      <div class="pre-wrap">
+        <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># targetcli のインストール（現代の標準）</span>
+$ <span class="cmd">sudo apt install</span> targetcli-fb
+
+<span class="comment"># targetcli の起動</span>
+$ <span class="cmd">sudo targetcli</span>
+<span class="out">targetcli shell version 2.1.53</span>
+<span class="out">Copyright 2011-2013 by Datera, Inc and others.</span>
+<span class="out">For help on commands, type 'help'.</span>
+<span class="out">/&gt;</span>
+
+<span class="comment"># targetcli でのターゲット設定例</span>
+<span class="comment"># バックストア（ストレージ）の作成</span>
+<span class="out">/&gt; backstores/block create name=disk1 dev=/dev/sdb</span>
+<span class="out">/&gt; backstores/fileio create name=file1 file_or_dev=/data/iscsi.img size=10G</span>
+
+<span class="comment"># iSCSI ターゲットの作成</span>
+<span class="out">/&gt; iscsi/ create iqn.2026-01.com.example:storage1</span>
+
+<span class="comment"># LUN の設定</span>
+<span class="out">/&gt; iscsi/iqn.2026-01.com.example:storage1/tpg1/luns create /backstores/block/disk1</span>
+
+<span class="comment"># ACL（アクセス制御）の設定</span>
+<span class="out">/&gt; iscsi/iqn.2026-01.com.example:storage1/tpg1/acls create iqn.1993-08.org.debian:01:client1</span>
+
+<span class="comment"># 設定を保存して終了</span>
+<span class="out">/&gt; saveconfig</span>
+<span class="out">/&gt; exit</span>
+
+<span class="comment"># target サービスを起動</span>
+$ <span class="cmd">sudo systemctl</span> enable --now target
+</pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(btn, id) {
+      btn.closest('.tab-wrap').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.closest('.tab-wrap').querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(id).classList.add('active');
+    }
+  </script>
+
+  <h3>iscsiadm コマンドのオプション一覧</h3>
+  <table class="ref-table">
+    <thead><tr><th>コマンド</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td><code>iscsiadm -m discovery -t st -p ターゲットIP</code></td><td>ターゲットを検出（SendTargets）</td></tr>
+      <tr><td><code>iscsiadm -m node</code></td><td>検出済みターゲットの一覧表示</td></tr>
+      <tr><td><code>iscsiadm -m node --login</code></td><td>ターゲットにログイン（接続）</td></tr>
+      <tr><td><code>iscsiadm -m node --logout</code></td><td>ターゲットからログアウト（切断）</td></tr>
+      <tr><td><code>iscsiadm -m node --loginall=all</code></td><td>すべてのターゲットにログイン</td></tr>
+      <tr><td><code>iscsiadm -m session</code></td><td>現在のセッション一覧を表示</td></tr>
+      <tr><td><code>iscsiadm -m node -o delete</code></td><td>ノード（ターゲット情報）を削除</td></tr>
+    </tbody>
+  </table>
+
+  <h3>iSCSI 操作インタラクティブデモ</h3>
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#1a365d; margin:0 0 12px;">
+      操作シナリオを選択して iscsiadm コマンドを確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>操作シナリオ</label>
+      <select id="iscsi-sel" onchange="showIscsiScenario()">
+        <option value="">-- シナリオを選択 --</option>
+        <option value="discover">ターゲットを検出する</option>
+        <option value="login">ターゲットに接続する</option>
+        <option value="use">iSCSI ディスクを使用する</option>
+        <option value="auto">起動時の自動接続を設定する</option>
+        <option value="logout">切断・クリーンアップする</option>
+      </select>
+    </div>
+    <div class="output-display" id="iscsi-output" style="display:none;"></div>
+  </div>
+
+  <script>
+    const iscsiScenarios = {
+      discover: {
+        color: '#90cdf4',
+        text:
+`# ターゲットサーバー（192.168.1.100）のターゲットを検出
+
+$ sudo iscsiadm -m discovery -t sendtargets -p 192.168.1.100
+192.168.1.100:3260,1 iqn.2026-01.com.example:storage1
+192.168.1.100:3260,1 iqn.2026-01.com.example:storage2
+
+# 検出されたターゲットは /etc/iscsi/nodes/ に保存される
+$ ls /etc/iscsi/nodes/
+iqn.2026-01.com.example:storage1/
+iqn.2026-01.com.example:storage2/`
+      },
+      login: {
+        color: '#68d391',
+        text:
+`# 特定のターゲットにログイン
+$ sudo iscsiadm -m node \\
+    --targetname iqn.2026-01.com.example:storage1 \\
+    --portal 192.168.1.100:3260 \\
+    --login
+
+Login to [iface: default, target: iqn.2026-01.com.example:storage1,
+          portal: 192.168.1.100,3260]: successful
+
+# 接続確認
+$ sudo iscsiadm -m session
+tcp: [1] 192.168.1.100:3260,1 iqn.2026-01.com.example:storage1
+
+# 新しいブロックデバイスが作成される
+$ lsblk
+sdb      8:16   0  100G  0 disk  ← iSCSI ディスク`
+      },
+      use: {
+        color: '#b794f4',
+        text:
+`# iSCSI ディスクを通常のディスクと同様に使用
+
+# パーティション作成
+$ sudo fdisk /dev/sdb
+# → n → p → Enter → Enter → w
+
+# ファイルシステム作成
+$ sudo mkfs.ext4 /dev/sdb1
+
+# マウント
+$ sudo mkdir /mnt/iscsi
+$ sudo mount /dev/sdb1 /mnt/iscsi
+
+# 使用確認
+$ df -h /mnt/iscsi
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sdb1        99G   24K   94G   1% /mnt/iscsi
+
+# /etc/fstab に追記（_netdev オプション必須）
+/dev/sdb1  /mnt/iscsi  ext4  defaults,_netdev  0 0`
+      },
+      auto: {
+        color: '#f6ad55',
+        text:
+`# 起動時に自動的に iSCSI ターゲットにログインする設定
+
+# node.startup を automatic に設定
+$ sudo iscsiadm -m node \\
+    --targetname iqn.2026-01.com.example:storage1 \\
+    -o update \\
+    -n node.startup \\
+    -v automatic
+
+# iscsid と open-iscsi サービスを有効化
+$ sudo systemctl enable iscsid
+$ sudo systemctl enable open-iscsi
+
+# 設定確認
+$ sudo iscsiadm -m node -o show | grep startup
+node.startup = automatic`
+      },
+      logout: {
+        color: '#fc8181',
+        text:
+`# iSCSI 接続の切断とクリーンアップ
+
+# ステップ1：アンマウント
+$ sudo umount /mnt/iscsi
+
+# ステップ2：ターゲットからログアウト
+$ sudo iscsiadm -m node \\
+    --targetname iqn.2026-01.com.example:storage1 \\
+    --portal 192.168.1.100:3260 \\
+    --logout
+
+Logging out of session [sid: 1, target: iqn.2026-01.com.example:storage1,
+                        portal: 192.168.1.100,3260]
+Logout of [sid: 1, target: iqn.2026-01.com.example:storage1,
+           portal: 192.168.1.100,3260]: successful
+
+# ステップ3：ノード情報を削除（オプション）
+$ sudo iscsiadm -m node \\
+    --targetname iqn.2026-01.com.example:storage1 \\
+    -o delete`
+      }
+    };
+
+    function showIscsiScenario() {
+      const key = document.getElementById('iscsi-sel').value;
+      const el  = document.getElementById('iscsi-output');
+      if (!key) { el.style.display='none'; return; }
+      const d = iscsiScenarios[key];
+      el.style.display = 'block';
+      el.style.color   = d.color;
+      el.textContent   = d.text;
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- まとめ表 -->
+<!-- ============================================================ -->
+<h2>📌 まとめ一覧</h2>
+<div class="demo-box">
+  <table class="ref-table">
+    <thead><tr><th>カテゴリ</th><th>コマンド / ファイル</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td colspan="3" style="background:#dbeafe; color:#1a365d; font-weight:bold; font-size:0.88em;">▼ デバイス確認</td></tr>
+      <tr><td>ブロックデバイス一覧</td><td><code>lsblk</code> / <code>lsblk -f</code></td><td>デバイス・パーティション・マウントポイントを表示</td></tr>
+      <tr><td>パーティション操作（MBR）</td><td><code>fdisk /dev/sda</code></td><td>MBR パーティションの作成・削除・変更</td></tr>
+      <tr><td>パーティション操作（GPT）</td><td><code>parted /dev/sda</code> / <code>gdisk /dev/sda</code></td><td>GPT パーティションの操作</td></tr>
+      <tr><td colspan="3" style="background:#dbeafe; color:#1a365d; font-weight:bold; font-size:0.88em;">▼ HDD の管理</td></tr>
+      <tr><td>ディスク情報表示</td><td><code>hdparm -I /dev/sda</code></td><td>ATA/SATA ディスクの詳細情報</td></tr>
+      <tr><td>読み取り速度テスト</td><td><code>hdparm -Tt /dev/sda</code></td><td>ディスクとキャッシュの読み取り速度</td></tr>
+      <tr><td>電源状態確認</td><td><code>hdparm -C /dev/sda</code></td><td>ディスクの電源状態を確認</td></tr>
+      <tr><td colspan="3" style="background:#dbeafe; color:#1a365d; font-weight:bold; font-size:0.88em;">▼ SSD の管理</td></tr>
+      <tr><td>TRIM 対応確認</td><td><code>hdparm -I /dev/sda | grep -i trim</code></td><td>TRIM 対応の確認</td></tr>
+      <tr><td>手動 TRIM</td><td><code>fstrim -av</code></td><td>全マウント済み FS に TRIM を実行</td></tr>
+      <tr><td>自動 TRIM</td><td><code>systemctl enable fstrim.timer</code></td><td>週1回の自動 TRIM を有効化</td></tr>
+      <tr><td colspan="3" style="background:#dbeafe; color:#1a365d; font-weight:bold; font-size:0.88em;">▼ iSCSI</td></tr>
+      <tr><td>ターゲット検出</td><td><code>iscsiadm -m discovery -t st -p ターゲットIP</code></td><td>iSCSI ターゲットを検出</td></tr>
+      <tr><td>ログイン</td><td><code>iscsiadm -m node --login</code></td><td>ターゲットに接続</td></tr>
+      <tr><td>セッション確認</td><td><code>iscsiadm -m session</code></td><td>現在の接続セッションを表示</td></tr>
+      <tr><td>ログアウト</td><td><code>iscsiadm -m node --logout</code></td><td>ターゲットから切断</td></tr>
+      <tr><td>イニシエータ名</td><td><code>/etc/iscsi/initiatorname.iscsi</code></td><td>イニシエータの IQN 設定ファイル</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 穴埋め問題</h3>
+    <p>以下の説明に合うコマンド・ファイルを入力してください。</p>
+    <label>① /dev/sda の読み取り速度をテストするコマンド（バッファリングなし・キャッシュ両方）：</label>
+    <input type="text" id="q1a" placeholder="hdparm -XX /dev/sda">
+    <label>② マウント済みのすべてのファイルシステムに TRIM を実行するコマンド：</label>
+    <input type="text" id="q1b" placeholder="コマンド -オプション">
+    <label>③ iSCSI ターゲット（192.168.1.100）を検出するコマンド（iscsiadm を使用）：</label>
+    <input type="text" id="q1c" placeholder="iscsiadm -m discovery -t st -p 192.168.1.100">
+    <label>④ iSCSI イニシエータ名が設定されているファイルのパス：</label>
+    <input type="text" id="q1d" placeholder="/etc/iscsi/...">
+    <label>⑤ NVMe SSD の1番目のコントローラ・1番目のネームスペースのデバイスファイル名：</label>
+    <input type="text" id="q1e" placeholder="/dev/...">
+    <br>
+    <button class="btn btn-blue" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const a = document.getElementById('q1a').value.trim().toLowerCase().replace(/\s+/g,'');
+        const b = document.getElementById('q1b').value.trim().toLowerCase().replace(/\s+/g,'');
+        const c = document.getElementById('q1c').value.trim().toLowerCase().replace(/\s+/g,'');
+        const d = document.getElementById('q1d').value.trim().toLowerCase().replace(/\s/g,'');
+        const e = document.getElementById('q1e').value.trim().toLowerCase().replace(/\s/g,'');
+        const r = document.getElementById('q1-result');
+        const ca = a === 'hdparm-tt/dev/sda' || a === 'hdparm-t-t/dev/sda';
+        const cb = b === 'fstrim-av' || b === 'fstrim-va';
+        const cc = c === 'iscsiadm-mdiscovery-tst-p192.168.1.100' ||
+                   c === 'iscsiadm-mdiscovery-tsendtargets-p192.168.1.100';
+        const cd = d === '/etc/iscsi/initiatorname.iscsi';
+        const ce = e === '/dev/nvme0n1';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ hdparm -Tt /dev/sda'}　` +
+            `② ${cb?'✅':'❌ fstrim -av'}　` +
+            `③ ${cc?'✅':'❌ iscsiadm -m discovery -t st -p 192.168.1.100'}　` +
+            `④ ${cd?'✅':'❌ /etc/iscsi/initiatorname.iscsi'}　` +
+            `⑤ ${ce?'✅':'❌ /dev/nvme0n1'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 選択問題</h3>
+    <p>
+      SSD の管理に関する説明として<strong>正しいもの</strong>はどれですか？
+    </p>
+    <select id="q2">
+      <option value="">-- 選択してください --</option>
+      <option value="a">SSD は HDD と同様にデフラグを定期的に実行する必要がある</option>
+      <option value="b">TRIM は削除済みブロックを SSD に通知してパフォーマンスを維持する機能である</option>
+      <option value="c">SSD では atime の更新を有効にすることでパフォーマンスが向上する</option>
+      <option value="d">fstrim コマンドはアンマウント状態のファイルシステムに対して実行する</option>
+    </select>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const v = document.getElementById('q2').value;
+        const r = document.getElementById('q2-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>TRIM の仕組み：</strong><br>' +
+            'ファイルを削除すると OS はファイルシステム上でそのブロックを「空き」とマークしますが、<br>' +
+            'SSD はそのブロックがまだ使用中だと認識しています。<br>' +
+            'TRIM はこの情報を SSD に伝えることで、SSD が事前にブロックを消去して<br>' +
+            '次の書き込みを高速化できるようにします。<br><br>' +
+            '<strong>SSD 管理のポイント：</strong><br>' +
+            '・デフラグは不要・有害（書き込み回数を無駄に消費）<br>' +
+            '・<code>noatime</code> マウントオプションで書き込み回数を削減<br>' +
+            '・<code>fstrim</code> はマウント中のファイルシステムに対して実行する';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br><br>' +
+            '正しいのは「TRIM は削除済みブロックを SSD に通知してパフォーマンスを維持する」です。<br>' +
+            '・SSD のデフラグは不要・有害<br>' +
+            '・atime の更新は書き込み回数を増やすため <code>noatime</code> を推奨<br>' +
+            '・<code>fstrim</code> は<strong>マウント中</strong>のファイルシステムに対して実行する';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① NVMe SSD のデバイスファイルは <code>/dev/nvme0n1</code> のような形式で表される
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② iSCSI のイニシエータはストレージを提供するサーバー側のコンポーネントである
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ <code>hdparm -I /dev/sda</code> は ATA/SATA ディスクの詳細情報を表示する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ iSCSI は TCP/IP ネットワーク経由で SCSI コマンドを転送する技術である
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ <code>fstrim.timer</code> を有効化すると定期的に自動 TRIM が実行される
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ iSCSI のデフォルトポートは TCP 2049 である
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ <code>/etc/fstab</code> で iSCSI ディスクをマウントする場合は <code>_netdev</code> オプションを指定する
+    </label>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：①③④⑤⑦（a,c,d,e,g）
+        // ② イニシエータはクライアント側（ターゲットがサーバー側）
+        // ⑥ iSCSI のデフォルトポートは TCP 3260（2049 は NFS）
+        const correct = { a:true, b:false, c:true, d:true, e:true, f:false, g:true };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>①③④⑤⑦<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・② iSCSI の<strong>イニシエータ</strong>はストレージに<strong>アクセスするクライアント</strong>側です。<br>' +
+            '&nbsp;&nbsp;ストレージを提供するサーバー側は<strong>ターゲット</strong>です<br>' +
+            '・⑥ iSCSI のデフォルトポートは <strong>TCP 3260</strong> です。<br>' +
+            '&nbsp;&nbsp;TCP 2049 は NFS のポートです';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. シナリオ問題</h3>
+    <p>
+      iSCSI ターゲット（<code>192.168.1.100</code>）に接続して、
+      提供されているストレージを <code>/mnt/iscsi</code> にマウントしたいと考えています。
+      <strong>正しい手順</strong>はどれですか？
+    </p>
+    <select id="q4">
+      <option value="">-- 選択してください --</option>
+      <option value="a">mount -t iscsi 192.168.1.100:/storage /mnt/iscsi を実行する</option>
+      <option value="b">iscsiadm で検出・ログイン → lsblk で新しいデバイスを確認 → mkfs → mount の順で実行する</option>
+      <option value="c">NFS と同様に /etc/fstab に 192.168.1.100:/storage /mnt/iscsi nfs defaults 0 0 と記述する</option>
+      <option value="d">sshfs 192.168.1.100:/storage /mnt/iscsi を実行する</option>
+    </select>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const v = document.getElementById('q4').value;
+        const r = document.getElementById('q4-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>iSCSI 接続の正しい手順：</strong><br>' +
+            '① <code>iscsiadm -m discovery -t st -p 192.168.1.100</code>（ターゲット検出）<br>' +
+            '② <code>iscsiadm -m node --login</code>（ターゲットにログイン）<br>' +
+            '③ <code>lsblk</code>（新しいブロックデバイス /dev/sdb などを確認）<br>' +
+            '④ <code>fdisk /dev/sdb</code>（パーティション作成）<br>' +
+            '⑤ <code>mkfs.ext4 /dev/sdb1</code>（ファイルシステム作成）<br>' +
+            '⑥ <code>mount /dev/sdb1 /mnt/iscsi</code>（マウント）<br><br>' +
+            'iSCSI はブロックデバイスとして認識されるため、NFS とは異なりフォーマットが必要です。';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br><br>' +
+            'iSCSI はネットワーク経由の<strong>ブロックデバイス</strong>です。<br>' +
+            'NFS のようにネットワークパスを直接マウントするのではなく、<br>' +
+            '<code>iscsiadm</code> でターゲットに接続すると <code>/dev/sdb</code> などのブロックデバイスとして認識されます。<br>' +
+            'その後、通常のディスクと同様に <code>mkfs</code> でフォーマットして <code>mount</code> します。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-block">
+    <h3>Q5. 選択問題</h3>
+    <p>
+      <code>hdparm -Tt /dev/sda</code> コマンドの説明として正しいものはどれですか？
+    </p>
+    <select id="q5">
+      <option value="">-- 選択してください --</option>
+      <option value="a">ディスクのパーティションテーブルを表示する</option>
+      <option value="b">ディスクのタイムスタンプを更新する</option>
+      <option value="c">ディスクのキャッシュ読み取り速度とバッファリングなし読み取り速度をテストする</option>
+      <option value="d">ディスクの TRIM 機能を有効化する</option>
+    </select>
+    <br>
+    <button class="btn btn-blue" onclick="checkQ5()">答え合わせ</button>
+    <div class="result-msg" id="q5-result"></div>
+    <script>
+      function checkQ5() {
+        const v = document.getElementById('q5').value;
+        const r = document.getElementById('q5-result');
+        if (v === 'c') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>hdparm の速度テストオプション：</strong><br>' +
+            '・<code>-T</code>：キャッシュ読み取り速度をテスト（CPU とメモリのキャッシュ速度）<br>' +
+            '・<code>-t</code>：バッファリングなしの実際のディスク読み取り速度をテスト<br>' +
+            '・<code>-Tt</code>：両方を同時に実行<br><br>' +
+            '<strong>出力例：</strong><br>' +
+            '<code>Timing cached reads: 12345 MB in 2.00 seconds = 6172.50 MB/sec</code><br>' +
+            '<code>Timing buffered disk reads: 1234 MB in 3.00 seconds = 411.33 MB/sec</code>';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '<code>hdparm -Tt</code> はディスクの読み取り速度をテストします。<br>' +
+            '・<code>-T</code>：キャッシュ読み取り速度<br>' +
+            '・<code>-t</code>：実際のディスク読み取り速度（バッファリングなし）';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 第5章「高度なストレージ管理」の全セクションが完了しました！</p>
+  <button class="btn btn-done" onclick="markComplete()">✅ 第5章を完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch5', '100');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  if (parseInt(localStorage.getItem('lpic201_ch5') || '0') >= 100) {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="02_lvm.html">← LVM の管理</a>
+  <a class="home" href="../index.html">🏠 目次へ</a>
+  <a class="next" href="../06_network/index.html">次章へ：ネットワーク設定 →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
