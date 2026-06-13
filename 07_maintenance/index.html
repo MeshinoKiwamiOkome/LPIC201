@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ソースからのソフトウェアインストール ｜ LPIC-201</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      background: #f0f4f8;
+      color: #2d3748;
+      line-height: 1.8;
+    }
+
+    /* パンくず */
+    .breadcrumb {
+      font-size: 0.82em; color: #a0aec0;
+      margin-bottom: 20px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .breadcrumb a { color: #276749; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ヘッダー */
+    .chapter-header {
+      background: linear-gradient(135deg, #1a4731, #276749);
+      border-radius: 12px; padding: 32px 32px 24px;
+      margin-bottom: 32px; color: #fff;
+      box-shadow: 0 4px 18px rgba(39,103,73,0.35);
+    }
+    .chapter-header .ch-num {
+      font-size: 0.8em; font-family: 'Consolas', 'Monaco', monospace;
+      opacity: 0.85; letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .chapter-header h1 { margin: 0 0 10px; font-size: 1.6em; color: #fff; border: none; padding: 0; }
+    .chapter-header p  { margin: 0; font-size: 0.92em; opacity: 0.88; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px; padding: 3px 12px;
+      font-size: 0.76em; font-weight: bold;
+    }
+
+    /* 見出し */
+    h2 { color: #1a4731; margin-top: 48px; border-left: 5px solid #276749; padding-left: 12px; }
+    h3 { color: #2c5282; margin-top: 28px; }
+
+    /* コード */
+    code {
+      background: #edf2f7; padding: 2px 6px;
+      border-radius: 4px; font-size: 0.93em;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre {
+      background: #1a202c; color: #e2e8f0;
+      padding: 18px 20px; border-radius: 8px;
+      overflow-x: auto; font-size: 0.88em;
+      line-height: 1.7; font-family: 'Consolas', 'Monaco', monospace;
+    }
+    pre .comment { color: #68d391; }
+    pre .cmd     { color: #90cdf4; }
+    pre .opt     { color: #fc8181; }
+    pre .val     { color: #fbd38d; }
+    pre .out     { color: #e2e8f0; }
+    pre .hl      { color: #f6ad55; font-weight: bold; }
+    pre .hdr     { color: #b794f4; font-weight: bold; }
+    pre .err     { color: #fc8181; }
+    pre .mk      { color: #68d391; font-weight: bold; }
+
+    /* コピーボタン */
+    .pre-wrap { position: relative; margin: 14px 0; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #4a5568; color: #e2e8f0;
+      border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 0.75em;
+      cursor: pointer; font-family: 'Consolas', 'Monaco', monospace;
+      transition: background 0.2s; z-index: 1;
+    }
+    .copy-btn:hover { background: #276749; }
+
+    /* ボックス */
+    .note {
+      background: #fff; border: 1px dashed #9ae6b4;
+      border-radius: 6px; padding: 14px 18px;
+      font-size: 0.93em; color: #4a5568; margin: 14px 0;
+    }
+    .note strong { color: #1a4731; }
+    .warn {
+      background: #fffaf0; border: 1px solid #f6ad55;
+      border-left: 5px solid #f6ad55; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #744210; margin: 14px 0;
+    }
+    .warn strong { color: #c05621; }
+    .good {
+      background: #f0fff4; border: 1px solid #68d391;
+      border-left: 5px solid #48bb78; border-radius: 6px;
+      padding: 14px 18px; font-size: 0.93em; color: #276749; margin: 14px 0;
+    }
+    .demo-box {
+      background: #fff; border: 1px solid #9ae6b4;
+      border-radius: 8px; padding: 20px 24px;
+      margin: 12px 0 28px; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* セクションナビ */
+    .section-nav {
+      background: #fff; border: 1px solid #9ae6b4;
+      border-radius: 10px; padding: 18px 22px;
+      margin-bottom: 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .section-nav h2 { margin: 0 0 12px; font-size: 0.92em; color: #1a4731; border: none; padding: 0; }
+    .section-nav ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+    .section-nav ol li { margin: 4px 0; }
+    .section-nav ol li a { color: #276749; text-decoration: none; }
+    .section-nav ol li a:hover { text-decoration: underline; }
+    .section-nav ol li.current a { color: #1a4731; font-weight: bold; }
+
+    /* ビルドフロー */
+    .build-flow {
+      display: flex; flex-direction: column; gap: 0; margin: 16px 0;
+    }
+    .build-step {
+      display: flex; gap: 16px; align-items: flex-start; position: relative;
+    }
+    .build-step::before {
+      content: ''; position: absolute;
+      left: 19px; top: 40px;
+      width: 2px; height: calc(100% - 8px);
+      background: #9ae6b4;
+    }
+    .build-step:last-child::before { display: none; }
+    .build-num {
+      flex-shrink: 0; width: 40px; height: 40px;
+      background: #276749; color: #fff;
+      border-radius: 50%; display: flex;
+      align-items: center; justify-content: center;
+      font-weight: bold; font-size: 0.95em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      z-index: 1; margin-top: 4px;
+    }
+    .build-body {
+      flex: 1; background: #fff;
+      border: 1px solid #9ae6b4; border-radius: 8px;
+      padding: 12px 16px; margin-bottom: 10px;
+      cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .build-body:hover {
+      border-color: #276749;
+      box-shadow: 0 2px 8px rgba(39,103,73,0.12);
+    }
+    .build-body h4 { margin: 0 0 4px; color: #1a4731; font-size: 0.95em; }
+    .build-body p  { margin: 0; font-size: 0.85em; color: #4a5568; }
+    .build-body code { font-size: 0.88em; }
+
+    /* Makefile 構造図 */
+    .makefile-struct {
+      background: #1a202c; border-radius: 8px;
+      padding: 16px 20px; font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85em; line-height: 2.2; margin: 14px 0;
+    }
+    .mk-target  { color: #90cdf4; font-weight: bold; }
+    .mk-dep     { color: #fbd38d; }
+    .mk-cmd     { color: #68d391; }
+    .mk-var     { color: #b794f4; }
+    .mk-comment { color: #4a5568; font-style: italic; }
+
+    /* インタラクティブデモ */
+    .interactive-demo {
+      background: #f0fff4; border: 1px solid #9ae6b4;
+      border-radius: 8px; padding: 16px 20px; margin: 14px 0;
+    }
+    .slider-row {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .slider-row label {
+      font-size: 0.85em; font-weight: bold;
+      min-width: 180px; color: #1a4731;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .slider-row select {
+      border: 2px solid #9ae6b4; border-radius: 6px;
+      padding: 6px 10px; font-size: 0.88em;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #2d3748; background: #fff;
+      cursor: pointer; flex: 1;
+    }
+    .slider-row select:focus { border-color: #276749; outline: none; }
+    .output-display {
+      background: #1a202c; color: #68d391;
+      border-radius: 6px; padding: 12px 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.84em; margin-top: 10px;
+      white-space: pre; overflow-x: auto; line-height: 1.7;
+    }
+
+    /* テーブル */
+    table.ref-table {
+      border-collapse: collapse; width: 100%;
+      background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      margin: 14px 0; font-size: 0.9em;
+    }
+    table.ref-table th, table.ref-table td {
+      border: 1px solid #9ae6b4; padding: 10px 14px; text-align: left;
+    }
+    table.ref-table thead tr { background: #1a4731; color: #fff; }
+    table.ref-table tbody tr:nth-child(even) { background: #f0fff4; }
+
+    /* 演習問題 */
+    .quiz-section {
+      background: #fffaf0; border-left: 6px solid #f6ad55;
+      border-radius: 0 8px 8px 0; padding: 24px 28px; margin: 48px 0 32px;
+    }
+    .quiz-section > h2 { margin-top: 0; color: #c05621; border-left-color: #f6ad55; }
+    .quiz-block {
+      background: #fff; border: 1px solid #fbd38d;
+      border-radius: 8px; padding: 18px 22px; margin-bottom: 22px;
+    }
+    .quiz-block h3 { margin-top: 0; color: #744210; }
+    .quiz-block input[type="text"],
+    .quiz-block select,
+    .quiz-block textarea {
+      border: 2px solid #fbd38d; border-radius: 6px;
+      padding: 8px 12px; font-size: 0.95em;
+      width: 100%; max-width: 440px; margin: 6px 0;
+      outline: none; font-family: 'Consolas', 'Monaco', monospace;
+      transition: border-color 0.2s;
+    }
+    .quiz-block input[type="text"]:focus,
+    .quiz-block select:focus { border-color: #f6ad55; }
+    .quiz-block label { display: block; margin: 8px 0 2px; font-weight: bold; color: #4a5568; }
+    .quiz-block label.checkbox-label {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-weight: normal; cursor: pointer; margin: 6px 0;
+    }
+    .quiz-block label.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
+    .btn {
+      display: inline-block; padding: 9px 20px;
+      border-radius: 6px; border: none; cursor: pointer;
+      font-size: 0.95em; font-weight: bold;
+      transition: opacity 0.2s; margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-green { background: #276749; color: #fff; }
+    .btn-done  { background: #48bb78; color: #fff; }
+    .result-msg {
+      margin-top: 10px; padding: 10px 14px;
+      border-radius: 6px; font-weight: bold; display: none;
+    }
+    .result-msg.correct { background: #c6f6d5; color: #276749; display: block; }
+    .result-msg.wrong   { background: #fed7d7; color: #9b2335; display: block; }
+    .result-msg.info    { background: #c6f6d5; color: #1a4731; display: block; }
+
+    /* ページナビ */
+    .page-nav {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 48px;
+      padding-top: 20px; border-top: 2px solid #9ae6b4;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .page-nav a {
+      display: inline-block; padding: 10px 20px;
+      border-radius: 8px; text-decoration: none;
+      font-weight: bold; font-size: 0.9em; transition: opacity 0.2s;
+    }
+    .page-nav a:hover { opacity: 0.8; }
+    .page-nav .prev { background: #edf2f7; color: #4a5568; }
+    .page-nav .next { background: #276749; color: #fff; }
+    .page-nav .home { background: #fff; color: #276749; border: 2px solid #276749; }
+
+    /* 完了ボタン */
+    .complete-section {
+      background: #f0fff4; border: 2px solid #48bb78;
+      border-radius: 10px; padding: 20px 24px;
+      margin-top: 40px; text-align: center;
+    }
+    .complete-section p { margin: 0 0 12px; color: #276749; font-weight: bold; }
+
+    /* フッター */
+    footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 2px solid #9ae6b4;
+      font-size: 0.82em; color: #a0aec0; text-align: center;
+    }
+    footer a { color: #276749; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      body { font-size: 0.84em; }
+      .chapter-header { padding: 20px 16px; }
+      .chapter-header h1 { font-size: 1.2em; }
+      .demo-box { padding: 14px 12px; }
+      .quiz-section { padding: 16px 12px; }
+      .quiz-block { padding: 14px 12px; }
+      .quiz-block input[type="text"],
+      .quiz-block select { max-width: 100%; }
+      .page-nav { flex-direction: column; align-items: stretch; }
+      .page-nav a { text-align: center; }
+    }
+    @media (min-width: 601px) and (max-width: 768px) { body { font-size: 0.92em; } }
+  </style>
+</head>
+<body>
+
+<!-- パンくず -->
+<div class="breadcrumb">
+  <a href="../index.html">🏠 LPIC-201</a> ›
+  第7章：システムメンテナンス › ソースからのソフトウェアインストール
+</div>
+
+<!-- 章ヘッダー -->
+<div class="chapter-header">
+  <div class="ch-num">CHAPTER 07 › SECTION 01</div>
+  <h1>🔨 ソースからのソフトウェアインストール</h1>
+  <p>ソースコードのアーカイブ展開、configure スクリプトによる環境確認、
+  Makefile の構造と make コマンドによるコンパイル・インストールの
+  全手順を体系的に学びます。</p>
+  <div class="badge-row">
+    <span class="badge">tar</span>
+    <span class="badge">./configure</span>
+    <span class="badge">Makefile</span>
+    <span class="badge">make</span>
+    <span class="badge">make install</span>
+    <span class="badge">make clean</span>
+    <span class="badge">gcc</span>
+  </div>
+</div>
+
+<!-- セクションナビ -->
+<div class="section-nav">
+  <h2>📋 第7章のセクション</h2>
+  <ol>
+    <li class="current"><a href="index.html">ソースからのソフトウェアインストール</a></li>
+    <li><a href="02_backup.html">バックアップ操作</a></li>
+    <li><a href="03_notify.html">システム管理者への通知</a></li>
+  </ol>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 1：全体の流れ -->
+<!-- ============================================================ -->
+<h2 id="overview">① ソースインストールの全体フロー</h2>
+
+<div class="note">
+  <strong>重要ポイント①：ソースからのインストールは「展開 → configure → make → make install」の4ステップが基本</strong><br>
+  パッケージマネージャが提供しないソフトウェアや、最新版・カスタムオプションが必要な場合に使用します。
+</div>
+
+<div class="demo-box">
+  <h3>ビルドフロー（クリックで各ステップの詳細を表示）</h3>
+  <div class="build-flow">
+
+    <div class="build-step">
+      <div class="build-num">1</div>
+      <div class="build-body" onclick="showBuildStep('download')">
+        <h4>📥 ソースアーカイブのダウンロード</h4>
+        <p><code>wget</code> / <code>curl</code> で .tar.gz や .tar.bz2 を取得</p>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-num">2</div>
+      <div class="build-body" onclick="showBuildStep('extract')">
+        <h4>📦 アーカイブの展開</h4>
+        <p><code>tar xzf</code> / <code>tar xjf</code> でソースコードを展開</p>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-num">3</div>
+      <div class="build-body" onclick="showBuildStep('configure')">
+        <h4>⚙️ configure スクリプトの実行</h4>
+        <p><code>./configure</code> でシステム環境を確認し Makefile を生成</p>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-num">4</div>
+      <div class="build-body" onclick="showBuildStep('make')">
+        <h4>🔨 コンパイル（make）</h4>
+        <p><code>make</code> で Makefile に従ってソースコードをコンパイル</p>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-num">5</div>
+      <div class="build-body" onclick="showBuildStep('install')">
+        <h4>📂 インストール（make install）</h4>
+        <p><code>sudo make install</code> でバイナリ・ライブラリ・設定ファイルを配置</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ビルドステップ詳細 -->
+  <div id="build-step-detail" style="display:none; margin-top:14px; background:#fff; border:1px solid #9ae6b4; border-left:5px solid #276749; border-radius:0 8px 8px 0; padding:16px 20px; font-size:0.88em; color:#2d3748;"></div>
+
+  <script>
+    const buildSteps = {
+      download: {
+        title: '📥 ステップ1：ソースアーカイブのダウンロード',
+        color: '#4a5568',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:12px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8; margin-top:8px;">
+<div style="color:#68d391;"># wget でダウンロード</div>
+<div>$ wget https://example.com/software-1.0.tar.gz</div>
+<div style="color:#68d391;"># curl でダウンロード</div>
+<div>$ curl -O https://example.com/software-1.0.tar.gz</div>
+<div style="color:#68d391;"># チェックサムで整合性を確認（推奨）</div>
+<div>$ sha256sum software-1.0.tar.gz</div>
+<div>$ md5sum software-1.0.tar.gz</div>
+<div style="color:#68d391;"># GPG 署名を検証</div>
+<div>$ gpg --verify software-1.0.tar.gz.sig software-1.0.tar.gz</div>
+</div>`
+      },
+      extract: {
+        title: '📦 ステップ2：アーカイブの展開',
+        color: '#2b4c7e',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:12px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8; margin-top:8px;">
+<div style="color:#68d391;"># .tar.gz の展開</div>
+<div>$ tar xzf software-1.0.tar.gz</div>
+<div style="color:#68d391;"># .tar.bz2 の展開</div>
+<div>$ tar xjf software-1.0.tar.bz2</div>
+<div style="color:#68d391;"># .tar.xz の展開</div>
+<div>$ tar xJf software-1.0.tar.xz</div>
+<div style="color:#68d391;"># 展開前に内容を確認（-t = list）</div>
+<div>$ tar tzf software-1.0.tar.gz | head -20</div>
+<div style="color:#68d391;"># 展開後にディレクトリに移動</div>
+<div>$ cd software-1.0/</div>
+<div>$ ls</div>
+<div style="color:#f6ad55;">configure  Makefile.in  README  src/  include/  docs/</div>
+</div>`
+      },
+      configure: {
+        title: '⚙️ ステップ3：configure スクリプトの実行',
+        color: '#276749',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:12px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8; margin-top:8px;">
+<div style="color:#68d391;"># 基本的な configure の実行</div>
+<div>$ ./configure</div>
+<div style="color:#68d391;"># インストール先を指定（デフォルト: /usr/local）</div>
+<div>$ ./configure --prefix=/usr/local</div>
+<div>$ ./configure --prefix=/opt/software</div>
+<div style="color:#68d391;"># 利用可能なオプションを確認</div>
+<div>$ ./configure --help</div>
+<div style="color:#68d391;"># 機能を有効化・無効化</div>
+<div>$ ./configure --enable-ssl --disable-debug</div>
+<div style="color:#68d391;"># configure の出力例</div>
+<div style="color:#f6ad55;">checking for gcc... gcc</div>
+<div style="color:#f6ad55;">checking for C compiler default output file name... a.out</div>
+<div style="color:#f6ad55;">checking whether the C compiler works... yes</div>
+<div style="color:#f6ad55;">configure: creating ./config.status</div>
+<div style="color:#f6ad55;">config.status: creating Makefile</div>
+</div>`
+      },
+      make: {
+        title: '🔨 ステップ4：コンパイル（make）',
+        color: '#744210',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:12px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8; margin-top:8px;">
+<div style="color:#68d391;"># コンパイルの実行</div>
+<div>$ make</div>
+<div style="color:#68d391;"># 並列コンパイルで高速化（-j = CPU コア数）</div>
+<div>$ make -j4</div>
+<div>$ make -j$(nproc)  # CPU コア数を自動取得</div>
+<div style="color:#68d391;"># make の出力例</div>
+<div style="color:#f6ad55;">gcc -c -o src/main.o src/main.c</div>
+<div style="color:#f6ad55;">gcc -c -o src/utils.o src/utils.c</div>
+<div style="color:#f6ad55;">gcc -o software src/main.o src/utils.o -lssl</div>
+<div style="color:#68d391;"># コンパイル後のテスト（あれば）</div>
+<div>$ make test</div>
+<div>$ make check</div>
+</div>`
+      },
+      install: {
+        title: '📂 ステップ5：インストール（make install）',
+        color: '#9b2335',
+        body: `<div style="background:#1a202c; border-radius:6px; padding:12px 16px; font-family:'Consolas','Monaco',monospace; font-size:0.82em; color:#e2e8f0; line-height:1.8; margin-top:8px;">
+<div style="color:#68d391;"># インストール（root 権限が必要）</div>
+<div>$ sudo make install</div>
+<div style="color:#68d391;"># インストール先を確認</div>
+<div style="color:#f6ad55;">install -m 755 software /usr/local/bin/software</div>
+<div style="color:#f6ad55;">install -m 644 software.conf /usr/local/etc/software.conf</div>
+<div style="color:#f6ad55;">install -m 644 software.1 /usr/local/share/man/man1/software.1</div>
+<div style="color:#68d391;"># DESTDIR でインストール先を変更（パッケージ作成時に使用）</div>
+<div>$ sudo make install DESTDIR=/tmp/staging</div>
+<div style="color:#68d391;"># アンインストール（対応している場合）</div>
+<div>$ sudo make uninstall</div>
+<div style="color:#68d391;"># ビルドファイルの削除</div>
+<div>$ make clean      # コンパイル済みオブジェクトを削除</div>
+<div>$ make distclean  # configure が生成したファイルも削除</div>
+</div>`
+      }
+    };
+
+    function showBuildStep(key) {
+      const d = buildSteps[key];
+      const el = document.getElementById('build-step-detail');
+      if (el.dataset.current === key && el.style.display !== 'none') {
+        el.style.display='none'; el.dataset.current=''; return;
+      }
+      el.dataset.current = key;
+      el.style.display = 'block';
+      el.style.borderLeftColor = d.color;
+      el.innerHTML = `<strong style="color:${d.color}; font-size:0.95em;">${d.title}</strong>${d.body}`;
+      el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+  </script>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 2：ソースの展開 -->
+<!-- ============================================================ -->
+<h2 id="extract">② ソースの展開</h2>
+
+<div class="demo-box">
+  <h3>tar コマンドによるアーカイブ操作</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment">## アーカイブ形式と展開コマンド</span>
+
+<span class="comment"># .tar.gz（gzip 圧縮）</span>
+$ <span class="cmd">tar</span> <span class="opt">xzf</span> software-1.0.tar.gz
+$ <span class="cmd">tar</span> <span class="opt">xzvf</span> software-1.0.tar.gz    <span class="comment"># -v で詳細表示</span>
+
+<span class="comment"># .tar.bz2（bzip2 圧縮）</span>
+$ <span class="cmd">tar</span> <span class="opt">xjf</span> software-1.0.tar.bz2
+$ <span class="cmd">tar</span> <span class="opt">xjvf</span> software-1.0.tar.bz2
+
+<span class="comment"># .tar.xz（xz 圧縮）</span>
+$ <span class="cmd">tar</span> <span class="opt">xJf</span> software-1.0.tar.xz
+
+<span class="comment"># .tar（圧縮なし）</span>
+$ <span class="cmd">tar</span> <span class="opt">xf</span> software-1.0.tar
+
+<span class="comment"># 展開先ディレクトリを指定（-C）</span>
+$ <span class="cmd">tar</span> <span class="opt">xzf</span> software-1.0.tar.gz <span class="opt">-C</span> /usr/local/src/
+
+<span class="comment"># 展開前に内容を確認（-t = list）</span>
+$ <span class="cmd">tar</span> <span class="opt">tzf</span> software-1.0.tar.gz | <span class="cmd">head</span> <span class="opt">-20</span>
+<span class="out">software-1.0/</span>
+<span class="out">software-1.0/configure</span>
+<span class="out">software-1.0/Makefile.in</span>
+<span class="out">software-1.0/README</span>
+<span class="out">software-1.0/src/</span>
+<span class="out">software-1.0/src/main.c</span>
+
+<span class="comment"># アーカイブを作成（参考）</span>
+$ <span class="cmd">tar</span> <span class="opt">czf</span> myproject-1.0.tar.gz myproject-1.0/
+$ <span class="cmd">tar</span> <span class="opt">cjf</span> myproject-1.0.tar.bz2 myproject-1.0/
+</pre>
+  </div>
+
+  <h3>tar オプション一覧</h3>
+  <table class="ref-table">
+    <thead><tr><th>オプション</th><th>意味</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td><code>x</code></td><td>extract</td><td>アーカイブを展開</td></tr>
+      <tr><td><code>c</code></td><td>create</td><td>アーカイブを作成</td></tr>
+      <tr><td><code>t</code></td><td>list</td><td>アーカイブの内容を一覧表示</td></tr>
+      <tr><td><code>f</code></td><td>file</td><td>アーカイブファイルを指定（必須）</td></tr>
+      <tr><td><code>v</code></td><td>verbose</td><td>処理中のファイルを表示</td></tr>
+      <tr><td><code>z</code></td><td>gzip</td><td>gzip 圧縮・展開（.tar.gz）</td></tr>
+      <tr><td><code>j</code></td><td>bzip2</td><td>bzip2 圧縮・展開（.tar.bz2）</td></tr>
+      <tr><td><code>J</code></td><td>xz</td><td>xz 圧縮・展開（.tar.xz）</td></tr>
+      <tr><td><code>C ディレクトリ</code></td><td>change directory</td><td>展開先・作成元ディレクトリを指定</td></tr>
+      <tr><td><code>p</code></td><td>preserve</td><td>パーミッションを保持</td></tr>
+    </tbody>
+  </table>
+
+  <h3>展開後のソースディレクトリ構成</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># 典型的なソースパッケージの構成</span>
+$ <span class="cmd">ls</span> software-1.0/
+<span class="out">AUTHORS      COPYING     ChangeLog   INSTALL</span>
+<span class="hl">Makefile.in  NEWS        README      aclocal.m4</span>
+<span class="hl">configure    configure.ac</span>
+<span class="out">docs/        include/    src/        tests/</span>
+
+<span class="comment"># 重要なファイルの役割</span>
+<span class="comment"># README      : インストール方法・概要</span>
+<span class="comment"># INSTALL     : 詳細なインストール手順</span>
+<span class="comment"># configure   : 環境確認スクリプト（実行可能）</span>
+<span class="comment"># configure.ac: configure スクリプトの元となる autoconf 入力ファイル</span>
+<span class="comment"># Makefile.in : configure が Makefile を生成するためのテンプレート</span>
+<span class="comment"># COPYING     : ライセンス情報</span>
+
+<span class="comment"># まず README と INSTALL を読む</span>
+$ <span class="cmd">cat</span> README
+$ <span class="cmd">cat</span> INSTALL
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 3：configure スクリプト -->
+<!-- ============================================================ -->
+<h2 id="configure">③ configure スクリプト</h2>
+
+<div class="note">
+  <strong>重要ポイント②：configure スクリプトはシステムの環境（コンパイラ・ライブラリ・ヘッダファイル）を確認して Makefile を生成する。--prefix でインストール先を指定できる</strong>
+</div>
+
+<div class="demo-box">
+  <h3>configure の主要オプション</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># 利用可能なオプションを確認</span>
+$ <span class="cmd">./configure</span> <span class="opt">--help</span>
+<span class="out">Usage: ./configure [OPTION]... [VAR=VALUE]...</span>
+<span class="out"></span>
+<span class="out">Installation directories:</span>
+<span class="hl">  --prefix=PREFIX         install architecture-independent files in PREFIX</span>
+<span class="hl">                          [/usr/local]</span>
+<span class="out">  --exec-prefix=EPREFIX   install architecture-dependent files in EPREFIX</span>
+<span class="out">  --bindir=DIR            user executables [EPREFIX/bin]</span>
+<span class="out">  --sbindir=DIR           system admin executables [EPREFIX/sbin]</span>
+<span class="out">  --libdir=DIR            object code libraries [EPREFIX/lib]</span>
+<span class="out">  --includedir=DIR        C header files [PREFIX/include]</span>
+<span class="out">  --mandir=DIR            man documentation [PREFIX/share/man]</span>
+<span class="out">  --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]</span>
+
+<span class="comment"># 標準的な configure の実行</span>
+$ <span class="cmd">./configure</span> <span class="opt">--prefix</span>=/usr/local
+
+<span class="comment"># /usr にインストール（システム全体向け）</span>
+$ <span class="cmd">./configure</span> <span class="opt">--prefix</span>=/usr
+
+<span class="comment"># 特定ディレクトリにインストール（独立管理向け）</span>
+$ <span class="cmd">./configure</span> <span class="opt">--prefix</span>=/opt/software-1.0
+
+<span class="comment"># 機能の有効化・無効化</span>
+$ <span class="cmd">./configure</span> <span class="opt">--enable-ssl</span> <span class="opt">--disable-debug</span> <span class="opt">--with-zlib</span>
+
+<span class="comment"># 環境変数でコンパイラ・フラグを指定</span>
+$ <span class="cmd">./configure</span> <span class="val">CC=gcc</span> <span class="val">CFLAGS="-O2 -march=native"</span>
+
+<span class="comment"># configure 実行後に生成されるファイル</span>
+$ <span class="cmd">ls</span> <span class="opt">-la</span>
+<span class="hl">Makefile          </span><span class="comment"># ← configure が Makefile.in から生成</span>
+<span class="out">config.h          </span><span class="comment"># ← システム設定のヘッダファイル</span>
+<span class="out">config.log        </span><span class="comment"># ← configure の実行ログ（エラー調査に使用）</span>
+<span class="out">config.status     </span><span class="comment"># ← 設定を再現するためのスクリプト</span>
+</pre>
+  </div>
+
+  <h3>configure のインストール先ディレクトリ</h3>
+  <table class="ref-table">
+    <thead><tr><th>オプション</th><th>デフォルト（--prefix=/usr/local）</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td><code>--prefix</code></td><td><code>/usr/local</code></td><td>インストールのベースディレクトリ</td></tr>
+      <tr><td><code>--bindir</code></td><td><code>/usr/local/bin</code></td><td>実行ファイル</td></tr>
+      <tr><td><code>--sbindir</code></td><td><code>/usr/local/sbin</code></td><td>管理者用実行ファイル</td></tr>
+      <tr><td><code>--libdir</code></td><td><code>/usr/local/lib</code></td><td>ライブラリ</td></tr>
+      <tr><td><code>--includedir</code></td><td><code>/usr/local/include</code></td><td>C ヘッダファイル</td></tr>
+      <tr><td><code>--sysconfdir</code></td><td><code>/usr/local/etc</code></td><td>設定ファイル</td></tr>
+      <tr><td><code>--mandir</code></td><td><code>/usr/local/share/man</code></td><td>man ページ</td></tr>
+      <tr><td><code>--datadir</code></td><td><code>/usr/local/share</code></td><td>アーキテクチャ非依存データ</td></tr>
+    </tbody>
+  </table>
+
+  <div class="warn">
+    <strong>⚠️ configure が失敗する主な原因</strong><br>
+    ・<strong>開発ツールがない</strong>：<code>sudo apt install build-essential</code> でインストール<br>
+    ・<strong>ライブラリの開発ファイルがない</strong>：<code>libssl-dev</code> など <code>-dev</code> パッケージが必要<br>
+    ・<strong>エラーの確認</strong>：<code>config.log</code> に詳細なエラー情報が記録される
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 4：Makefile の構造 -->
+<!-- ============================================================ -->
+<h2 id="makefile">④ Makefile の構造</h2>
+
+<div class="note">
+  <strong>重要ポイント③：Makefile はターゲット・依存関係・コマンドで構成される。make コマンドは Makefile に従ってビルドを実行する</strong><br>
+  コマンド行は<strong>必ずタブ文字で始める</strong>（スペースは不可）。
+</div>
+
+<div class="demo-box">
+  <h3>Makefile の基本構造</h3>
+  <div class="makefile-struct">
+    <div style="color:#4a5568; font-style:italic;"># Makefile の基本構造</div>
+    <div></div>
+    <div><span class="mk-comment"># 変数の定義</span></div>
+    <div><span class="mk-var">CC</span> = gcc</div>
+    <div><span class="mk-var">CFLAGS</span> = -Wall -O2</div>
+    <div><span class="mk-var">PREFIX</span> = /usr/local</div>
+    <div></div>
+    <div><span class="mk-comment"># ターゲット: 依存ファイル</span></div>
+    <div><span class="mk-comment"># [TAB]コマンド</span></div>
+    <div></div>
+    <div><span class="mk-target">all</span>: <span class="mk-dep">software</span></div>
+    <div></div>
+    <div><span class="mk-target">software</span>: <span class="mk-dep">src/main.o src/utils.o</span></div>
+    <div style="padding-left:24px;"><span class="mk-cmd">$(CC) $(CFLAGS) -o software src/main.o src/utils.o</span></div>
+    <div></div>
+    <div><span class="mk-target">src/main.o</span>: <span class="mk-dep">src/main.c include/main.h</span></div>
+    <div style="padding-left:24px;"><span class="mk-cmd">$(CC) $(CFLAGS) -c -o src/main.o src/main.c</span></div>
+    <div></div>
+    <div><span class="mk-target">src/utils.o</span>: <span class="mk-dep">src/utils.c include/utils.h</span></div>
+    <div style="padding-left:24px;"><span class="mk-cmd">$(CC) $(CFLAGS) -c -o src/utils.o src/utils.c</span></div>
+    <div></div>
+    <div><span class="mk-target">install</span>:</div>
+    <div style="padding-left:24px;"><span class="mk-cmd">install -m 755 software $(PREFIX)/bin/software</span></div>
+    <div></div>
+    <div><span class="mk-target">clean</span>:</div>
+    <div style="padding-left:24px;"><span class="mk-cmd">rm -f src/*.o software</span></div>
+    <div></div>
+    <div><span class="mk-target">distclean</span>: <span class="mk-dep">clean</span></div>
+    <div style="padding-left:24px;"><span class="mk-cmd">rm -f Makefile config.h config.log config.status</span></div>
+    <div></div>
+    <div><span class="mk-target">.PHONY</span>: <span class="mk-dep">all install clean distclean</span></div>
+  </div>
+
+  <h3>Makefile の構文ルール</h3>
+  <table class="ref-table">
+    <thead><tr><th>要素</th><th>書式</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td><strong>ターゲット</strong></td><td><code>ターゲット名: 依存ファイル</code></td><td>生成するファイル名またはアクション名</td></tr>
+      <tr><td><strong>依存関係</strong></td><td>コロンの右側</td><td>このターゲットが依存するファイルやターゲット</td></tr>
+      <tr><td><strong>コマンド</strong></td><td><code>[TAB]コマンド</code></td><td>ターゲットを生成するシェルコマンド（<strong>必ずタブ文字</strong>）</td></tr>
+      <tr><td><strong>変数</strong></td><td><code>VAR = 値</code> / <code>$(VAR)</code></td><td>変数の定義と参照</td></tr>
+      <tr><td><strong>フォニーターゲット</strong></td><td><code>.PHONY: ターゲット名</code></td><td>ファイルを生成しないターゲット（clean など）</td></tr>
+      <tr><td><strong>コメント</strong></td><td><code># コメント</code></td><td>行頭の # 以降はコメント</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Makefile の変数</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># Makefile の変数定義と参照</span>
+
+<span class="comment"># 単純代入（= ）: 再帰的展開（参照時に評価）</span>
+<span class="hdr">CC = gcc</span>
+<span class="hdr">CFLAGS = -Wall -O2</span>
+
+<span class="comment"># 即時代入（:= ）: 定義時に評価</span>
+<span class="hdr">SRCS := $(wildcard src/*.c)</span>
+<span class="hdr">OBJS := $(SRCS:.c=.o)</span>
+
+<span class="comment"># 変数の参照</span>
+<span class="hdr">$(CC) $(CFLAGS) -o $@ $^</span>
+
+<span class="comment"># 自動変数</span>
+<span class="comment"># $@  : 現在のターゲット名</span>
+<span class="comment"># $^  : すべての依存ファイル</span>
+<span class="comment"># $<  : 最初の依存ファイル</span>
+<span class="comment"># $*  : パターンマッチのステム（% に一致した部分）</span>
+
+<span class="comment"># 暗黙のルール（パターンルール）</span>
+<span class="hdr">%.o: %.c</span>
+<span class="hdr">	$(CC) $(CFLAGS) -c -o $@ $<</span>
+
+<span class="comment"># 環境変数の参照</span>
+<span class="hdr">PREFIX ?= /usr/local</span>   <span class="comment"># ?= : 未定義の場合のみ代入</span>
+</pre>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PART 5：コンパイルとインストール -->
+<!-- ============================================================ -->
+<h2 id="compile">⑤ コンパイルとインストール</h2>
+
+<div class="demo-box">
+  <h3>make コマンドの使い方</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment">## make コマンドの基本操作</span>
+
+<span class="comment"># デフォルトターゲット（all）を実行</span>
+$ <span class="cmd">make</span>
+
+<span class="comment"># 特定のターゲットを実行</span>
+$ <span class="cmd">make</span> <span class="val">all</span>
+$ <span class="cmd">make</span> <span class="val">install</span>
+$ <span class="cmd">make</span> <span class="val">clean</span>
+$ <span class="cmd">make</span> <span class="val">distclean</span>
+$ <span class="cmd">make</span> <span class="val">test</span>
+$ <span class="cmd">make</span> <span class="val">uninstall</span>
+
+<span class="comment"># 並列コンパイル（-j = ジョブ数）</span>
+$ <span class="cmd">make</span> <span class="opt">-j4</span>                  <span class="comment"># 4並列</span>
+$ <span class="cmd">make</span> <span class="opt">-j</span>$(nproc)           <span class="comment"># CPU コア数に合わせて並列化</span>
+
+<span class="comment"># 変数をコマンドラインで上書き</span>
+$ <span class="cmd">make</span> <span class="val">CC=clang</span>             <span class="comment"># コンパイラを変更</span>
+$ <span class="cmd">make</span> <span class="val">CFLAGS="-O3 -g"</span>      <span class="comment"># コンパイルフラグを変更</span>
+$ <span class="cmd">make</span> <span class="val">PREFIX=/opt/software</span>  <span class="comment"># インストール先を変更</span>
+
+<span class="comment"># ドライラン（実際には実行しない）</span>
+$ <span class="cmd">make</span> <span class="opt">-n</span>                    <span class="comment"># 実行されるコマンドを表示</span>
+$ <span class="cmd">make</span> <span class="opt">--dry-run</span>
+
+<span class="comment"># 詳細表示</span>
+$ <span class="cmd">make</span> <span class="opt">V=1</span>                   <span class="comment"># 詳細なコンパイルコマンドを表示</span>
+$ <span class="cmd">make</span> <span class="opt">VERBOSE=1</span>
+
+<span class="comment"># エラーを無視して続行（-k）</span>
+$ <span class="cmd">make</span> <span class="opt">-k</span>
+
+<span class="comment"># 特定のディレクトリで make を実行（-C）</span>
+$ <span class="cmd">make</span> <span class="opt">-C</span> /path/to/source
+</pre>
+  </div>
+
+  <h3>完全なビルド・インストール手順（実例）</h3>
+  <div class="interactive-demo">
+    <p style="font-size:0.85em; font-weight:bold; color:#1a4731; margin:0 0 12px;">
+      ソフトウェアを選択して実際のビルド手順を確認しましょう
+    </p>
+    <div class="slider-row">
+      <label>ソフトウェアの例</label>
+      <select id="build-example-sel" onchange="showBuildExample()">
+        <option value="">-- 選択してください --</option>
+        <option value="generic">汎用的なビルド手順</option>
+        <option value="nginx">nginx のビルド例</option>
+        <option value="hello">hello world プログラム（最小例）</option>
+        <option value="cmake">CMake を使用するプロジェクト</option>
+      </select>
+    </div>
+    <div class="output-display" id="build-example-output" style="display:none;"></div>
+  </div>
+
+  <script>
+    const buildExamples = {
+      generic: {
+        color: '#68d391',
+        text:
+`# 汎用的なソースからのビルド・インストール手順
+
+# 1. ビルドツールのインストール（事前準備）
+$ sudo apt install build-essential
+
+# 2. ソースをダウンロード
+$ wget https://example.com/software-1.0.tar.gz
+
+# 3. チェックサムで整合性を確認
+$ sha256sum software-1.0.tar.gz
+
+# 4. 展開
+$ tar xzf software-1.0.tar.gz
+$ cd software-1.0/
+
+# 5. README・INSTALL を読む
+$ cat README
+$ cat INSTALL
+
+# 6. configure でビルド環境を確認・Makefile を生成
+$ ./configure --prefix=/usr/local
+
+# 7. コンパイル
+$ make -j$(nproc)
+
+# 8. テスト（あれば）
+$ make test
+
+# 9. インストール
+$ sudo make install
+
+# 10. 確認
+$ which software
+$ software --version`
+      },
+      nginx: {
+        color: '#90cdf4',
+        text:
+`# nginx のソースからのビルド例
+
+# 1. 依存ライブラリのインストール
+$ sudo apt install build-essential libpcre3-dev zlib1g-dev libssl-dev
+
+# 2. ソースをダウンロード・展開
+$ wget http://nginx.org/download/nginx-1.26.0.tar.gz
+$ tar xzf nginx-1.26.0.tar.gz
+$ cd nginx-1.26.0/
+
+# 3. configure（オプションを指定）
+$ ./configure \\
+    --prefix=/usr/local/nginx \\
+    --with-http_ssl_module \\
+    --with-http_v2_module \\
+    --with-http_gzip_static_module \\
+    --with-pcre
+
+# 4. コンパイル
+$ make -j$(nproc)
+
+# 5. インストール
+$ sudo make install
+
+# 6. 起動確認
+$ sudo /usr/local/nginx/sbin/nginx -t
+$ sudo /usr/local/nginx/sbin/nginx`
+      },
+      hello: {
+        color: '#b794f4',
+        text:
+`# 最小限の Makefile と C プログラムの例
+
+# hello.c を作成
+$ cat > hello.c << 'EOF'
+#include <stdio.h>
+int main() {
+    printf("Hello, World!\\n");
+    return 0;
+}
+EOF
+
+# Makefile を作成（コマンド行はタブ文字が必要）
+$ cat > Makefile << 'EOF'
+CC = gcc
+CFLAGS = -Wall -O2
+PREFIX = /usr/local
+
+all: hello
+
+hello: hello.c
+\t$(CC) $(CFLAGS) -o hello hello.c
+
+install: hello
+\tinstall -m 755 hello $(PREFIX)/bin/hello
+
+clean:
+\trm -f hello
+
+.PHONY: all install clean
+EOF
+
+# ビルド
+$ make
+gcc -Wall -O2 -o hello hello.c
+
+# 実行確認
+$ ./hello
+Hello, World!
+
+# インストール
+$ sudo make install
+install -m 755 hello /usr/local/bin/hello`
+      },
+      cmake: {
+        color: '#f6ad55',
+        text:
+`# CMake を使用するプロジェクトのビルド手順
+
+# CMake のインストール
+$ sudo apt install cmake
+
+# ソースを展開してビルドディレクトリを作成
+$ tar xzf project-1.0.tar.gz
+$ cd project-1.0/
+$ mkdir build && cd build/
+
+# CMake でビルドシステムを生成
+$ cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local
+
+# コンパイル
+$ make -j$(nproc)
+
+# テスト
+$ make test
+
+# インストール
+$ sudo make install
+
+# CMake の主なオプション
+# -DCMAKE_INSTALL_PREFIX=パス  : インストール先
+# -DCMAKE_BUILD_TYPE=Release   : リリースビルド（最適化）
+# -DCMAKE_BUILD_TYPE=Debug     : デバッグビルド
+# -DBUILD_SHARED_LIBS=ON       : 共有ライブラリとしてビルド`
+      }
+    };
+
+    function showBuildExample() {
+      const key = document.getElementById('build-example-sel').value;
+      const el  = document.getElementById('build-example-output');
+      if (!key) { el.style.display='none'; return; }
+      const d = buildExamples[key];
+      el.style.display = 'block';
+      el.style.color   = d.color;
+      el.textContent   = d.text;
+    }
+  </script>
+
+  <h3>make の主要ターゲット一覧</h3>
+  <table class="ref-table">
+    <thead><tr><th>ターゲット</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td><code>make</code> / <code>make all</code></td><td>デフォルトターゲット。通常はコンパイルを実行</td></tr>
+      <tr><td><code>make install</code></td><td>コンパイル済みファイルをシステムにインストール</td></tr>
+      <tr><td><code>make clean</code></td><td>コンパイル済みオブジェクトファイル（.o）と実行ファイルを削除</td></tr>
+      <tr><td><code>make distclean</code></td><td>configure が生成したファイル（Makefile・config.h など）も削除</td></tr>
+      <tr><td><code>make test</code> / <code>make check</code></td><td>テストスイートを実行</td></tr>
+      <tr><td><code>make uninstall</code></td><td>インストールしたファイルを削除（対応している場合）</td></tr>
+      <tr><td><code>make dist</code></td><td>配布用アーカイブ（.tar.gz）を作成</td></tr>
+    </tbody>
+  </table>
+
+  <h3>ビルド後のファイル管理</h3>
+  <div class="pre-wrap">
+    <button class="copy-btn" onclick="copyPre(this)">copy</button>
+<pre>
+<span class="comment"># インストールされたファイルを確認</span>
+$ <span class="cmd">find</span> /usr/local/bin /usr/local/lib /usr/local/include \
+    <span class="opt">-name</span> <span class="val">"software*"</span> <span class="opt">-ls</span>
+
+<span class="comment"># DESTDIR を使ってインストールファイルを確認（パッケージ作成に有用）</span>
+$ <span class="cmd">sudo make</span> install <span class="val">DESTDIR=/tmp/staging</span>
+$ <span class="cmd">find</span> /tmp/staging <span class="opt">-ls</span>
+
+<span class="comment"># ビルドディレクトリのクリーンアップ</span>
+$ <span class="cmd">make</span> clean        <span class="comment"># .o ファイルと実行ファイルを削除</span>
+$ <span class="cmd">make</span> distclean    <span class="comment"># Makefile・config.h なども削除（configure 前の状態に戻す）</span>
+
+<span class="comment"># ソースディレクトリを削除（インストール後に不要な場合）</span>
+$ <span class="cmd">cd</span> ..
+$ <span class="cmd">rm</span> <span class="opt">-rf</span> software-1.0/
+
+<span class="comment"># 共有ライブラリのキャッシュを更新（ライブラリをインストールした場合）</span>
+$ <span class="cmd">sudo ldconfig</span>
+
+<span class="comment"># インストールされたコマンドを確認</span>
+$ <span class="cmd">which</span> software
+<span class="out">/usr/local/bin/software</span>
+$ <span class="cmd">software</span> <span class="opt">--version</span>
+</pre>
+  </div>
+
+  <div class="good">
+    ✅ <strong>ソースインストールのベストプラクティス</strong><br>
+    ① <strong>--prefix を明示的に指定</strong>：<code>--prefix=/usr/local</code> または <code>--prefix=/opt/ソフトウェア名</code><br>
+    ② <strong>チェックサムで整合性確認</strong>：ダウンロード後に <code>sha256sum</code> で確認<br>
+    ③ <strong>README・INSTALL を読む</strong>：ソフトウェア固有の手順がある場合がある<br>
+    ④ <strong>build-essential をインストール</strong>：<code>sudo apt install build-essential</code><br>
+    ⑤ <strong>config.log でエラー確認</strong>：configure 失敗時は <code>config.log</code> を確認<br>
+    ⑥ <strong>make -j$(nproc) で並列化</strong>：ビルド時間を短縮できる
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- まとめ表 -->
+<!-- ============================================================ -->
+<h2>📌 まとめ一覧</h2>
+<div class="demo-box">
+  <table class="ref-table">
+    <thead><tr><th>手順</th><th>コマンド</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td colspan="3" style="background:#c6f6d5; color:#1a4731; font-weight:bold; font-size:0.88em;">▼ ソースの展開</td></tr>
+      <tr><td>.tar.gz の展開</td><td><code>tar xzf ファイル名.tar.gz</code></td><td>gzip 圧縮アーカイブを展開</td></tr>
+      <tr><td>.tar.bz2 の展開</td><td><code>tar xjf ファイル名.tar.bz2</code></td><td>bzip2 圧縮アーカイブを展開</td></tr>
+      <tr><td>内容確認</td><td><code>tar tzf ファイル名.tar.gz</code></td><td>展開前に内容を一覧表示</td></tr>
+      <tr><td colspan="3" style="background:#c6f6d5; color:#1a4731; font-weight:bold; font-size:0.88em;">▼ configure</td></tr>
+      <tr><td>基本実行</td><td><code>./configure --prefix=/usr/local</code></td><td>インストール先を指定して Makefile を生成</td></tr>
+      <tr><td>ヘルプ表示</td><td><code>./configure --help</code></td><td>利用可能なオプションを表示</td></tr>
+      <tr><td>エラー確認</td><td><code>cat config.log</code></td><td>configure 失敗時のログを確認</td></tr>
+      <tr><td colspan="3" style="background:#c6f6d5; color:#1a4731; font-weight:bold; font-size:0.88em;">▼ make によるビルド・インストール</td></tr>
+      <tr><td>コンパイル</td><td><code>make</code> / <code>make -j$(nproc)</code></td><td>ソースコードをコンパイル（並列化推奨）</td></tr>
+      <tr><td>インストール</td><td><code>sudo make install</code></td><td>コンパイル済みファイルをインストール</td></tr>
+      <tr><td>クリーン</td><td><code>make clean</code></td><td>コンパイル済みファイルを削除</td></tr>
+      <tr><td>完全クリーン</td><td><code>make distclean</code></td><td>configure 生成ファイルも削除</td></tr>
+      <tr><td>テスト</td><td><code>make test</code> / <code>make check</code></td><td>テストスイートを実行</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 演習問題 -->
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>🖊️ 演習問題</h2>
+  <p>入力欄に答えを入れて「答え合わせ」ボタンを押してください。</p>
+
+  <!-- Q1 -->
+  <div class="quiz-block">
+    <h3>Q1. 穴埋め問題</h3>
+    <p>以下の説明に合うコマンドを入力してください。</p>
+    <label>① software-1.0.tar.gz を展開するコマンド：</label>
+    <input type="text" id="q1a" placeholder="tar xxx software-1.0.tar.gz">
+    <label>② configure でインストール先を /opt/myapp に指定するオプション：</label>
+    <input type="text" id="q1b" placeholder="--xxx=/opt/myapp">
+    <label>③ CPU コア数に合わせて並列コンパイルするコマンド：</label>
+    <input type="text" id="q1c" placeholder="make -j$(xxx)">
+    <label>④ コンパイル済みオブジェクトファイルと実行ファイルを削除するターゲット：</label>
+    <input type="text" id="q1d" placeholder="make xxx">
+    <label>⑤ configure が失敗した際にエラーの詳細を確認するファイル：</label>
+    <input type="text" id="q1e" placeholder="config.xxx">
+    <br>
+    <button class="btn btn-green" onclick="checkQ1()">答え合わせ</button>
+    <div class="result-msg" id="q1-result"></div>
+    <script>
+      function checkQ1() {
+        const a = document.getElementById('q1a').value.trim().toLowerCase().replace(/\s+/g,'');
+        const b = document.getElementById('q1b').value.trim().toLowerCase().replace(/\s/g,'');
+        const c = document.getElementById('q1c').value.trim().toLowerCase().replace(/\s+/g,'');
+        const d = document.getElementById('q1d').value.trim().toLowerCase().replace(/\s+/g,'');
+        const e = document.getElementById('q1e').value.trim().toLowerCase().replace(/\s/g,'');
+        const r = document.getElementById('q1-result');
+        const ca = a === 'tarxzfsoftware-1.0.tar.gz' || a === 'tarxzvfsoftware-1.0.tar.gz';
+        const cb = b === '--prefix=/opt/myapp';
+        const cc = c === 'make-j$(nproc)' || c === 'make-j$(nproc)';
+        const cd = d === 'makeclean';
+        const ce = e === 'config.log';
+        const count = [ca,cb,cc,cd,ce].filter(Boolean).length;
+        if (count === 5) {
+          r.className = 'result-msg correct';
+          r.textContent = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ ${count}/5 問正解。<br>` +
+            `① ${ca?'✅':'❌ tar xzf software-1.0.tar.gz'}　` +
+            `② ${cb?'✅':'❌ --prefix=/opt/myapp'}　` +
+            `③ ${cc?'✅':'❌ make -j$(nproc)'}　` +
+            `④ ${cd?'✅':'❌ make clean'}　` +
+            `⑤ ${ce?'✅':'❌ config.log'}`;
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-block">
+    <h3>Q2. 選択問題</h3>
+    <p>
+      Makefile のコマンド行（レシピ）の先頭に必要な文字はどれですか？
+    </p>
+    <select id="q2">
+      <option value="">-- 選択してください --</option>
+      <option value="a">スペース（半角空白）4つ</option>
+      <option value="b">タブ文字</option>
+      <option value="c">シャープ（#）</option>
+      <option value="d">コロン（:）</option>
+    </select>
+    <br>
+    <button class="btn btn-green" onclick="checkQ2()">答え合わせ</button>
+    <div class="result-msg" id="q2-result"></div>
+    <script>
+      function checkQ2() {
+        const v = document.getElementById('q2').value;
+        const r = document.getElementById('q2-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            'Makefile のコマンド行（レシピ）は必ず<strong>タブ文字</strong>で始める必要があります。<br>' +
+            'スペースで始めると <code>Makefile:N: *** missing separator. Stop.</code> というエラーが発生します。<br><br>' +
+            '<strong>Makefile の構造：</strong><br>' +
+            '<code>ターゲット: 依存ファイル</code>（行頭から）<br>' +
+            '<code>[TAB]コマンド</code>（タブ文字で始まる）';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            'Makefile のコマンド行は<strong>タブ文字</strong>で始める必要があります。<br>' +
+            'スペースを使うと <code>missing separator</code> エラーが発生します。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-block">
+    <h3>Q3. 正誤チェックボックス問題</h3>
+    <p><strong>正しい記述</strong>をすべて選んでください。</p>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3a">
+      ① <code>./configure --prefix=/usr/local</code> はインストール先を /usr/local に指定する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3b">
+      ② <code>make distclean</code> は <code>make clean</code> より多くのファイルを削除する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3c">
+      ③ configure スクリプトは Makefile.in を元に Makefile を生成する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3d">
+      ④ <code>tar xzf</code> は .tar.bz2 形式のアーカイブを展開するコマンドである
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3e">
+      ⑤ <code>make -j$(nproc)</code> は CPU コア数に合わせて並列コンパイルを行う
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3f">
+      ⑥ Makefile の <code>.PHONY</code> はファイルを生成しないターゲットを宣言する
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="q3g">
+      ⑦ <code>sudo make install</code> は通常 /usr/local/bin などにファイルをインストールする
+    </label>
+    <br>
+    <button class="btn btn-green" onclick="checkQ3()">答え合わせ</button>
+    <div class="result-msg" id="q3-result"></div>
+    <script>
+      function checkQ3() {
+        const r = document.getElementById('q3-result');
+        const checks = {
+          a: document.getElementById('q3a').checked,
+          b: document.getElementById('q3b').checked,
+          c: document.getElementById('q3c').checked,
+          d: document.getElementById('q3d').checked,
+          e: document.getElementById('q3e').checked,
+          f: document.getElementById('q3f').checked,
+          g: document.getElementById('q3g').checked,
+        };
+        // 正解：①②③⑤⑥⑦（a,b,c,e,f,g）
+        // ④ tar xzf は .tar.gz（gzip）の展開。.tar.bz2 は tar xjf
+        const correct = { a:true, b:true, c:true, d:false, e:true, f:true, g:true };
+        const allOk = Object.keys(correct).every(k => checks[k] === correct[k]);
+        if (allOk) {
+          r.className = 'result-msg correct';
+          r.innerHTML = '✅ 全問正解！完璧です！';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解の項目があります。<br><br>' +
+            '<strong>正しい記述：</strong>①②③⑤⑥⑦<br><br>' +
+            '<strong>誤った記述：</strong><br>' +
+            '・④ <code>tar xzf</code> は <strong>.tar.gz（gzip 圧縮）</strong>の展開コマンドです。<br>' +
+            '&nbsp;&nbsp;.tar.bz2（bzip2 圧縮）を展開するには <code>tar xjf</code> を使います。';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-block">
+    <h3>Q4. 手順並べ替え問題</h3>
+    <p>
+      ソースコードからソフトウェアをインストールする正しい手順を答えてください。
+    </p>
+    <div style="background:#f0fff4; border:1px solid #9ae6b4; border-radius:6px; padding:12px 16px; margin:10px 0; font-size:0.88em;">
+      <div>A. <code>sudo make install</code></div>
+      <div>B. <code>tar xzf software-1.0.tar.gz</code></div>
+      <div>C. <code>make</code></div>
+      <div>D. <code>./configure --prefix=/usr/local</code></div>
+      <div>E. <code>cd software-1.0/</code></div>
+    </div>
+    <label>正しい順序（例：B→E→... の形式で入力）：</label>
+    <input type="text" id="q4" placeholder="X→X→X→X→X">
+    <br>
+    <button class="btn btn-green" onclick="checkQ4()">答え合わせ</button>
+    <div class="result-msg" id="q4-result"></div>
+    <script>
+      function checkQ4() {
+        const v = document.getElementById('q4').value.trim().toUpperCase()
+                    .replace(/[^A-E→>-]/g,'').replace(/[-›>]+/g,'→');
+        const r = document.getElementById('q4-result');
+        if (v === 'B→E→D→C→A') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<strong>正しい手順：</strong><br>' +
+            '① B：<code>tar xzf software-1.0.tar.gz</code>（アーカイブを展開）<br>' +
+            '② E：<code>cd software-1.0/</code>（ソースディレクトリに移動）<br>' +
+            '③ D：<code>./configure --prefix=/usr/local</code>（環境確認・Makefile 生成）<br>' +
+            '④ C：<code>make</code>（コンパイル）<br>' +
+            '⑤ A：<code>sudo make install</code>（インストール）';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            `❌ 不正解。あなたの回答：${v || '（未入力）'}<br><br>` +
+            '<strong>正しい順序：B→E→D→C→A</strong><br>' +
+            '① B：tar xzf（展開）<br>' +
+            '② E：cd（ディレクトリ移動）<br>' +
+            '③ D：./configure（環境確認）<br>' +
+            '④ C：make（コンパイル）<br>' +
+            '⑤ A：sudo make install（インストール）';
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-block">
+    <h3>Q5. 選択問題</h3>
+    <p>
+      <code>./configure --help</code> コマンドの説明として正しいものはどれですか？
+    </p>
+    <select id="q5">
+      <option value="">-- 選択してください --</option>
+      <option value="a">システムにインストール済みのヘルプドキュメントを表示する</option>
+      <option value="b">configure スクリプトで利用可能なオプション（--prefix など）を表示する</option>
+      <option value="c">make のヘルプを表示する</option>
+      <option value="d">コンパイラのヘルプを表示する</option>
+    </select>
+    <br>
+    <button class="btn btn-green" onclick="checkQ5()">答え合わせ</button>
+    <div class="result-msg" id="q5-result"></div>
+    <script>
+      function checkQ5() {
+        const v = document.getElementById('q5').value;
+        const r = document.getElementById('q5-result');
+        if (v === 'b') {
+          r.className = 'result-msg correct';
+          r.innerHTML =
+            '✅ 正解！<br><br>' +
+            '<code>./configure --help</code> は configure スクリプトで利用可能な<br>' +
+            'すべてのオプションを表示します。<br><br>' +
+            '<strong>主な表示内容：</strong><br>' +
+            '・<code>--prefix</code>：インストール先の指定<br>' +
+            '・<code>--enable-xxx</code> / <code>--disable-xxx</code>：機能の有効化・無効化<br>' +
+            '・<code>--with-xxx</code> / <code>--without-xxx</code>：外部ライブラリの使用設定<br>' +
+            '・各ディレクトリオプション（--bindir・--libdir など）';
+        } else if (v === '') {
+          r.className = 'result-msg info';
+          r.textContent = '⚠️ 選択肢を選んでください。';
+        } else {
+          r.className = 'result-msg wrong';
+          r.innerHTML =
+            '❌ 不正解。<br>' +
+            '<code>./configure --help</code> は configure スクリプト固有のオプション一覧を表示します。<br>' +
+            'インストール先（--prefix）や機能の有効化（--enable-xxx）などを確認できます。';
+        }
+      }
+    </script>
+  </div>
+
+</div><!-- /quiz-section -->
+
+
+<!-- 完了ボタン -->
+<div class="complete-section">
+  <p>🎉 「ソースからのソフトウェアインストール」の学習が完了したら記録しましょう！</p>
+  <button class="btn btn-done" onclick="markComplete()">✅ このセクションを完了にする</button>
+  <div id="complete-msg" style="margin-top:10px; font-size:0.88em; color:#276749; display:none;">
+    進捗を保存しました！トップページの進捗バーに反映されます。
+  </div>
+</div>
+<script>
+  function markComplete() {
+    localStorage.setItem('lpic201_ch7', '33');
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+  if (parseInt(localStorage.getItem('lpic201_ch7') || '0') >= 33) {
+    document.getElementById('complete-msg').style.display = 'block';
+  }
+
+  function copyPre(btn) {
+    const pre = btn.nextElementSibling;
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+</script>
+
+<!-- ページナビ -->
+<div class="page-nav">
+  <a class="prev" href="../06_network/02_dns.html">← 第6章：高度なネットワークの設定と問題解決</a>
+  <a class="home" href="../index.html">🏠 目次へ</a>
+  <a class="next" href="02_backup.html">次へ：バックアップ操作 →</a>
+</div>
+
+<!-- フッター -->
+<footer>
+  <p>
+    LPIC-201 学習サイト ／
+    <a href="https://meshinokiwamiokome.github.io/HTML5/" target="_blank">HTML5 学習サイト</a> ／
+    <a href="https://github.com/MeshinoKiwamiOkome/LPIC201" target="_blank">GitHub リポジトリ</a>
+  </p>
+  <p style="margin-top:4px;">© MeshinoKiwamiOkome</p>
+</footer>
+
+</body>
+</html>
